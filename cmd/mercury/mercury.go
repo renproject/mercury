@@ -9,6 +9,11 @@ import (
 )
 
 func main() {
+	btcMainnetPlugin, err := btc.New(os.Getenv("BITCOIN_MAINNET_RPC_URL"), os.Getenv("BITCOIN_MAINNET_RPC_USER"), os.Getenv("BITCOIN_MAINNET_RPC_PASSWORD"))
+	if err != nil {
+		panic(err)
+	}
+
 	btcTestnetPlugin, err := btc.New(os.Getenv("BITCOIN_TESTNET_RPC_URL"), os.Getenv("BITCOIN_TESTNET_RPC_USER"), os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD"))
 	if err != nil {
 		panic(err)
@@ -34,5 +39,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	mercury.New(os.Getenv("PORT"), btcTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
+	mercury.New(os.Getenv("PORT"), btcMainnetPlugin, btcTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
 }
