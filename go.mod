@@ -1,6 +1,6 @@
 module github.com/renproject/mercury
 
-// +heroku install ./cmd/...
+// +heroku install ./cmd
 
 require (
 	github.com/btcsuite/btcd v0.0.0-20190315201642-aa6e0f35703c
