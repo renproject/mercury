@@ -34,5 +34,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	mercury.New("8123", btcTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
+	mercury.New(os.Getenv("PORT"), btcTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
 }
