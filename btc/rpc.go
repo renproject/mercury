@@ -29,7 +29,7 @@ type ListTransansactionsObj struct {
 }
 
 type RPCCLient interface {
-	ListTransansactions() (ListTransansactionsResponse, error)
+	ListTransansactions(accName string) (ListTransansactionsResponse, error)
 	ListReceivedByAddress(address string) (ListReceivedByAddressResponse, error)
 }
 
@@ -45,9 +45,9 @@ func NewRPCClient(host, user, password string) RPCCLient {
 	}
 }
 
-func (client *rpcClient) ListTransansactions() (ListTransansactionsResponse, error) {
+func (client *rpcClient) ListTransansactions(accName string) (ListTransansactionsResponse, error) {
 	resp := ListTransansactionsResponse{}
-	req := []byte("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"listtransactions\", \"params\": [\"*\", 999999, 0, true] }")
+	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"listtransactions\", \"params\": [\"%s\", 999999, 0, true] }", accName))
 	if err := client.sendRequest(req, &resp); err != nil {
 		return resp, err
 	}

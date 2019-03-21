@@ -1,6 +1,9 @@
 package btc
 
 import (
+	"bytes"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math"
@@ -8,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury"
 )
@@ -158,7 +162,11 @@ func (btc *bitcoin) ScriptRedeemed(address string, value int64) (bool, int64, er
 }
 
 func (btc *bitcoin) ScriptSpent(scriptAddress, spenderAddress string) (bool, string, error) {
-	if err := btc.client.ImportAddressRescan(scriptAddress, "", false); err != nil {
+	randAcc := [32]byte{}
+	rand.Read(randAcc[:])
+	randAccName := base64.StdEncoding.EncodeToString(randAcc[:])
+
+	if err := btc.client.ImportAddressRescan(scriptAddress, randAccName, false); err != nil {
 		return false, "", err
 	}
 
@@ -166,7 +174,7 @@ func (btc *bitcoin) ScriptSpent(scriptAddress, spenderAddress string) (bool, str
 		return false, "", err
 	}
 
-	txs, err := btc.client2.ListTransansactions()
+	txs, err := btc.client2.ListTransansactions(randAccName)
 	if err != nil {
 		return false, "", err
 	}
@@ -205,11 +213,11 @@ func (btc *bitcoin) ScriptSpent(scriptAddress, spenderAddress string) (bool, str
 }
 
 func (btc *bitcoin) PublishTransaction(stx []byte) error {
-	tx, err := btcutil.NewTxFromBytes(stx)
-	if err != nil {
+	tx := wire.NewMsgTx(2)
+	if err := tx.Deserialize(bytes.NewBuffer(stx)); err != nil {
 		return err
 	}
-	_, err = btc.client.SendRawTransaction(tx.MsgTx(), false)
+	_, err := btc.client.SendRawTransaction(tx, false)
 	return err
 }
 

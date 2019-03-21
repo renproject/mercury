@@ -13,13 +13,14 @@ import (
 // Handlers of the bitcoin blockchain
 func (btc *bitcoin) AddRoutes(r *mux.Router) {
 	r.HandleFunc(btc.AddRoutePrefix("/utxo/{address}"), btc.getUTXOhandler()).Queries("limit", "{limit}").Queries("confirmations", "{confirmations}").Methods("GET")
-	r.HandleFunc(btc.AddRoutePrefix("/script/{state}/{address}"), btc.getScriptHandler()).Queries("value", "{value}").Queries("spender", "{spender}").Methods("GET")
+	r.HandleFunc(btc.AddRoutePrefix("/script/{state}/{address}"), btc.getScriptHandler()).Queries("value", "{value}").Methods("GET")
+	r.HandleFunc(btc.AddRoutePrefix("/script/{state}/{address}"), btc.getScriptHandler()).Queries("spender", "{spender}").Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/confirmations/{txHash}"), btc.getConfirmationsHandler()).Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/tx"), btc.postTransaction()).Methods("POST")
 }
 
 func (btc *bitcoin) AddRoutePrefix(route string) string {
-	return fmt.Sprintf("/%s-%s%s", "bitcoin", btc.Network(), route)
+	return fmt.Sprintf("/%s-%s%s", "btc", btc.Network(), route)
 }
 
 func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
@@ -58,7 +59,7 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 		var err error
 		switch state {
 		case "spent":
-			status, script, err2 := btc.ScriptSpent(addr, r.URL.Query().Get("confirmations"))
+			status, script, err2 := btc.ScriptSpent(addr, r.URL.Query().Get("spender"))
 			if err2 != nil {
 				err = err2
 				break
@@ -91,6 +92,8 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 			}
 			resp.Value = val
 			resp.Status = status
+		default:
+			err = fmt.Errorf("unsupported script state: %s", state)
 		}
 		if err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
