@@ -115,7 +115,7 @@ func (zec *zcash) Confirmations(txHashStr string) (int64, error) {
 }
 
 func (zec *zcash) ScriptFunded(address string, value int64) (bool, int64, error) {
-	if err := zec.client.ImportAddressRescan(address, "", true); err != nil {
+	if err := zec.client.ImportAddressRescan(address, "", false); err != nil {
 		return false, value, err
 	}
 	resp, err := zec.client2.ListReceivedByAddress(address)
