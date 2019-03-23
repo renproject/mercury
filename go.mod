@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/sessions v1.1.3 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
+	github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80
 	github.com/rs/cors v1.6.0
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )
