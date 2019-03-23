@@ -6,6 +6,7 @@ import (
 	"github.com/renproject/mercury"
 	"github.com/renproject/mercury/btc"
 	"github.com/renproject/mercury/eth"
+	"github.com/renproject/mercury/zec"
 )
 
 func main() {
@@ -18,6 +19,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	zecTestnetPlugin, err := zec.New(os.Getenv("ZCASH_TESTNET_RPC_URL"), os.Getenv("ZCASH_TESTNET_RPC_USER"), os.Getenv("ZCASH_TESTNET_RPC_PASSWORD"))
+	if err != nil {
+		panic(err)
+	}
+
 	apiKeys := map[string]string{
 		"":         os.Getenv("INFURA_KEY_DEFAULT"),
 		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
@@ -39,5 +46,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	mercury.New(os.Getenv("PORT"), btcMainnetPlugin, btcTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
+	mercury.New(os.Getenv("PORT"), btcMainnetPlugin, btcTestnetPlugin, zecTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
 }
