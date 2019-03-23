@@ -48,13 +48,10 @@ func New(host, user, password string) (mercury.BlockchainPlugin, error) {
 	switch bcInfo.Chain {
 	case "main":
 		params = &chaincfg.MainNetParams
-		network = "mainnet"
 	case "test":
 		params = &chaincfg.TestNet3Params
-		network = "testnet3"
 	case "regtest":
 		params = &chaincfg.RegressionNetParams
-		network = "regtest"
 	default:
 		return nil, fmt.Errorf("unsupported bitcoin network: %s", bcInfo.Chain)
 	}
@@ -222,5 +219,5 @@ func (btc *bitcoin) PublishTransaction(stx []byte) error {
 }
 
 func (btc *bitcoin) Network() string {
-	return btc.network
+	return btc.params.Name
 }
