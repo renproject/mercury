@@ -7,27 +7,14 @@ import (
 	"github.com/renproject/mercury/btc"
 	"github.com/renproject/mercury/eth"
 	"github.com/renproject/mercury/zec"
-	"github.com/republicprotocol/co-go"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	var btcMainnetPlugin, btcTestnetPlugin, zecTestnetPlugin mercury.BlockchainPlugin
-	var err1, err2, err3 error
-	co.ParBegin(
-		func() {
-			btcMainnetPlugin, err1 = btc.New(os.Getenv("BITCOIN_MAINNET_RPC_URL"), os.Getenv("BITCOIN_MAINNET_RPC_USER"), os.Getenv("BITCOIN_MAINNET_RPC_PASSWORD"))
-		},
-		func() {
-			btcTestnetPlugin, err2 = btc.New(os.Getenv("BITCOIN_TESTNET_RPC_URL"), os.Getenv("BITCOIN_TESTNET_RPC_USER"), os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD"))
-		},
-		func() {
-			zecTestnetPlugin, err3 = zec.New(os.Getenv("ZCASH_TESTNET_RPC_URL"), os.Getenv("ZCASH_TESTNET_RPC_USER"), os.Getenv("ZCASH_TESTNET_RPC_PASSWORD"))
-		},
-	)
-	if err1 != nil || err2 != nil || err3 != nil {
-		panic("failed to connect to blockchains")
-	}
-
+	logger := logrus.StandardLogger()
+	btcMainnetPlugin := btc.New("btc", os.Getenv("BITCOIN_MAINNET_RPC_URL"), os.Getenv("BITCOIN_MAINNET_RPC_USER"), os.Getenv("BITCOIN_MAINNET_RPC_PASSWORD"))
+	btcTestnetPlugin := btc.New("btc-testnet3", os.Getenv("BITCOIN_TESTNET_RPC_URL"), os.Getenv("BITCOIN_TESTNET_RPC_USER"), os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD"))
+	zecTestnetPlugin := zec.New("zec-testnet", os.Getenv("ZCASH_TESTNET_RPC_URL"), os.Getenv("ZCASH_TESTNET_RPC_USER"), os.Getenv("ZCASH_TESTNET_RPC_PASSWORD"))
 	apiKeys := map[string]string{
 		"":         os.Getenv("INFURA_KEY_DEFAULT"),
 		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
@@ -39,5 +26,5 @@ func main() {
 	kovanEthPlugin := eth.New("kovan", apiKeys)
 	ropstenEthPlugin := eth.New("ropsten", apiKeys)
 	mainnetEthPlugin := eth.New("mainnet", apiKeys)
-	mercury.New(os.Getenv("PORT"), btcMainnetPlugin, btcTestnetPlugin, zecTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
+	mercury.New(os.Getenv("PORT"), logger, btcMainnetPlugin, btcTestnetPlugin, zecTestnetPlugin, kovanEthPlugin, ropstenEthPlugin, mainnetEthPlugin).Run()
 }

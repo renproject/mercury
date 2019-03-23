@@ -20,7 +20,7 @@ func (btc *bitcoin) AddRoutes(r *mux.Router) {
 }
 
 func (btc *bitcoin) AddRoutePrefix(route string) string {
-	return fmt.Sprintf("/%s-%s%s", "btc", btc.Network(), route)
+	return fmt.Sprintf("/%s%s", btc.network, route)
 }
 
 func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {

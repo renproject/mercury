@@ -18,6 +18,10 @@ func New(network string, tags map[string]string) mercury.BlockchainPlugin {
 	return &ethereum{network, tags}
 }
 
+func (eth *ethereum) Init() error {
+	return nil
+}
+
 // Handlers of the bitcoin blockchain
 func (eth *ethereum) AddRoutes(r *mux.Router) {
 	r.HandleFunc(eth.AddRoutePrefix(""), eth.jsonRPCHandler()).Queries("tag", "{tag}").Methods("POST")
@@ -25,11 +29,7 @@ func (eth *ethereum) AddRoutes(r *mux.Router) {
 }
 
 func (eth *ethereum) AddRoutePrefix(route string) string {
-	return fmt.Sprintf("/%s-%s%s", "eth", eth.Network(), route)
-}
-
-func (eth *ethereum) Network() string {
-	return eth.network
+	return fmt.Sprintf("/%s-%s%s", "eth", eth.network, route)
 }
 
 func (eth *ethereum) jsonRPCHandler() http.HandlerFunc {

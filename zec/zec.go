@@ -13,29 +13,39 @@ import (
 )
 
 type zcash struct {
-	client  *rpcclient.Client
-	client2 RPCCLient
-	params  *chaincfg.Params
+	network, host, user, password string
+	client                        *rpcclient.Client
+	client2                       RPCCLient
+	params                        *chaincfg.Params
 }
 
-func New(host, user, password string) (mercury.BlockchainPlugin, error) {
+func New(network, host, user, password string) mercury.BlockchainPlugin {
+	return &zcash{
+		host:     host,
+		user:     user,
+		password: password,
+		network:  network,
+	}
+}
+
+func (zec *zcash) Init() error {
 	client, err := rpcclient.New(
 		&rpcclient.ConnConfig{
-			Host:         host,
-			User:         user,
-			Pass:         password,
+			Host:         zec.host,
+			User:         zec.user,
+			Pass:         zec.password,
 			HTTPPostMode: true,
 			DisableTLS:   true,
 		},
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	bcInfo, err := client.GetBlockChainInfo()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var params *chaincfg.Params
@@ -47,14 +57,13 @@ func New(host, user, password string) (mercury.BlockchainPlugin, error) {
 	case "regtest":
 		params = &chaincfg.RegressionNetParams
 	default:
-		return nil, fmt.Errorf("unsupported zcash network: %s", bcInfo.Chain)
+		return fmt.Errorf("unsupported bitcoin network: %s", bcInfo.Chain)
 	}
 
-	return &zcash{
-		client:  client,
-		client2: NewRPCClient(host, user, password),
-		params:  params,
-	}, nil
+	zec.client = client
+	zec.client2 = NewRPCClient(zec.host, zec.user, zec.password)
+	zec.params = params
+	return nil
 }
 
 type UTXO struct {
@@ -181,10 +190,6 @@ func (zec *zcash) ScriptSpent(scriptAddress, spenderAddress string) (bool, strin
 func (zec *zcash) PublishTransaction(stx []byte) error {
 	_, err := zec.client2.SendRawTransaction(stx)
 	return err
-}
-
-func (zec *zcash) Network() string {
-	return zec.params.Name
 }
 
 func reverse(hexStr string) string {

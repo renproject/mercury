@@ -20,11 +20,7 @@ func (zec *zcash) AddRoutes(r *mux.Router) {
 }
 
 func (zec *zcash) AddRoutePrefix(route string) string {
-	network := zec.Network()
-	if network == "mainnet" {
-		network = ""
-	}
-	return fmt.Sprintf("/%s-%s%s", "zec", network, route)
+	return fmt.Sprintf("/%s%s", zec.network, route)
 }
 
 func (zec *zcash) getUTXOhandler() http.HandlerFunc {

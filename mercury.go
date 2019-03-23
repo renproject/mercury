@@ -5,12 +5,16 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/republicprotocol/co-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"golang.org/x/time/rate"
 )
 
 type BlockchainPlugin interface {
+	Init() error
 	AddRoutes(router *mux.Router)
 }
 
@@ -20,13 +24,20 @@ type Mercury interface {
 
 type server struct {
 	port    string
+	logger  logrus.FieldLogger
 	plugins []BlockchainPlugin
 }
 
 // New mercury http server
-func New(port string, plugins ...BlockchainPlugin) Mercury {
+func New(port string, logger logrus.FieldLogger, plugins ...BlockchainPlugin) Mercury {
+	go co.ParForAll(plugins, func(i int) {
+		if err := plugins[i].Init(); err != nil {
+			logger.Error(err)
+		}
+	})
 	return &server{
 		port:    port,
+		logger:  logger,
 		plugins: plugins,
 	}
 }

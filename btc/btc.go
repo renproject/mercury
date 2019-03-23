@@ -17,34 +17,42 @@ import (
 )
 
 type bitcoin struct {
-	client  *rpcclient.Client
-	client2 RPCCLient
-	params  *chaincfg.Params
-	network string
+	host, user, password, network string
+	client                        *rpcclient.Client
+	client2                       RPCCLient
+	params                        *chaincfg.Params
 }
 
-func New(host, user, password string) (mercury.BlockchainPlugin, error) {
+func New(network, host, user, password string) mercury.BlockchainPlugin {
+	return &bitcoin{
+		host:     host,
+		user:     user,
+		password: password,
+		network:  network,
+	}
+}
+
+func (btc *bitcoin) Init() error {
 	client, err := rpcclient.New(
 		&rpcclient.ConnConfig{
-			Host:         host,
-			User:         user,
-			Pass:         password,
+			Host:         btc.host,
+			User:         btc.user,
+			Pass:         btc.password,
 			HTTPPostMode: true,
 			DisableTLS:   true,
 		},
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	bcInfo, err := client.GetBlockChainInfo()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var params *chaincfg.Params
-	var network string
 	switch bcInfo.Chain {
 	case "main":
 		params = &chaincfg.MainNetParams
@@ -53,15 +61,13 @@ func New(host, user, password string) (mercury.BlockchainPlugin, error) {
 	case "regtest":
 		params = &chaincfg.RegressionNetParams
 	default:
-		return nil, fmt.Errorf("unsupported bitcoin network: %s", bcInfo.Chain)
+		return fmt.Errorf("unsupported bitcoin network: %s", bcInfo.Chain)
 	}
 
-	return &bitcoin{
-		client:  client,
-		client2: NewRPCClient(host, user, password),
-		params:  params,
-		network: network,
-	}, nil
+	btc.client = client
+	btc.client2 = NewRPCClient(btc.host, btc.user, btc.password)
+	btc.params = params
+	return nil
 }
 
 type UTXO struct {
@@ -216,8 +222,4 @@ func (btc *bitcoin) PublishTransaction(stx []byte) error {
 	}
 	_, err := btc.client.SendRawTransaction(tx, false)
 	return err
-}
-
-func (btc *bitcoin) Network() string {
-	return btc.params.Name
 }
