@@ -30,7 +30,7 @@ type server struct {
 
 // New mercury http server
 func New(port string, logger logrus.FieldLogger, plugins ...BlockchainPlugin) Mercury {
-	go co.ParForAll(plugins, func(i int) {
+	co.ParForAll(plugins, func(i int) {
 		if err := plugins[i].Init(); err != nil {
 			logger.Error(err)
 		}
