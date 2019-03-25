@@ -23,6 +23,10 @@ func (zec *zcash) AddRoutePrefix(route string) string {
 	return fmt.Sprintf("/%s%s", zec.network, route)
 }
 
+func (zec *zcash) Initiated() bool {
+	return zec.initiated
+}
+
 func (zec *zcash) getUTXOhandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		opts := mux.Vars(r)

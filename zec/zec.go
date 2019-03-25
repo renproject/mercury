@@ -17,6 +17,7 @@ type zcash struct {
 	client                        *rpcclient.Client
 	client2                       RPCCLient
 	params                        *chaincfg.Params
+	initiated                     bool
 }
 
 func New(network, host, user, password string) mercury.BlockchainPlugin {
@@ -63,6 +64,7 @@ func (zec *zcash) Init() error {
 	zec.client = client
 	zec.client2 = NewRPCClient(zec.host, zec.user, zec.password)
 	zec.params = params
+	zec.initiated = true
 	return nil
 }
 
