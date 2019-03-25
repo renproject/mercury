@@ -21,6 +21,7 @@ type bitcoin struct {
 	client                        *rpcclient.Client
 	client2                       RPCCLient
 	params                        *chaincfg.Params
+	initiated                     bool
 }
 
 func New(network, host, user, password string) mercury.BlockchainPlugin {
@@ -67,6 +68,7 @@ func (btc *bitcoin) Init() error {
 	btc.client = client
 	btc.client2 = NewRPCClient(btc.host, btc.user, btc.password)
 	btc.params = params
+	btc.initiated = true
 	return nil
 }
 

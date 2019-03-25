@@ -23,6 +23,10 @@ func (btc *bitcoin) AddRoutePrefix(route string) string {
 	return fmt.Sprintf("/%s%s", btc.network, route)
 }
 
+func (btc *bitcoin) Initiated() bool {
+	return btc.initiated
+}
+
 func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		opts := mux.Vars(r)
