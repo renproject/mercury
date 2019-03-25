@@ -10,16 +10,21 @@ import (
 )
 
 type ethereum struct {
-	network string
-	tags    map[string]string
+	network   string
+	tags      map[string]string
+	initiated bool
 }
 
 func New(network string, tags map[string]string) mercury.BlockchainPlugin {
-	return &ethereum{network, tags}
+	return &ethereum{network, tags, true}
 }
 
 func (eth *ethereum) Init() error {
 	return nil
+}
+
+func (eth *ethereum) Initiated() bool {
+	return eth.initiated
 }
 
 // Handlers of the bitcoin blockchain
