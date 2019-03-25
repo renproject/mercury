@@ -5,16 +5,16 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/republicprotocol/co-go"
-	"github.com/sirupsen/logrus"
-
 	"github.com/gorilla/mux"
+	"github.com/republicprotocol/co-go"
 	"github.com/rs/cors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
 
 type BlockchainPlugin interface {
 	Init() error
+	Initiated() bool
 	AddRoutes(router *mux.Router)
 }
 
@@ -30,7 +30,7 @@ type server struct {
 
 // New mercury http server
 func New(port string, logger logrus.FieldLogger, plugins ...BlockchainPlugin) Mercury {
-	co.ParForAll(plugins, func(i int) {
+	go co.ParForAll(plugins, func(i int) {
 		if err := plugins[i].Init(); err != nil {
 			logger.Error(err)
 		}
@@ -59,6 +59,17 @@ func (server *server) Run() {
 	}).Handler(r)
 	log.Printf("Listening on port %v...", server.port)
 	http.ListenAndServe(fmt.Sprintf(":%v", server.port), handler)
+}
+
+func isInitiated(plugin BlockchainPlugin, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if plugin.Initiated() {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte("service unavailable"))
+	})
 }
 
 func rateLimit(limiter *rate.Limiter, next http.Handler) http.Handler {
