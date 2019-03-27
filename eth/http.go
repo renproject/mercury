@@ -44,7 +44,20 @@ func (eth *ethereum) jsonRPCHandler() http.HandlerFunc {
 			apiKey = eth.tags[""]
 		}
 
-		resp, err := http.Post(fmt.Sprintf("https://%s.infura.io/v3/%s", eth.network, apiKey), "application/json", r.Body)
+		var network string
+		switch eth.network {
+		case "eth":
+			network = "mainnet"
+		case "eth-ropsten":
+			network = "ropsten"
+		case "eth-kovan":
+			network = "kovan"
+		default:
+			http.Error(w, fmt.Sprintf("{ \"error\": \"unsupported network: %s\" }", network), http.StatusBadRequest)
+			return
+		}
+
+		resp, err := http.Post(fmt.Sprintf("https://%s.infura.io/v3/%s", network, apiKey), "application/json", r.Body)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), resp.StatusCode)
 			return
