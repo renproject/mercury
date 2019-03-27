@@ -34,7 +34,7 @@ func (eth *ethereum) AddRoutes(r *mux.Router) {
 }
 
 func (eth *ethereum) AddRoutePrefix(route string) string {
-	return fmt.Sprintf("/%s-%s%s", "eth", eth.network, route)
+	return fmt.Sprintf("/%s%s", eth.network, route)
 }
 
 func (eth *ethereum) jsonRPCHandler() http.HandlerFunc {
