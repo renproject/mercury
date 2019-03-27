@@ -9,6 +9,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury"
 )
 
@@ -94,9 +95,13 @@ func (zec *zcash) GetUTXOs(address string, limit, confitmations int64) ([]UTXO, 
 
 	utxos := []UTXO{}
 	for _, unspent := range unspents {
+		amount, err := btcutil.NewAmount(unspent.Amount)
+		if err != nil {
+			return utxos, err
+		}
 		utxos = append(utxos, UTXO{
 			TxHash:       unspent.TxID,
-			Amount:       int64(unspent.Amount * math.Pow(10, 8)),
+			Amount:       int64(amount.ToUnit(btcutil.AmountSatoshi)),
 			ScriptPubKey: unspent.ScriptPubKey,
 			Vout:         unspent.Vout,
 		})
