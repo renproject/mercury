@@ -163,7 +163,7 @@ func (client *rpcClient) sendRequest(data []byte, response interface{}) error {
 	if resp.StatusCode != http.StatusOK {
 		return errors.New(string(msg))
 	}
-	fmt.Println(msg)
+	fmt.Println(string(msg))
 
 	result := Response{}
 	if err := json.Unmarshal(msg, &result); err != nil {
