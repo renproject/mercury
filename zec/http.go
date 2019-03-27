@@ -138,7 +138,7 @@ func (zec *zcash) postTransaction() http.HandlerFunc {
 			return
 		}
 		if err := zec.PublishTransaction(stx); err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
