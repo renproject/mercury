@@ -43,7 +43,7 @@ func New(port string, logger logrus.FieldLogger, plugins ...BlockchainPlugin) Me
 }
 
 func (server *server) Run() {
-	limiter := rate.NewLimiter(3, 20)
+	limiter := rate.NewLimiter(200, 20)
 	r := mux.NewRouter()
 	for _, plugin := range server.plugins {
 		plugin.AddRoutes(r)
