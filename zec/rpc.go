@@ -11,6 +11,11 @@ import (
 
 type Response struct {
 	Result json.RawMessage `json:"result"`
+	Error  RPCError        `json:"error"`
+}
+
+type RPCError struct {
+	Message string `json:"message"`
 }
 
 type ListReceivedByAddressResponse []ListReceivedByAddressObj
@@ -160,14 +165,13 @@ func (client *rpcClient) sendRequest(data []byte, response interface{}) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		fmt.Println(string(msg))
-		return errors.New(string(msg))
-	}
-
 	result := Response{}
 	if err := json.Unmarshal(msg, &result); err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(result.Error.Message)
 	}
 
 	return json.Unmarshal(result.Result, response)
