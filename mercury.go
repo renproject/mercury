@@ -9,7 +9,6 @@ import (
 	"github.com/republicprotocol/co-go"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 )
 
 type BlockchainPlugin interface {
@@ -43,14 +42,10 @@ func New(port string, logger logrus.FieldLogger, plugins ...BlockchainPlugin) Me
 }
 
 func (server *server) Run() {
-	limiter := rate.NewLimiter(200, 20)
 	r := mux.NewRouter()
 	for _, plugin := range server.plugins {
 		plugin.AddRoutes(r)
 	}
-	r.Use(func(handler http.Handler) http.Handler {
-		return rateLimit(limiter, handler)
-	})
 	r.Use(recoveryHandler)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -69,17 +64,6 @@ func isInitiated(plugin BlockchainPlugin, next http.Handler) http.Handler {
 		}
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Write([]byte("service unavailable"))
-	})
-}
-
-func rateLimit(limiter *rate.Limiter, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if limiter.Allow() {
-			next.ServeHTTP(w, r)
-			return
-		}
-		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte("too many requests"))
 	})
 }
 
