@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/renproject/libbtc-go/errors"
 )
 
 type PreviousOut struct {
@@ -130,7 +129,7 @@ func NewBI(network string) (BitcoinClient, error) {
 			Params: &chaincfg.TestNet3Params,
 		}, nil
 	default:
-		return nil, errors.NewErrUnsupportedNetwork(network)
+		return nil, fmt.Errorf("unsupported network: %s", network)
 	}
 }
 
@@ -270,7 +269,7 @@ func (client *blockchainInfoClient) PublishTransaction(ctx context.Context, stx 
 		}
 		stxResult := string(stxResultBytes)
 		if !strings.Contains(stxResult, "Transaction Submitted") {
-			return errors.NewErrBitcoinSubmitTx(stxResult)
+			return fmt.Errorf("unable to submit tx: ", stxResult)
 		}
 		return nil
 	})
@@ -317,7 +316,7 @@ func backoff(ctx context.Context, f func() error) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.ErrTimedOut
+			return ctx.Err()
 		default:
 			err := f()
 			if err == nil {
