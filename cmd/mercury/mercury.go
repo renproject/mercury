@@ -12,8 +12,21 @@ import (
 
 func main() {
 	logger := logrus.StandardLogger()
-	btcMainnetPlugin := btc.New("btc", os.Getenv("BITCOIN_MAINNET_RPC_URL"), os.Getenv("BITCOIN_MAINNET_RPC_USER"), os.Getenv("BITCOIN_MAINNET_RPC_PASSWORD"))
-	btcTestnetPlugin := btc.New("btc-testnet3", os.Getenv("BITCOIN_TESTNET_RPC_URL"), os.Getenv("BITCOIN_TESTNET_RPC_USER"), os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD"))
+
+	mainnetClient, err := btc.NewBI("mainnet")
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	testnetClient, err := btc.NewBI("testnet")
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	btcMainnetPlugin := btc.New("btc", mainnetClient)
+	btcTestnetPlugin := btc.New("btc-testnet3", testnetClient)
 	zecTestnetPlugin := zec.New("zec-testnet", os.Getenv("ZCASH_TESTNET_RPC_URL"), os.Getenv("ZCASH_TESTNET_RPC_USER"), os.Getenv("ZCASH_TESTNET_RPC_PASSWORD"))
 	zecMainnetPlugin := zec.New("zec", os.Getenv("ZCASH_MAINNET_RPC_URL"), os.Getenv("ZCASH_MAINNET_RPC_USER"), os.Getenv("ZCASH_MAINNET_RPC_PASSWORD"))
 	apiKeys := map[string]string{
