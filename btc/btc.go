@@ -2,6 +2,7 @@ package btc
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
@@ -15,7 +16,7 @@ import (
 	"github.com/renproject/mercury"
 )
 
-type bitcoin struct {
+type fullnodeClient struct {
 	host, user, password, network string
 	client                        *rpcclient.Client
 	client2                       RPCCLient
@@ -23,8 +24,18 @@ type bitcoin struct {
 	initiated                     bool
 }
 
-func New(network, host, user, password string) mercury.BlockchainPlugin {
-	return &bitcoin{
+type bitcoin struct {
+	initiated bool
+	prefix    string
+	client    BitcoinClient
+}
+
+func New(prefix string, client BitcoinClient) mercury.BlockchainPlugin {
+	return &bitcoin{prefix: prefix, client: client}
+}
+
+func NewFN(network, host, user, password string) BitcoinClient {
+	return &fullnodeClient{
 		host:     host,
 		user:     user,
 		password: password,
@@ -32,7 +43,26 @@ func New(network, host, user, password string) mercury.BlockchainPlugin {
 	}
 }
 
+type BitcoinClient interface {
+	Init() error
+
+	GetUTXOs(ctx context.Context, address string, limit, confitmations int64) ([]UTXO, error)
+	Confirmations(ctx context.Context, txHashStr string) (int64, error)
+	ScriptFunded(ctx context.Context, address string, value int64) (bool, int64, error)
+	ScriptRedeemed(ctx context.Context, address string, value int64) (bool, int64, error)
+	ScriptSpent(ctx context.Context, scriptAddress, spenderAddress string) (bool, string, error)
+	PublishTransaction(ctx context.Context, stx []byte) error
+}
+
 func (btc *bitcoin) Init() error {
+	if err := btc.client.Init(); err != nil {
+		return err
+	}
+	btc.initiated = true
+	return nil
+}
+
+func (btc *fullnodeClient) Init() error {
 	client, err := rpcclient.New(
 		&rpcclient.ConnConfig{
 			Host:         btc.host,
@@ -78,7 +108,7 @@ type UTXO struct {
 	Vout         uint32 `json:"vout"`
 }
 
-func (btc *bitcoin) GetUTXOs(address string, limit, confitmations int64) ([]UTXO, error) {
+func (btc *fullnodeClient) GetUTXOs(_ context.Context, address string, limit, confitmations int64) ([]UTXO, error) {
 	net := btc.params
 	addr, err := btcutil.DecodeAddress(address, net)
 	if err != nil {
@@ -117,7 +147,7 @@ func (btc *bitcoin) GetUTXOs(address string, limit, confitmations int64) ([]UTXO
 	return utxos, nil
 }
 
-func (btc *bitcoin) Confirmations(txHashStr string) (int64, error) {
+func (btc *fullnodeClient) Confirmations(_ context.Context, txHashStr string) (int64, error) {
 	txHash, err := chainhash.NewHashFromStr(txHashStr)
 	if err != nil {
 		return 0, err
@@ -129,7 +159,7 @@ func (btc *bitcoin) Confirmations(txHashStr string) (int64, error) {
 	return tx.Confirmations, nil
 }
 
-func (btc *bitcoin) ScriptFunded(address string, value int64) (bool, int64, error) {
+func (btc *fullnodeClient) ScriptFunded(_ context.Context, address string, value int64) (bool, int64, error) {
 	if err := btc.client.ImportAddressRescan(address, "scripts", false); err != nil {
 		return false, value, err
 	}
@@ -145,7 +175,7 @@ func (btc *bitcoin) ScriptFunded(address string, value int64) (bool, int64, erro
 	return int64(amount.ToUnit(btcutil.AmountSatoshi)) >= value, int64(amount.ToUnit(btcutil.AmountSatoshi)), nil
 }
 
-func (btc *bitcoin) ScriptRedeemed(address string, value int64) (bool, int64, error) {
+func (btc *fullnodeClient) ScriptRedeemed(ctx context.Context, address string, value int64) (bool, int64, error) {
 	if err := btc.client.ImportAddressRescan(address, "scripts", false); err != nil {
 		return false, value, err
 	}
@@ -158,7 +188,7 @@ func (btc *bitcoin) ScriptRedeemed(address string, value int64) (bool, int64, er
 	if err != nil {
 		return false, value, err
 	}
-	utxos, err := btc.GetUTXOs(address, 999999, 0)
+	utxos, err := btc.GetUTXOs(ctx, address, 999999, 0)
 	if err != nil {
 		return false, value, err
 	}
@@ -169,7 +199,7 @@ func (btc *bitcoin) ScriptRedeemed(address string, value int64) (bool, int64, er
 	return int64(amount.ToUnit(btcutil.AmountSatoshi)) >= value && balance == 0, balance, nil
 }
 
-func (btc *bitcoin) ScriptSpent(scriptAddress, spenderAddress string) (bool, string, error) {
+func (btc *fullnodeClient) ScriptSpent(_ context.Context, scriptAddress, spenderAddress string) (bool, string, error) {
 	randAcc := [32]byte{}
 	rand.Read(randAcc[:])
 	randAccName := base64.StdEncoding.EncodeToString(randAcc[:])
@@ -220,7 +250,7 @@ func (btc *bitcoin) ScriptSpent(scriptAddress, spenderAddress string) (bool, str
 	return false, "", fmt.Errorf("could not find the transaction")
 }
 
-func (btc *bitcoin) PublishTransaction(stx []byte) error {
+func (btc *fullnodeClient) PublishTransaction(_ context.Context, stx []byte) error {
 	tx := wire.NewMsgTx(2)
 	if err := tx.Deserialize(bytes.NewBuffer(stx)); err != nil {
 		return err

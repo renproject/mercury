@@ -1,11 +1,13 @@
 package btc
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -20,7 +22,7 @@ func (btc *bitcoin) AddRoutes(r *mux.Router) {
 }
 
 func (btc *bitcoin) AddRoutePrefix(route string) string {
-	return fmt.Sprintf("/%s%s", btc.network, route)
+	return fmt.Sprintf("/%s%s", btc.prefix, route)
 }
 
 func (btc *bitcoin) Initiated() bool {
@@ -41,7 +43,10 @@ func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		utxos, err := btc.GetUTXOs(addr, limit, confirmations)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		utxos, err := btc.client.GetUTXOs(ctx, addr, limit, confirmations)
 		if err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -59,11 +64,14 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 		addr := opts["address"]
 		state := opts["state"]
 
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
 		var resp GetScriptResponse
 		var err error
 		switch state {
 		case "spent":
-			status, script, err2 := btc.ScriptSpent(addr, r.URL.Query().Get("spender"))
+			status, script, err2 := btc.client.ScriptSpent(ctx, addr, r.URL.Query().Get("spender"))
 			if err2 != nil {
 				err = err2
 				break
@@ -76,7 +84,7 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 				err = err2
 				break
 			}
-			status, val, err2 := btc.ScriptFunded(addr, value)
+			status, val, err2 := btc.client.ScriptFunded(ctx, addr, value)
 			if err2 != nil {
 				err = err2
 				break
@@ -89,7 +97,7 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 				err = err2
 				break
 			}
-			status, val, err2 := btc.ScriptRedeemed(addr, value)
+			status, val, err2 := btc.client.ScriptRedeemed(ctx, addr, value)
 			if err2 != nil {
 				err = err2
 				break
@@ -113,7 +121,10 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 func (btc *bitcoin) getConfirmationsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		opts := mux.Vars(r)
-		conf, err := btc.Confirmations(opts["txHash"])
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		conf, err := btc.client.Confirmations(ctx, opts["txHash"])
 		if err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -128,6 +139,9 @@ func (btc *bitcoin) getConfirmationsHandler() http.HandlerFunc {
 func (btc *bitcoin) postTransaction() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := PostTransactionRequest{}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -137,7 +151,7 @@ func (btc *bitcoin) postTransaction() http.HandlerFunc {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		if err := btc.PublishTransaction(stx); err != nil {
+		if err := btc.client.PublishTransaction(ctx, stx); err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
