@@ -22,7 +22,7 @@ func (eth *ethereum) Relay(req RelayRequest) (RelayResponse, error) {
 	data := make([][]byte, len(req.Data))
 	var err error
 	for i := range data {
-		if req.Data[i][:2] == "0x" {
+		if len(req.Data[i]) >= 2 && req.Data[i][:2] == "0x" {
 			req.Data[i] = req.Data[i][2:]
 		}
 
