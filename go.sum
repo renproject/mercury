@@ -97,6 +97,8 @@ github.com/renproject/libeth-go v0.0.0-20190410051758-3f743025a227 h1:C/iHq3+4Xy
 github.com/renproject/libeth-go v0.0.0-20190410051758-3f743025a227/go.mod h1:nW+XJBkfN1wQcA6eSe0btesaMbHw5SJz1uzYCw0yVEE=
 github.com/renproject/libeth-go v0.0.0-20190411012108-92121d1e119f h1:3kL4X0VZoGXR+mg/bVpbujMdjAj07OPwG78lwj64Alo=
 github.com/renproject/libeth-go v0.0.0-20190411012108-92121d1e119f/go.mod h1:nW+XJBkfN1wQcA6eSe0btesaMbHw5SJz1uzYCw0yVEE=
+github.com/renproject/libeth-go v0.0.0-20190411045434-975a62352f57 h1:N/DwedyQx0bHsdJ5ykhscyNMfwKnR6pDVsygkAb7VnY=
+github.com/renproject/libeth-go v0.0.0-20190411045434-975a62352f57/go.mod h1:nW+XJBkfN1wQcA6eSe0btesaMbHw5SJz1uzYCw0yVEE=
 github.com/renproject/mercury v0.0.0-20190321013155-23499d524cd8/go.mod h1:62WHJPxwAQU+aQzPjEsz+2IhxbMyjU0+HMk7CBTfm/4=
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80 h1:jcfajT2zPmtzIGn/JnWCkaWwz1kFprPYO9Y5qBUv0/U=
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80/go.mod h1:NdfPrY+l1x6DwEs+wn5eJejQ+DibNnXGia8tkxumgsU=

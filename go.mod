@@ -19,7 +19,7 @@ require (
 	github.com/onsi/gomega v1.5.0
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/renproject/libbtc-go v0.0.0-20190406053552-a33d87f4d88f
-	github.com/renproject/libeth-go v0.0.0-20190411012108-92121d1e119f
+	github.com/renproject/libeth-go v0.0.0-20190411045434-975a62352f57
 	github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80
 	github.com/rs/cors v1.6.0
 	github.com/sirupsen/logrus v1.4.0
