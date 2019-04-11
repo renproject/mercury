@@ -34,7 +34,19 @@ func (eth *ethereum) Init() error {
 		return err
 	}
 
-	client, err := libeth.NewInfuraClient(eth.network, eth.tags[""])
+	var network string
+	switch eth.network {
+	case "eth":
+		network = "mainnet"
+	case "eth-ropsten":
+		network = "ropsten"
+	case "eth-kovan":
+		network = "kovan"
+	default:
+		return fmt.Errorf("unsupported network: %s", network)
+	}
+
+	client, err := libeth.NewInfuraClient(network, eth.tags[""])
 	if err != nil {
 		return err
 	}
