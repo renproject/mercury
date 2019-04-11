@@ -37,9 +37,10 @@ func main() {
 		"renex-ui": os.Getenv("INFURA_KEY_RENEX_UI"),
 		"dcc":      os.Getenv("INFURA_KEY_DCC"),
 	}
-	kovanEthPlugin := eth.New("eth-kovan", apiKeys)
-	ropstenEthPlugin := eth.New("eth-ropsten", apiKeys)
-	mainnetEthPlugin := eth.New("eth", apiKeys)
+	privKey := os.Getenv("ETHEREUM_PRIVATE_KEY")
+	kovanEthPlugin := eth.New("eth-kovan", privKey, apiKeys)
+	ropstenEthPlugin := eth.New("eth-ropsten", privKey, apiKeys)
+	mainnetEthPlugin := eth.New("eth", privKey, apiKeys)
 	mercury.New(os.Getenv("PORT"), logger, btcMainnetPlugin, zecMainnetPlugin,
 		btcTestnetPlugin, zecTestnetPlugin, kovanEthPlugin, ropstenEthPlugin,
 		mainnetEthPlugin).Run()

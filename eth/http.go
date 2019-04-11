@@ -1,25 +1,52 @@
 package eth
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/mux"
+	"github.com/renproject/libeth-go"
 	"github.com/renproject/mercury"
 )
 
 type ethereum struct {
+	account   libeth.Account
 	network   string
+	privKey   string
 	tags      map[string]string
 	initiated bool
 }
 
-func New(network string, tags map[string]string) mercury.BlockchainPlugin {
-	return &ethereum{network, tags, true}
+func New(network, privKey string, tags map[string]string) mercury.BlockchainPlugin {
+	return &ethereum{
+		network: network,
+		privKey: privKey,
+		tags:    tags,
+	}
 }
 
 func (eth *ethereum) Init() error {
+	privKey, err := crypto.HexToECDSA(eth.privKey)
+	if err != nil {
+		return err
+	}
+
+	client, err := libeth.NewInfuraClient(eth.network, eth.tags[""])
+	if err != nil {
+		return err
+	}
+
+	account, err := libeth.NewAccount(client, privKey)
+	if err != nil {
+		return err
+	}
+
+	eth.account = account
+	eth.initiated = true
+
 	return nil
 }
 
@@ -31,6 +58,7 @@ func (eth *ethereum) Initiated() bool {
 func (eth *ethereum) AddRoutes(r *mux.Router) {
 	r.HandleFunc(eth.AddRoutePrefix(""), eth.jsonRPCHandler()).Queries("tag", "{tag}").Methods("POST")
 	r.HandleFunc(eth.AddRoutePrefix(""), eth.jsonRPCHandler()).Methods("POST")
+	r.HandleFunc(eth.AddRoutePrefix("/relay"), eth.relayHandler()).Methods("POST")
 }
 
 func (eth *ethereum) AddRoutePrefix(route string) string {
@@ -69,5 +97,24 @@ func (eth *ethereum) jsonRPCHandler() http.HandlerFunc {
 		}
 		w.WriteHeader(resp.StatusCode)
 		w.Write(data)
+	}
+}
+
+func (eth *ethereum) relayHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := RelayRequest{}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusBadRequest)
+			return
+		}
+		resp, err := eth.Relay(req)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusBadRequest)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusInternalServerError)
+			return
+		}
 	}
 }
