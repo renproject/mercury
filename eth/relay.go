@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/renproject/libeth-go"
 )
 
 type RelayRequest struct {
@@ -35,8 +36,13 @@ func (eth *ethereum) Relay(req RelayRequest) (RelayResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	tx, err := eth.account.ContractTransact(ctx, common.HexToAddress(req.Address), req.FnName, data...)
+	f, err := eth.account.ContractTransactCtor(ctx, common.HexToAddress(req.Address), req.FnName, data...)
 	if err != nil {
+		return RelayResponse{}, err
+	}
+
+	tx, err := eth.account.Transact(ctx, libeth.Fast, nil, f, nil, 1)
+	if err != libeth.ErrPreConditionCheckFailed && err != nil {
 		return RelayResponse{}, err
 	}
 
