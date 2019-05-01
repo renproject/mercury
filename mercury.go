@@ -1,9 +1,11 @@
 package mercury
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/republicprotocol/co-go"
@@ -14,6 +16,8 @@ import (
 type BlockchainPlugin interface {
 	Init() error
 	Initiated() bool
+	Health() bool
+	Prefix() string
 	AddRoutes(router *mux.Router)
 }
 
@@ -46,7 +50,9 @@ func (server *server) Run() {
 	for _, plugin := range server.plugins {
 		plugin.AddRoutes(r)
 	}
-	r.Use(recoveryHandler)
+	r.Use(isInitiatedMiddleware(server.plugins))
+	r.HandleFunc("/health", server.getHealth()).Methods("GET")
+	r.Use(server.recoveryHandler)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
@@ -56,21 +62,43 @@ func (server *server) Run() {
 	http.ListenAndServe(fmt.Sprintf(":%v", server.port), handler)
 }
 
-func isInitiated(plugin BlockchainPlugin, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if plugin.Initiated() {
-			next.ServeHTTP(w, r)
+func (server *server) getHealth() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		healthMap := map[string]bool{}
+		for _, plugin := range server.plugins {
+			healthMap[plugin.Prefix()] = plugin.Health()
+		}
+		if err := json.NewEncoder(w).Encode(healthMap); err != nil {
+			server.logger.Error(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("service unavailable"))
-	})
+	}
 }
 
-func recoveryHandler(h http.Handler) http.Handler {
+func isInitiatedMiddleware(plugins []BlockchainPlugin) mux.MiddlewareFunc {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			for _, plugin := range plugins {
+				if plugin.Prefix() == strings.Split(r.URL.Path, "/")[1] {
+					if !plugin.Initiated() {
+						w.WriteHeader(http.StatusServiceUnavailable)
+						w.Write([]byte("service unavailable"))
+						return
+					}
+
+				}
+			}
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (server *server) recoveryHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
+				server.logger.Error(r)
 				http.Error(w, fmt.Sprintf("recovery from: %v", r), http.StatusInternalServerError)
 			}
 		}()
