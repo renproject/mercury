@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/renproject/libeth-go"
 	"github.com/renproject/mercury"
+	"github.com/sirupsen/logrus"
 )
 
 type ethereum struct {
@@ -17,14 +18,16 @@ type ethereum struct {
 	network   string
 	privKey   string
 	tags      map[string]string
+	logger    logrus.FieldLogger
 	initiated bool
 }
 
-func New(network, privKey string, tags map[string]string) mercury.BlockchainPlugin {
+func New(network, privKey string, tags map[string]string, logger logrus.FieldLogger) mercury.BlockchainPlugin {
 	return &ethereum{
 		network: network,
 		privKey: privKey,
 		tags:    tags,
+		logger:  logger,
 	}
 }
 
@@ -66,6 +69,14 @@ func (eth *ethereum) Initiated() bool {
 	return eth.initiated
 }
 
+func (eth *ethereum) Health() bool {
+	return true
+}
+
+func (eth *ethereum) Prefix() string {
+	return eth.network
+}
+
 // Handlers of the bitcoin blockchain
 func (eth *ethereum) AddRoutes(r *mux.Router) {
 	r.HandleFunc(eth.AddRoutePrefix(""), eth.jsonRPCHandler()).Queries("tag", "{tag}").Methods("POST")
@@ -99,12 +110,12 @@ func (eth *ethereum) jsonRPCHandler() http.HandlerFunc {
 
 		resp, err := http.Post(fmt.Sprintf("https://%s.infura.io/v3/%s", network, apiKey), "application/json", r.Body)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), resp.StatusCode)
+			eth.writeError(w, r, resp.StatusCode, err)
 			return
 		}
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), resp.StatusCode)
+			eth.writeError(w, r, resp.StatusCode, err)
 			return
 		}
 		w.WriteHeader(resp.StatusCode)
@@ -116,17 +127,27 @@ func (eth *ethereum) relayHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := RelayRequest{}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusBadRequest)
+			eth.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		resp, err := eth.Relay(req)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusBadRequest)
+			eth.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusInternalServerError)
+			eth.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 	}
+}
+
+func (eth *ethereum) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
+	if statusCode >= 500 {
+		eth.logger.Errorf("failed to call %s with error %v", r.URL.String(), err)
+	}
+	if statusCode >= 400 {
+		eth.logger.Warningf("failed to call %s with error %v", r.URL.String(), err)
+	}
+	http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), statusCode)
 }
