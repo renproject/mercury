@@ -311,6 +311,17 @@ func (client *blockchainInfoClient) NetworkParams() *chaincfg.Params {
 	return client.Params
 }
 
+func (client *blockchainInfoClient) OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error) {
+	return OmniGetBalanceResponse{}, fmt.Errorf("blockchain info doesnot support omnilayer")
+}
+
+func (client *blockchainInfoClient) Health() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := client.LatestBlock(ctx)
+	return err != nil
+}
+
 func backoff(ctx context.Context, f func() error) error {
 	duration := time.Duration(1000)
 	for {

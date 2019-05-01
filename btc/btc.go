@@ -14,6 +14,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury"
+	"github.com/sirupsen/logrus"
 )
 
 type fullnodeClient struct {
@@ -27,11 +28,12 @@ type fullnodeClient struct {
 type bitcoin struct {
 	initiated bool
 	prefix    string
+	logger    logrus.FieldLogger
 	client    BitcoinClient
 }
 
-func New(prefix string, client BitcoinClient) mercury.BlockchainPlugin {
-	return &bitcoin{prefix: prefix, client: client}
+func New(prefix string, client BitcoinClient, logger logrus.FieldLogger) mercury.BlockchainPlugin {
+	return &bitcoin{prefix: prefix, client: client, logger: logger}
 }
 
 func NewFN(network, host, user, password string) BitcoinClient {
@@ -46,12 +48,14 @@ func NewFN(network, host, user, password string) BitcoinClient {
 type BitcoinClient interface {
 	Init() error
 
+	Health() bool
 	GetUTXOs(ctx context.Context, address string, limit, confitmations int64) ([]UTXO, error)
 	Confirmations(ctx context.Context, txHashStr string) (int64, error)
 	ScriptFunded(ctx context.Context, address string, value int64) (bool, int64, error)
 	ScriptRedeemed(ctx context.Context, address string, value int64) (bool, int64, error)
 	ScriptSpent(ctx context.Context, scriptAddress, spenderAddress string) (bool, string, error)
 	PublishTransaction(ctx context.Context, stx []byte) error
+	OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error)
 }
 
 func (btc *bitcoin) Init() error {
@@ -60,6 +64,14 @@ func (btc *bitcoin) Init() error {
 	}
 	btc.initiated = true
 	return nil
+}
+
+func (btc *bitcoin) Prefix() string {
+	return btc.prefix
+}
+
+func (btc *bitcoin) Health() bool {
+	return btc.client.Health()
 }
 
 func (btc *fullnodeClient) Init() error {
@@ -257,4 +269,13 @@ func (btc *fullnodeClient) PublishTransaction(_ context.Context, stx []byte) err
 	}
 	_, err := btc.client.SendRawTransaction(tx, false)
 	return err
+}
+
+func (btc *fullnodeClient) OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error) {
+	return btc.client2.OmniGetBalance(token, address)
+}
+
+func (btc *fullnodeClient) Health() bool {
+	_, err := btc.client.GetBlockChainInfo()
+	return err != nil
 }
