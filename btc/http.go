@@ -19,8 +19,11 @@ func (btc *bitcoin) AddRoutes(r *mux.Router) {
 	r.HandleFunc(btc.AddRoutePrefix("/script/{state}/{address}"), btc.getScriptHandler()).Queries("spender", "{spender}").Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/confirmations/{txHash}"), btc.getConfirmationsHandler()).Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/tx"), btc.postTransaction()).Methods("POST")
+
+	r.HandleFunc(btc.AddRoutePrefix("/omni/balance/{token}/{address}"), btc.getBalanceHandler()).Methods("GET")
 }
 
+// Handlers of the bitcoin blockchain
 func (btc *bitcoin) AddRoutePrefix(route string) string {
 	return fmt.Sprintf("/%s%s", btc.prefix, route)
 }
@@ -35,12 +38,12 @@ func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
 		addr := opts["address"]
 		limit, err := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
 		if err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		confirmations, err := strconv.ParseInt(r.URL.Query().Get("confirmations"), 10, 64)
 		if err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -48,11 +51,11 @@ func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
 
 		utxos, err := btc.client.GetUTXOs(ctx, addr, limit, confirmations)
 		if err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		if err := json.NewEncoder(w).Encode(utxos); err != nil {
-			writeError(w, r, http.StatusInternalServerError, err)
+			btc.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -108,11 +111,11 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 			err = fmt.Errorf("unsupported script state: %s", state)
 		}
 		if err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			writeError(w, r, http.StatusInternalServerError, err)
+			btc.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -126,11 +129,11 @@ func (btc *bitcoin) getConfirmationsHandler() http.HandlerFunc {
 
 		conf, err := btc.client.Confirmations(ctx, opts["txHash"])
 		if err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		if err := json.NewEncoder(w).Encode(GetConfirmationsResponse(conf)); err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 	}
@@ -143,22 +146,48 @@ func (btc *bitcoin) postTransaction() http.HandlerFunc {
 		defer cancel()
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		stx, err := hex.DecodeString(req.SignedTransaction)
 		if err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		if err := btc.client.PublishTransaction(ctx, stx); err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 	}
 }
 
-func writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
+func (btc *bitcoin) getBalanceHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts := mux.Vars(r)
+		token, err := strconv.ParseInt(opts["token"], 10, 64)
+		if err != nil {
+			btc.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+		bal, err := btc.client.OmniGetBalance(token, opts["address"])
+		if err != nil {
+			btc.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(bal); err != nil {
+			btc.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+	}
+}
+
+func (btc *bitcoin) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
+	if statusCode >= 500 {
+		btc.logger.Errorf("failed to call %s with error %v", r.URL.String(), err)
+	}
+	if statusCode >= 400 {
+		btc.logger.Warningf("failed to call %s with error %v", r.URL.String(), err)
+	}
 	http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), statusCode)
 }

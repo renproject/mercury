@@ -1,12 +1,10 @@
 package btc
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+
+	"github.com/renproject/mercury/rpc"
 )
 
 type Response struct {
@@ -31,24 +29,27 @@ type ListTransansactionsObj struct {
 type RPCCLient interface {
 	ListTransansactions(accName string) (ListTransansactionsResponse, error)
 	ListReceivedByAddress(address string) (ListReceivedByAddressResponse, error)
+	OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error)
+}
+
+type OmniGetBalanceResponse struct {
+	Balance  string `json:"balance"`
+	Reserved string `json:"reserved"`
+	Frozen   string `json:"frozen"`
 }
 
 type rpcClient struct {
-	host     string
-	user     string
-	password string
+	rpc.Client
 }
 
 func NewRPCClient(host, user, password string) RPCCLient {
-	return &rpcClient{
-		host, user, password,
-	}
+	return &rpcClient{rpc.NewClient(host, user, password)}
 }
 
 func (client *rpcClient) ListTransansactions(accName string) (ListTransansactionsResponse, error) {
 	resp := ListTransansactionsResponse{}
 	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"listtransactions\", \"params\": [\"%s\", 999999, 0, true] }", accName))
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.SendRequest(req, &resp); err != nil {
 		return resp, err
 	}
 	return resp, nil
@@ -57,36 +58,21 @@ func (client *rpcClient) ListTransansactions(accName string) (ListTransansaction
 func (client *rpcClient) ListReceivedByAddress(address string) (ListReceivedByAddressResponse, error) {
 	resp := ListReceivedByAddressResponse{}
 	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"listreceivedbyaddress\", \"params\": [0, false, true, \"%s\"] }", address))
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.SendRequest(req, &resp); err != nil {
 		return resp, err
 	}
 	return resp, nil
 }
 
-func (client *rpcClient) sendRequest(data []byte, response interface{}) error {
-	request, err := http.NewRequest("POST", fmt.Sprintf("http://%s", client.host), bytes.NewBuffer(data))
-	if err != nil {
-		return err
+func (client *rpcClient) OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error) {
+	resp := OmniGetBalanceResponse{}
+	req := []byte(fmt.Sprintf(
+		"{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"omni_getbalance\", \"params\": [\"%s\", %d] }",
+		address,
+		token,
+	))
+	if err := client.SendRequest(req, &resp); err != nil {
+		return resp, err
 	}
-	request.SetBasicAuth(client.user, client.password)
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-
-	msg, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(string(msg))
-	}
-
-	result := Response{}
-	if err := json.Unmarshal(msg, &result); err != nil {
-		return err
-	}
-
-	return json.Unmarshal(result.Result, response)
+	return resp, nil
 }
