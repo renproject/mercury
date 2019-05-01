@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury"
+	"github.com/sirupsen/logrus"
 )
 
 type zcash struct {
@@ -19,14 +20,16 @@ type zcash struct {
 	client2                       RPCCLient
 	params                        *chaincfg.Params
 	initiated                     bool
+	logger                        logrus.FieldLogger
 }
 
-func New(network, host, user, password string) mercury.BlockchainPlugin {
+func New(network, host, user, password string, logger logrus.FieldLogger) mercury.BlockchainPlugin {
 	return &zcash{
 		host:     host,
 		user:     user,
 		password: password,
 		network:  network,
+		logger:   logger,
 	}
 }
 
@@ -67,6 +70,15 @@ func (zec *zcash) Init() error {
 	zec.params = params
 	zec.initiated = true
 	return nil
+}
+
+func (zec *zcash) Health() bool {
+	_, err := zec.client.GetBlockChainInfo()
+	return err != nil
+}
+
+func (zec *zcash) Prefix() string {
+	return zec.network
 }
 
 type UTXO struct {

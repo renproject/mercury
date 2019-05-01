@@ -1,22 +1,10 @@
 package zec
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+
+	"github.com/renproject/mercury/rpc"
 )
-
-type Response struct {
-	Result json.RawMessage `json:"result"`
-	Error  RPCError        `json:"error"`
-}
-
-type RPCError struct {
-	Message string `json:"message"`
-}
 
 type ListReceivedByAddressResponse []ListReceivedByAddressObj
 
@@ -71,21 +59,19 @@ type RPCCLient interface {
 }
 
 type rpcClient struct {
-	host     string
-	user     string
-	password string
+	client rpc.Client
 }
 
 func NewRPCClient(host, user, password string) RPCCLient {
 	return &rpcClient{
-		host, user, password,
+		rpc.NewClient(host, user, password),
 	}
 }
 
 func (client *rpcClient) ListUnspent(minConf, maxConf int64, address string) (ListUnspentResponse, error) {
 	resp := ListUnspentResponse{}
 	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"listunspent\", \"params\": [%d, %d, [\"%s\"]]  }", minConf, maxConf, address))
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.client.SendRequest(req, &resp); err != nil {
 		return resp, err
 	}
 	return resp, nil
@@ -94,7 +80,7 @@ func (client *rpcClient) ListUnspent(minConf, maxConf int64, address string) (Li
 func (client *rpcClient) ListTransansactions(accName string) (ListTransansactionsResponse, error) {
 	resp := ListTransansactionsResponse{}
 	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"listtransactions\", \"params\": [\"%s\", 999999, 0, true] }", accName))
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.client.SendRequest(req, &resp); err != nil {
 		return resp, err
 	}
 	return resp, nil
@@ -103,7 +89,7 @@ func (client *rpcClient) ListTransansactions(accName string) (ListTransansaction
 func (client *rpcClient) ListReceivedByAddress(address string) (ListReceivedByAddressObj, error) {
 	resp := ListReceivedByAddressResponse{}
 	req := []byte("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"listreceivedbyaddress\", \"params\": [0, true, true] }")
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.client.SendRequest(req, &resp); err != nil {
 		return ListReceivedByAddressObj{}, err
 	}
 	for _, addrObj := range resp {
@@ -125,7 +111,7 @@ func (client *rpcClient) AddressTxIDs(address string) ([]string, error) {
 func (client *rpcClient) SendRawTransaction(stx []byte) (string, error) {
 	resp := ""
 	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"sendrawtransaction\", \"params\": [\"%x\", false] }", stx))
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.client.SendRequest(req, &resp); err != nil {
 		return resp, err
 	}
 	return resp, nil
@@ -134,7 +120,7 @@ func (client *rpcClient) SendRawTransaction(stx []byte) (string, error) {
 func (client *rpcClient) GetRawTransaction(txid string) (string, error) {
 	resp := ""
 	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"getrawtransaction\", \"params\": [\"%s\"] }", txid))
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.client.SendRequest(req, &resp); err != nil {
 		return resp, err
 	}
 	return resp, nil
@@ -143,36 +129,8 @@ func (client *rpcClient) GetRawTransaction(txid string) (string, error) {
 func (client *rpcClient) ExtractScriptSig(tx string) (string, error) {
 	resp := DecodeRawTransactionResponse{}
 	req := []byte(fmt.Sprintf("{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"decoderawtransaction\", \"params\": [\"%s\"] }", tx))
-	if err := client.sendRequest(req, &resp); err != nil {
+	if err := client.client.SendRequest(req, &resp); err != nil {
 		return resp.Vins[0].ScriptSig.Hex, err
 	}
 	return resp.Vins[0].ScriptSig.Hex, nil
-}
-
-func (client *rpcClient) sendRequest(data []byte, response interface{}) error {
-	request, err := http.NewRequest("POST", fmt.Sprintf("http://%s", client.host), bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-	request.SetBasicAuth(client.user, client.password)
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-
-	msg, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	result := Response{}
-	if err := json.Unmarshal(msg, &result); err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(result.Error.Message)
-	}
-
-	return json.Unmarshal(result.Result, response)
 }
