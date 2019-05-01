@@ -7,7 +7,10 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190410025418-9bfb2ca0346b
 	github.com/btcsuite/btcutil v0.0.0-20190316010144-3ac1210f4b38
 	github.com/btcsuite/goleveldb v1.0.0 // indirect
+	github.com/certifi/gocertifi v0.0.0-20190415143156-92f724a62f3e // indirect
 	github.com/ethereum/go-ethereum v1.8.26
+	github.com/evalphobia/logrus_sentry v0.8.2
+	github.com/getsentry/raven-go v0.2.0
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/google/pprof v0.0.0-20190404155422-f8f10df84213 // indirect
 	github.com/gorilla/mux v1.7.0
@@ -18,6 +21,7 @@ require (
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pborman/uuid v1.2.0 // indirect
+	github.com/pkg/errors v0.8.1 // indirect
 	github.com/renproject/libbtc-go v0.0.0-20190406053552-a33d87f4d88f
 	github.com/renproject/libeth-go v0.0.0-20190412003833-315f7da6c380
 	github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80
