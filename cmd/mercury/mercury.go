@@ -47,7 +47,7 @@ func main() {
 	testnetFNClient := btc.NewFN("testnet", os.Getenv("BITCOIN_TESTNET_RPC_URL"), os.Getenv("BITCOIN_TESTNET_RPC_USER"), os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD"))
 
 	btcMainnetPlugin := btc.New("btc", btc.NewMulti(mainnetBIClient), logger)
-	btcTestnetPlugin := btc.New("btc-testnet3", btc.NewMulti(testnetBIClient, testnetFNClient), logger)
+	btcTestnetPlugin := btc.New("btc-testnet3", btc.NewMulti(testnetFNClient, testnetBIClient), logger)
 	zecTestnetPlugin := zec.New("zec-testnet", os.Getenv("ZCASH_TESTNET_RPC_URL"), os.Getenv("ZCASH_TESTNET_RPC_USER"), os.Getenv("ZCASH_TESTNET_RPC_PASSWORD"), logger)
 	zecMainnetPlugin := zec.New("zec", os.Getenv("ZCASH_MAINNET_RPC_URL"), os.Getenv("ZCASH_MAINNET_RPC_USER"), os.Getenv("ZCASH_MAINNET_RPC_PASSWORD"), logger)
 	apiKeys := map[string]string{
