@@ -24,6 +24,7 @@ func main() {
 			logrus.PanicLevel,
 			logrus.FatalLevel,
 			logrus.ErrorLevel,
+			logrus.WarnLevel,
 		})
 		hook.Timeout = 5 * time.Second
 		if err != nil {
