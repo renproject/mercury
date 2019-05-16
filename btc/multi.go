@@ -28,7 +28,7 @@ func (btc *multiClient) Init() error {
 
 func (btc *multiClient) GetUTXOs(ctx context.Context, address string, limit, confitmations int64) ([]UTXO, error) {
 	for i, client := range btc.clients {
-		if utxos, err := client.GetUTXOs(ctx, address, limit, confitmations); err == nil || i+1 == len(btc.clients) {
+		if utxos, err := client.GetUTXOs(ctx, address, limit, confitmations); (err == nil && len(utxos) > 0) || i+1 == len(btc.clients) {
 			return utxos, err
 		}
 	}
