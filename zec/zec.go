@@ -159,6 +159,9 @@ func (zec *fnClient) GetUTXOs(address string, limit, confitmations int64) ([]UTX
 			Vout:         unspent.Vout,
 		})
 	}
+	if len(utxos) > int(limit) {
+		return utxos[:limit], nil
+	}
 	return utxos, nil
 }
 
