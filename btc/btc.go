@@ -49,7 +49,7 @@ type BitcoinClient interface {
 	Init() error
 
 	Health() bool
-	GetUTXOs(ctx context.Context, address string, limit, confitmations int64) ([]UTXO, error)
+	GetUTXOs(ctx context.Context, address string, limit, confitmations int) ([]UTXO, error)
 	Confirmations(ctx context.Context, txHashStr string) (int64, error)
 	ScriptFunded(ctx context.Context, address string, value int64) (bool, int64, error)
 	ScriptRedeemed(ctx context.Context, address string, value int64) (bool, int64, error)
@@ -120,27 +120,20 @@ type UTXO struct {
 	Vout         uint32 `json:"vout"`
 }
 
-func (btc *fullnodeClient) GetUTXOs(_ context.Context, address string, limit, confitmations int64) ([]UTXO, error) {
+func (btc *fullnodeClient) GetUTXOs(_ context.Context, address string, limit, confitmations int) ([]UTXO, error) {
 	net := btc.params
 	addr, err := btcutil.DecodeAddress(address, net)
 	if err != nil {
 		return []UTXO{}, err
 	}
 
-	unspents, err := btc.client.ListUnspentMinMaxAddresses(0, 999999, []btcutil.Address{addr})
-	if err != nil {
+	if err := btc.client.ImportAddressRescan(address, "", false); err != nil {
 		return []UTXO{}, err
 	}
 
-	if len(unspents) == 0 {
-		if err := btc.client.ImportAddressRescan(address, "", false); err != nil {
-			return []UTXO{}, err
-		}
-
-		unspents, err = btc.client.ListUnspentMinMaxAddresses(0, 999999, []btcutil.Address{addr})
-		if err != nil {
-			return []UTXO{}, err
-		}
+	unspents, err := btc.client.ListUnspentMinMaxAddresses(confitmations, 999999, []btcutil.Address{addr})
+	if err != nil {
+		return []UTXO{}, err
 	}
 
 	utxos := []UTXO{}

@@ -137,7 +137,7 @@ func (client *blockchainInfoClient) Init() error {
 	return nil
 }
 
-func (client *blockchainInfoClient) GetUTXOs(ctx context.Context, address string, limit, confitmations int64) ([]UTXO, error) {
+func (client *blockchainInfoClient) GetUTXOs(ctx context.Context, address string, limit, confitmations int) ([]UTXO, error) {
 	unspent, err := client.GetUnspentOutputs(ctx, address, limit, confitmations)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (client *blockchainInfoClient) GetUTXOs(ctx context.Context, address string
 	return utxos, nil
 }
 
-func (client *blockchainInfoClient) balance(ctx context.Context, address string, confirmations int64) (int64, error) {
+func (client *blockchainInfoClient) balance(ctx context.Context, address string, confirmations int) (int64, error) {
 	utxos, err := client.GetUTXOs(ctx, address, 999999, confirmations)
 	if err != nil {
 		return 0, nil
@@ -167,7 +167,7 @@ func (client *blockchainInfoClient) balance(ctx context.Context, address string,
 	return balance, err
 }
 
-func (client *blockchainInfoClient) GetUnspentOutputs(ctx context.Context, address string, limit, confitmations int64) (Unspent, error) {
+func (client *blockchainInfoClient) GetUnspentOutputs(ctx context.Context, address string, limit, confitmations int) (Unspent, error) {
 	if limit == 0 {
 		limit = 250
 	}

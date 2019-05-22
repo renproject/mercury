@@ -49,7 +49,7 @@ func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		utxos, err := btc.client.GetUTXOs(ctx, addr, limit, confirmations)
+		utxos, err := btc.client.GetUTXOs(ctx, addr, int(limit), int(confirmations))
 		if err != nil {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
