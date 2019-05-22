@@ -20,7 +20,7 @@ func (zec *zcash) AddRoutes(r *mux.Router) {
 }
 
 func (zec *zcash) AddRoutePrefix(route string) string {
-	return fmt.Sprintf("/%s%s", zec.network, route)
+	return fmt.Sprintf("/%s%s", zec.prefix, route)
 }
 
 func (zec *zcash) Initiated() bool {
@@ -41,7 +41,7 @@ func (zec *zcash) getUTXOhandler() http.HandlerFunc {
 			zec.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		utxos, err := zec.GetUTXOs(addr, limit, confirmations)
+		utxos, err := zec.client.GetUTXOs(addr, limit, confirmations)
 		if err != nil {
 			zec.writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -63,7 +63,7 @@ func (zec *zcash) getScriptHandler() http.HandlerFunc {
 		var err error
 		switch state {
 		case "spent":
-			status, script, err2 := zec.ScriptSpent(addr, r.URL.Query().Get("spender"))
+			status, script, err2 := zec.client.ScriptSpent(addr, r.URL.Query().Get("spender"))
 			if err2 != nil {
 				err = err2
 				break
@@ -76,7 +76,7 @@ func (zec *zcash) getScriptHandler() http.HandlerFunc {
 				err = err2
 				break
 			}
-			status, val, err2 := zec.ScriptFunded(addr, value)
+			status, val, err2 := zec.client.ScriptFunded(addr, value)
 			if err2 != nil {
 				err = err2
 				break
@@ -89,7 +89,7 @@ func (zec *zcash) getScriptHandler() http.HandlerFunc {
 				err = err2
 				break
 			}
-			status, val, err2 := zec.ScriptRedeemed(addr, value)
+			status, val, err2 := zec.client.ScriptRedeemed(addr, value)
 			if err2 != nil {
 				err = err2
 				break
@@ -113,7 +113,7 @@ func (zec *zcash) getScriptHandler() http.HandlerFunc {
 func (zec *zcash) getConfirmationsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		opts := mux.Vars(r)
-		conf, err := zec.Confirmations(opts["txHash"])
+		conf, err := zec.client.Confirmations(opts["txHash"])
 		if err != nil {
 			zec.writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -137,7 +137,7 @@ func (zec *zcash) postTransaction() http.HandlerFunc {
 			zec.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		if err := zec.PublishTransaction(stx); err != nil {
+		if err := zec.client.PublishTransaction(stx); err != nil {
 			zec.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
@@ -148,8 +148,7 @@ func (zec *zcash) postTransaction() http.HandlerFunc {
 func (zec *zcash) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
 	if statusCode >= 500 {
 		zec.logger.Errorf("failed to call %s with error %v", r.URL.String(), err)
-	}
-	if statusCode >= 400 {
+	} else if statusCode >= 400 {
 		zec.logger.Warningf("failed to call %s with error %v", r.URL.String(), err)
 	}
 	http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), statusCode)

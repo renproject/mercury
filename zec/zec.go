@@ -15,25 +15,53 @@ import (
 )
 
 type zcash struct {
-	network, host, user, password string
-	client                        *rpcclient.Client
-	client2                       RPCCLient
-	params                        *chaincfg.Params
-	initiated                     bool
-	logger                        logrus.FieldLogger
+	prefix    string
+	client    ZCashClient
+	initiated bool
+	logger    logrus.FieldLogger
 }
 
-func New(network, host, user, password string, logger logrus.FieldLogger) mercury.BlockchainPlugin {
-	return &zcash{
+type fnClient struct {
+	host     string
+	user     string
+	password string
+	network  string
+
+	client    *rpcclient.Client
+	client2   RPCCLient
+	params    *chaincfg.Params
+	initiated bool
+}
+
+type ZCashClient interface {
+	Init() error
+
+	Health() bool
+	GetUTXOs(address string, limit, confitmations int64) ([]UTXO, error)
+	Confirmations(txHashStr string) (int64, error)
+	ScriptFunded(address string, value int64) (bool, int64, error)
+	ScriptRedeemed(address string, value int64) (bool, int64, error)
+	ScriptSpent(scriptAddress, spenderAddress string) (bool, string, error)
+	PublishTransaction(stx []byte) error
+}
+
+func NewFN(network, host, user, password string) ZCashClient {
+	return &fnClient{
 		host:     host,
 		user:     user,
 		password: password,
-		network:  network,
-		logger:   logger,
 	}
 }
 
-func (zec *zcash) Init() error {
+func New(prefix string, client ZCashClient, logger logrus.FieldLogger) mercury.BlockchainPlugin {
+	return &zcash{
+		prefix: prefix,
+		logger: logger,
+		client: client,
+	}
+}
+
+func (zec *fnClient) Init() error {
 	client, err := rpcclient.New(
 		&rpcclient.ConnConfig{
 			Host:         zec.host,
@@ -72,13 +100,26 @@ func (zec *zcash) Init() error {
 	return nil
 }
 
-func (zec *zcash) Health() bool {
+func (zec *fnClient) Health() bool {
 	_, err := zec.client.GetBlockChainInfo()
 	return err != nil
 }
+func (zec *zcash) Health() bool {
+	return zec.client.Health()
+}
+
+func (zec *zcash) Init() error {
+	err := zec.client.Init()
+	if err != nil {
+		zec.logger.Error(err)
+		return err
+	}
+	zec.initiated = true
+	return nil
+}
 
 func (zec *zcash) Prefix() string {
-	return zec.network
+	return zec.prefix
 }
 
 type UTXO struct {
@@ -88,7 +129,7 @@ type UTXO struct {
 	Vout         uint32 `json:"vout"`
 }
 
-func (zec *zcash) GetUTXOs(address string, limit, confitmations int64) ([]UTXO, error) {
+func (zec *fnClient) GetUTXOs(address string, limit, confitmations int64) ([]UTXO, error) {
 	unspents, err := zec.client2.ListUnspent(0, 999999, address)
 	if err != nil {
 		return []UTXO{}, err
@@ -121,7 +162,7 @@ func (zec *zcash) GetUTXOs(address string, limit, confitmations int64) ([]UTXO, 
 	return utxos, nil
 }
 
-func (zec *zcash) Confirmations(txHashStr string) (int64, error) {
+func (zec *fnClient) Confirmations(txHashStr string) (int64, error) {
 	txHash, err := chainhash.NewHashFromStr(txHashStr)
 	if err != nil {
 		return 0, err
@@ -133,7 +174,7 @@ func (zec *zcash) Confirmations(txHashStr string) (int64, error) {
 	return tx.Confirmations, nil
 }
 
-func (zec *zcash) ScriptFunded(address string, value int64) (bool, int64, error) {
+func (zec *fnClient) ScriptFunded(address string, value int64) (bool, int64, error) {
 	if err := zec.client.ImportAddressRescan(address, "", false); err != nil {
 		return false, value, err
 	}
@@ -145,7 +186,7 @@ func (zec *zcash) ScriptFunded(address string, value int64) (bool, int64, error)
 	return int64(amount) >= value, int64(amount), nil
 }
 
-func (zec *zcash) ScriptRedeemed(address string, value int64) (bool, int64, error) {
+func (zec *fnClient) ScriptRedeemed(address string, value int64) (bool, int64, error) {
 	if err := zec.client.ImportAddressRescan(address, "", false); err != nil {
 		return false, value, err
 	}
@@ -165,7 +206,7 @@ func (zec *zcash) ScriptRedeemed(address string, value int64) (bool, int64, erro
 	return int64(amount) >= value && balance == 0, balance, nil
 }
 
-func (zec *zcash) ScriptSpent(scriptAddress, spenderAddress string) (bool, string, error) {
+func (zec *fnClient) ScriptSpent(scriptAddress, spenderAddress string) (bool, string, error) {
 	if err := zec.client.ImportAddressRescan(scriptAddress, "", false); err != nil {
 		return false, "", err
 	}
@@ -206,7 +247,7 @@ func (zec *zcash) ScriptSpent(scriptAddress, spenderAddress string) (bool, strin
 	return false, "", fmt.Errorf("could not find the transaction")
 }
 
-func (zec *zcash) PublishTransaction(stx []byte) error {
+func (zec *fnClient) PublishTransaction(stx []byte) error {
 	_, err := zec.client2.SendRawTransaction(stx)
 	return err
 }
