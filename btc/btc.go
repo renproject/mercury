@@ -149,6 +149,9 @@ func (btc *fullnodeClient) GetUTXOs(_ context.Context, address string, limit, co
 			Vout:         unspent.Vout,
 		})
 	}
+	if len(utxos) > limit {
+		return utxos[:limit], nil
+	}
 	return utxos, nil
 }
 
