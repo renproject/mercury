@@ -3,6 +3,7 @@ package btc
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/renproject/mercury/rpc"
 )
@@ -33,9 +34,8 @@ type RPCCLient interface {
 }
 
 type OmniGetBalanceResponse struct {
-	Balance  string `json:"balance"`
-	Reserved string `json:"reserved"`
-	Frozen   string `json:"frozen"`
+	Token   int64 `json:"token"`
+	Balance int64 `json:"balance"`
 }
 
 type rpcClient struct {
@@ -65,14 +65,27 @@ func (client *rpcClient) ListReceivedByAddress(address string) (ListReceivedByAd
 }
 
 func (client *rpcClient) OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error) {
-	resp := OmniGetBalanceResponse{}
+	resp := struct {
+		Balance string `json:"balance"`
+	}{}
 	req := []byte(fmt.Sprintf(
 		"{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", \"method\": \"omni_getbalance\", \"params\": [\"%s\", %d] }",
 		address,
 		token,
 	))
+
 	if err := client.SendRequest(req, &resp); err != nil {
-		return resp, err
+		return OmniGetBalanceResponse{}, err
 	}
-	return resp, nil
+
+	bal, ok := new(big.Float).SetString(resp.Balance)
+	if !ok {
+		return OmniGetBalanceResponse{}, fmt.Errorf("invalid amount: %s", resp.Balance)
+	}
+
+	balance, _ := new(big.Float).Mul(bal, big.NewFloat(100000000.0)).Int64()
+	return OmniGetBalanceResponse{
+		Token:   token,
+		Balance: balance,
+	}, nil
 }

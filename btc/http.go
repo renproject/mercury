@@ -20,7 +20,7 @@ func (btc *bitcoin) AddRoutes(r *mux.Router) {
 	r.HandleFunc(btc.AddRoutePrefix("/confirmations/{txHash}"), btc.getConfirmationsHandler()).Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/tx"), btc.postTransaction()).Methods("POST")
 
-	r.HandleFunc(btc.AddRoutePrefix("/omni/balance/{token}/{address}"), btc.getBalanceHandler()).Methods("GET")
+	r.HandleFunc(btc.AddRoutePrefix("/omni/balance/{token}/{address}"), btc.getOmniBalanceHandler()).Methods("GET")
 }
 
 // Handlers of the bitcoin blockchain
@@ -162,7 +162,7 @@ func (btc *bitcoin) postTransaction() http.HandlerFunc {
 	}
 }
 
-func (btc *bitcoin) getBalanceHandler() http.HandlerFunc {
+func (btc *bitcoin) getOmniBalanceHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		opts := mux.Vars(r)
 		token, err := strconv.ParseInt(opts["token"], 10, 64)
