@@ -114,6 +114,7 @@ github.com/renproject/libeth-go v0.0.0-20190412003833-315f7da6c380/go.mod h1:nW+
 github.com/renproject/mercury v0.0.0-20190321013155-23499d524cd8/go.mod h1:62WHJPxwAQU+aQzPjEsz+2IhxbMyjU0+HMk7CBTfm/4=
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80 h1:jcfajT2zPmtzIGn/JnWCkaWwz1kFprPYO9Y5qBUv0/U=
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80/go.mod h1:NdfPrY+l1x6DwEs+wn5eJejQ+DibNnXGia8tkxumgsU=
+github.com/republicprotocol/mercury v0.0.0-20171019233132-f4b85b785e6f h1:QtpVIsFiAltkpTXnpWsxdwlzgxt56BsKDsviD6HLs1k=
 github.com/rjeczalik/notify v0.9.2 h1:MiTWrPj55mNDHEiIX5YUSKefw/+lCQVoAFmD6oQm5w8=
 github.com/rjeczalik/notify v0.9.2/go.mod h1:aErll2f0sUX9PXZnVNyeiObbmTlk5jnMoCa4QEjJeqM=
 github.com/rs/cors v1.6.0 h1:G9tHG9lebljV9mfp9SNPDL36nCDxmo3zTlAf1YgvzmI=
