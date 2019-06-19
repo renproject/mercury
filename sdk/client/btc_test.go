@@ -31,7 +31,7 @@ var _ = Describe("btc client", func() {
 
 	for _, network := range []types.BtcNetwork{ /*types.BtcMainnet,*/ types.BtcTestnet} {
 		network := network
-		FContext(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
+		Context(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
 			It("should return the right balance", func() {
 				client := NewBtcClient(network)
 				address := testAddress(network)
