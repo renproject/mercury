@@ -21,7 +21,7 @@ var _ = Describe("btc client", func() {
 		case types.BtcMainnet:
 			address, err = types.DecodeBase58Address("1MVC7MErbaqzgvXt647r7R9vy284HUJF5c",network )
 		case types.BtcTestnet:
-			address, err = types.DecodeBase58Address("1MVC7MErbaqzgvXt647r7R9vy284HUJF5c",network )
+			address, err = types.DecodeBase58Address("mmmj7f5M1DK7Foq7oHejQYvmFCHdiRPk91",network )
 		default:
 			Fail("unknown network")
 		}
@@ -29,21 +29,18 @@ var _ = Describe("btc client", func() {
 		return address
 	}
 
-	for _, network := range []types.BtcNetwork{types.BtcMainnet, types.BtcTestnet} {
-		Context(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
-			It("should return the right confirmed balance", func() {
+	for _, network := range []types.BtcNetwork{/*types.BtcMainnet,*/ types.BtcTestnet} {
+		network := network
+		FContext(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
+			It("should return the right balance", func() {
 				client := NewBtcClient(network)
 				address := testAddress(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3 *time.Second)
 				defer cancel()
 
-				balance, err := client.Balance(ctx, address, true)
+				balance, err := client.Balance(ctx, address, 999999, 0)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(balance).Should(BeZero())
-			})
-
-			It("should return the right unconfirmed balance", func() {
-
 			})
 
 			It("should return the utxos of the given address", func() {
@@ -61,7 +58,7 @@ var _ = Describe("btc client", func() {
 				client := NewBtcClient(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3 *time.Second)
 				defer cancel()
-				hash := types.TxHash("")
+				hash := types.TxHash("4b1f166b72d7838174c63aec75c27066fd1d9963982e22377d44ae485501c937")
 
 				confirmations, err := client.Confirmations(ctx, hash)
 				Expect(err).NotTo(HaveOccurred())
@@ -76,7 +73,7 @@ var _ = Describe("btc client", func() {
 				defer cancel()
 
 				stx := []byte{}
-				Expect(client.PublishSTX(ctx, stx)).Should(Succeed())
+				Expect(client.SubmitSTX(ctx, stx)).Should(Succeed())
 			})
 		})
 	}

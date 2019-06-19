@@ -33,12 +33,17 @@ func (network BtcNetwork) String() string {
 	}
 }
 
-type BtcAddr struct {
+// todo :
+type BtcAddr string
+
+// todo :
+func (addr BtcAddr) String() string {
+	return string(addr)
 }
 
+// todo :
 func DecodeBase58Address(addr string, network BtcNetwork) (BtcAddr, error) {
-	panic("unimplemented")
-
+	return BtcAddr(addr), nil
 }
 
 func AddressFromPubKey(pubKey *ecdsa.PublicKey) BtcAddr {
