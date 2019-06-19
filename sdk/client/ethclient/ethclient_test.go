@@ -32,7 +32,7 @@ var _ = Describe("eth client", func() {
 
 	for _, network := range []types.EthNetwork{types.EthMainnet} {
 		network := network
-		FContext(fmt.Sprintf("when querying info of ethereum %s", network), func() {
+		Context(fmt.Sprintf("when querying info of ethereum %s", network), func() {
 			It("should return the right balance", func() {
 				client := NewEthClient(network)
 				address := testAddress(network)
