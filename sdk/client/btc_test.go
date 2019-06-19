@@ -19,9 +19,9 @@ var _ = Describe("btc client", func() {
 		var err error
 		switch network {
 		case types.BtcMainnet:
-			address, err = types.DecodeBase58Address("1MVC7MErbaqzgvXt647r7R9vy284HUJF5c", network)
+			address, err = types.AddressFromBase58String("1MVC7MErbaqzgvXt647r7R9vy284HUJF5c", network)
 		case types.BtcTestnet:
-			address, err = types.DecodeBase58Address("mmmj7f5M1DK7Foq7oHejQYvmFCHdiRPk91", network)
+			address, err = types.AddressFromBase58String("mmmj7f5M1DK7Foq7oHejQYvmFCHdiRPk91", network)
 		default:
 			Fail("unknown network")
 		}
@@ -38,7 +38,7 @@ var _ = Describe("btc client", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
-				balance, err := client.Balance(ctx, address, 999999, 0)
+				balance, err := client.Balance(ctx, address, 0)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(balance).Should(BeZero())
 			})
