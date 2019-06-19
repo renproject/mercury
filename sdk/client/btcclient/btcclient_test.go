@@ -1,4 +1,4 @@
-package client_test
+package btcclient_test
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/sdk/client"
-
 	"github.com/renproject/mercury/types"
 )
 
