@@ -269,7 +269,7 @@ func (client *blockchainInfoClient) PublishTransaction(ctx context.Context, stx 
 		}
 		stxResult := string(stxResultBytes)
 		if !strings.Contains(stxResult, "Transaction Submitted") {
-			return fmt.Errorf("unable to submit tx: ", stxResult)
+			return fmt.Errorf("unable to submit tx: %s", stxResult)
 		}
 		return nil
 	})
