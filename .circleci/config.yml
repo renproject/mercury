@@ -21,11 +21,11 @@ jobs:
             go test -v ./...
             # all the tests passed so update coverage
             CI=true /go/bin/ginkgo -v --race --cover --coverprofile coverprofile.out ./...
-            /go/bin/covermerge                \
-              types/eth/coverprofile.out          \
-              sdk/client/coverprofile.out          \
+            /go/bin/covermerge \
+              types/ethtypes/coverprofile.out \
+              sdk/client/coverprofile.out \
               sdk/client/zecclient/coverprofile.out \
-              sdk/client/btcclient/coverprofile.out      \
+              sdk/client/btcclient/coverprofile.out \
               sdk/client/ethclient/coverprofile.out > coverprofile.out
             goveralls -coverprofile=coverprofile.out -service=circleci
       - save_cache:
