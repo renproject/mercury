@@ -65,7 +65,7 @@ var _ = Describe("btc client", func() {
 			})
 		})
 
-		Context(fmt.Sprintf("when submitting stx to bitcoin %s", network), func() {
+		PContext(fmt.Sprintf("when submitting stx to bitcoin %s", network), func() {
 			It("should be able to send a stx", func() {
 				client := NewBtcClient(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
