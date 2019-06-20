@@ -15,19 +15,17 @@ jobs:
           name: Run tests
           command: |
             go get -u github.com/onsi/ginkgo/ginkgo
-            # go get -u github.com/loongy/covermerge
+            go get -u github.com/loongy/covermerge
             go get -u github.com/mattn/goveralls
+            # make sure all the tests pass
             go test -v ./...
+            # all the tests passed so update coverage
             CI=true /go/bin/ginkgo -v --race --cover --coverprofile coverprofile.out ./...
-            # /go/bin/covermerge                \
-            #   block/coverprofile.out          \
-            #   cmd/hyperdrive/coverprofile.out \
-            #   consensus/coverprofile.out      \
-            #   replica/coverprofile.out        \
-            #   shard/coverprofile.out          \
-            #   sig/ecdsa/coverprofile.out      \
-            #   sig/coverprofile.out            \
-            #   tx/coverprofile.out > coverprofile.out
+            /go/bin/covermerge                \
+              sdk/client/coverprofile.out          \
+              sdk/client/zecclient/coverprofile.out \
+              sdk/client/btcclient/coverprofile.out      \
+              sdk/client/ethclient/coverprofile.out > coverprofile.out
             goveralls -coverprofile=coverprofile.out -service=circleci
       - save_cache:
           key: go-mod-v1-{{ checksum "go.sum" }}
