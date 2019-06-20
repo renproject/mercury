@@ -5,19 +5,59 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
 )
 
-// ErrUnknownEthNetwork is returned when the given bitcoin network is unknwon to us.
-var ErrUnknownEthNetwork = errors.New("unknown ethereum network")
+type Amount struct {
+	value *big.Int
+}
 
-type EthNetwork uint8
-type WeiValue = *big.Int
+func (a Amount) Add(other Amount) Amount {
+	v := big.NewInt(1)
+	v.Add(a.value, other.value)
+	return Amount{
+		value: v,
+	}
+}
+
+func (a Amount) Mul(other Amount) Amount {
+	v := big.NewInt(1)
+	v.Mul(a.value, other.value)
+	return Amount{
+		value: v,
+	}
+}
+
+func NewAmount(bigWeiValue *big.Int) Amount {
+	return Amount{
+		value: bigWeiValue,
+	}
+}
+
+func Wei(val uint64) Amount {
+	return NewAmount(new(big.Int).SetUint64(val))
+}
+
+func Gwei(val uint64) Amount {
+	return NewAmount(new(big.Int).SetUint64(val)).Mul(GWEI)
+}
+
+func Ether(val uint64) Amount {
+	return NewAmount(new(big.Int).SetUint64(val)).Mul(ETHER)
+}
+
+var (
+	WEI   = Wei(1)
+	GWEI  = Wei(1000000000)
+	ETHER = Wei(1000000000000000000)
+)
 
 const (
 	EthMainnet EthNetwork = 1
 	EthKovan   EthNetwork = 42
 )
+
+// ErrUnknownEthNetwork is returned when the given bitcoin network is unknwon to us.
+var ErrUnknownEthNetwork = errors.New("unknown ethereum network")
 
 func (network EthNetwork) String() string {
 	switch network {
@@ -30,21 +70,14 @@ func (network EthNetwork) String() string {
 	}
 }
 
-type EthAddr = common.Address
+type EthNetwork uint8
 
-var (
-	Wei   WeiValue = big.NewInt(1)
-	Kwei  WeiValue = mul(math.BigPow(10, 3), Wei)
-	Mwei  WeiValue = mul(math.BigPow(10, 6), Wei)
-	Gwei  WeiValue = mul(math.BigPow(10, 9), Wei)
-	Ether WeiValue = mul(math.BigPow(10, 18), Wei)
-)
+type EthAddr common.Address
 
-var BytesToEthAddr = common.BytesToAddress
-var HexStringToEthAddr = common.HexToAddress
+func HexStringToEthAddr(addr string) EthAddr {
+	return EthAddr(common.HexToAddress(addr))
+}
 
-func mul(x, y *big.Int) *big.Int {
-	result := big.NewInt(1)
-	result.Mul(x, y)
-	return result
+func (addr EthAddr) Hex() string {
+	return common.Address(addr).Hex()
 }

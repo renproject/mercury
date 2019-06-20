@@ -36,11 +36,11 @@ func NewEthClient(network types.EthNetwork) *EthClient {
 
 // Balance returns the balance of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded.
-func (client *EthClient) Balance(ctx context.Context, address types.EthAddr) (types.WeiValue, error) {
+func (client *EthClient) Balance(ctx context.Context, address types.EthAddr) (types.Amount, error) {
 	b := []string{address.Hex(), "latest"}
 	data, err := json.Marshal(b)
 	if err != nil {
-		return nil, err
+		return types.Amount{}, err
 	}
 	request := types.JSONRequest{
 		JSONRPC: "2.0",
@@ -51,16 +51,20 @@ func (client *EthClient) Balance(ctx context.Context, address types.EthAddr) (ty
 	var response types.JSONResponse
 	resp, err := client.sendRequest(request)
 	if err != nil {
-		return nil, err
+		return types.Amount{}, err
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
+		return types.Amount{}, err
 	}
 	var res string
 	if err := json.Unmarshal(response.Result, &res); err != nil {
-		return nil, err
+		return types.Amount{}, err
 	}
-	return hexutil.DecodeBig(res)
+	value, err := hexutil.DecodeBig(res)
+	if err != nil {
+		return types.Amount{}, err
+	}
+	return types.NewAmount(value), nil
 }
 
 // sendRequest sends the JSON-2.0 request to the target url and returns the response and any error.
