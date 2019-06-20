@@ -3,7 +3,6 @@ package ethclient_test
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -11,6 +10,7 @@ import (
 	. "github.com/renproject/mercury/sdk/client/ethclient"
 
 	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/eth"
 )
 
 var _ = Describe("eth client", func() {
@@ -42,7 +42,7 @@ var _ = Describe("eth client", func() {
 				balance, err := client.Balance(ctx, address)
 				// fmt.Println(balance)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(balance.Cmp(big.NewInt(0))).Should(Equal(1))
+				Expect(balance.Gt(eth.Wei(0))).Should(BeTrue())
 			})
 		})
 	}
