@@ -1,15 +1,12 @@
-package types
+package ethtypes
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/renproject/mercury/types"
 )
-
-// ErrUnknownEthNetwork is returned when the given bitcoin network is unknwon to us.
-var ErrUnknownEthNetwork = errors.New("unknown ethereum network")
 
 type EthNetwork uint8
 type WeiValue = *big.Int
@@ -26,11 +23,13 @@ func (network EthNetwork) String() string {
 	case EthKovan:
 		return "kovan"
 	default:
-		panic(ErrUnknownEthNetwork)
+		panic(types.ErrUnknownNetwork)
 	}
 }
 
-type EthAddr = common.Address
+type EthAddr struct {
+	common.Address
+}
 
 var (
 	Wei   WeiValue = big.NewInt(1)
@@ -47,4 +46,7 @@ func mul(x, y *big.Int) *big.Int {
 	result := big.NewInt(1)
 	result.Mul(x, y)
 	return result
+}
+
+func (addr EthAddr) Hex() {
 }

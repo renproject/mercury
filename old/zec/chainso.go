@@ -102,7 +102,7 @@ func (client chainSoClient) balance(address string, confirmations int64) (int64,
 	}
 	var balance int64
 	for _, utxo := range utxos {
-		balance = balance + utxo.Amount
+		balance = balance + Amount
 	}
 	return balance, err
 }

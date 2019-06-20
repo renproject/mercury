@@ -7,19 +7,19 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/btctypes"
 )
 
 var _ = Describe("btc client", func() {
 
-	testAddress := func(network types.BtcNetwork) types.BtcAddr {
-		var address types.BtcAddr
+	testAddress := func(network btctypes.Network) btctypes.Addr {
+		var address btctypes.Addr
 		var err error
 		switch network {
-		case types.BtcMainnet:
-			address, err = types.AddressFromBase58String("1MVC7MErbaqzgvXt647r7R9vy284HUJF5c", network)
-		case types.BtcTestnet:
-			address, err = types.AddressFromBase58String("mmmj7f5M1DK7Foq7oHejQYvmFCHdiRPk91", network)
+		case btctypes.Mainnet:
+			address, err = btctypes.AddressFromBase58String("1MVC7MErbaqzgvXt647r7R9vy284HUJF5c", network)
+		case btctypes.Testnet:
+			address, err = btctypes.AddressFromBase58String("mmmj7f5M1DK7Foq7oHejQYvmFCHdiRPk91", network)
 		default:
 			Fail("unknown network")
 		}
@@ -27,7 +27,7 @@ var _ = Describe("btc client", func() {
 		return address
 	}
 
-	for _, network := range []types.BtcNetwork{ /*types.BtcMainnet,*/ types.BtcTestnet} {
+	for _, network := range []btctypes.Network{ /*types.Mainnet,*/ btctypes.Testnet} {
 		network := network
 		Context(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
 			It("should return the right balance", func() {
@@ -56,7 +56,7 @@ var _ = Describe("btc client", func() {
 				client := NewBtcClient(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-				hash := types.TxHash("4b1f166b72d7838174c63aec75c27066fd1d9963982e22377d44ae485501c937")
+				hash := btctypes.TxHash("4b1f166b72d7838174c63aec75c27066fd1d9963982e22377d44ae485501c937")
 
 				confirmations, err := client.Confirmations(ctx, hash)
 				Expect(err).NotTo(HaveOccurred())

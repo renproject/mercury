@@ -3,7 +3,7 @@ package zec
 import (
 	"fmt"
 
-	"github.com/renproject/mercury/rpc"
+	"github.com/renproject/mercury/old/rpc"
 )
 
 type ListReceivedByAddressResponse []ListReceivedByAddressObj

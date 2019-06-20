@@ -21,7 +21,7 @@ require (
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pborman/uuid v1.2.0 // indirect
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/renproject/libbtc-go v0.0.0-20190406053552-a33d87f4d88f
 	github.com/renproject/libeth-go v0.0.0-20190412003833-315f7da6c380
 	github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80

@@ -18,7 +18,7 @@ func NewMulti(clients ...BitcoinClient) BitcoinClient {
 
 func (btc *multiClient) Init() error {
 	for _, client := range btc.clients {
-		if err := client.Init(); err != nil {
+		if err := Init(); err != nil {
 			return err
 		}
 	}
@@ -28,7 +28,7 @@ func (btc *multiClient) Init() error {
 
 func (btc *multiClient) GetUTXOs(ctx context.Context, address string, limit, confitmations int) ([]UTXO, error) {
 	for i, client := range btc.clients {
-		if utxos, err := client.GetUTXOs(ctx, address, limit, confitmations); (err == nil && len(utxos) > 0) || i+1 == len(btc.clients) {
+		if utxos, err := GetUTXOs(ctx, address, limit, confitmations); (err == nil && len(utxos) > 0) || i+1 == len(btc.clients) {
 			return utxos, err
 		}
 	}
@@ -37,7 +37,7 @@ func (btc *multiClient) GetUTXOs(ctx context.Context, address string, limit, con
 
 func (btc *multiClient) Confirmations(ctx context.Context, txHashStr string) (int64, error) {
 	for i, client := range btc.clients {
-		if conf, err := client.Confirmations(ctx, txHashStr); err == nil || i+1 == len(btc.clients) {
+		if conf, err := Confirmations(ctx, txHashStr); err == nil || i+1 == len(btc.clients) {
 			return conf, err
 		}
 	}
@@ -46,7 +46,7 @@ func (btc *multiClient) Confirmations(ctx context.Context, txHashStr string) (in
 
 func (btc *multiClient) ScriptFunded(ctx context.Context, address string, value int64) (bool, int64, error) {
 	for i, client := range btc.clients {
-		if funded, val, err := client.ScriptFunded(ctx, address, value); err == nil || i+1 == len(btc.clients) {
+		if funded, val, err := ScriptFunded(ctx, address, value); err == nil || i+1 == len(btc.clients) {
 			return funded, val, err
 		}
 	}
@@ -55,7 +55,7 @@ func (btc *multiClient) ScriptFunded(ctx context.Context, address string, value 
 
 func (btc *multiClient) ScriptRedeemed(ctx context.Context, address string, value int64) (bool, int64, error) {
 	for i, client := range btc.clients {
-		if redeemed, val, err := client.ScriptRedeemed(ctx, address, value); err == nil || i+1 == len(btc.clients) {
+		if redeemed, val, err := ScriptRedeemed(ctx, address, value); err == nil || i+1 == len(btc.clients) {
 			return redeemed, val, err
 		}
 	}
@@ -64,7 +64,7 @@ func (btc *multiClient) ScriptRedeemed(ctx context.Context, address string, valu
 
 func (btc *multiClient) ScriptSpent(ctx context.Context, scriptAddress, spenderAddress string) (bool, string, error) {
 	for i, client := range btc.clients {
-		if spent, val, err := client.ScriptSpent(ctx, scriptAddress, spenderAddress); err == nil || i+1 == len(btc.clients) {
+		if spent, val, err := ScriptSpent(ctx, scriptAddress, spenderAddress); err == nil || i+1 == len(btc.clients) {
 			return spent, val, err
 		}
 	}
@@ -73,7 +73,7 @@ func (btc *multiClient) ScriptSpent(ctx context.Context, scriptAddress, spenderA
 
 func (btc *multiClient) PublishTransaction(ctx context.Context, stx []byte) error {
 	for i, client := range btc.clients {
-		if err := client.PublishTransaction(ctx, stx); err == nil || i+1 == len(btc.clients) {
+		if err := PublishTransaction(ctx, stx); err == nil || i+1 == len(btc.clients) {
 			return err
 		}
 	}
@@ -82,7 +82,7 @@ func (btc *multiClient) PublishTransaction(ctx context.Context, stx []byte) erro
 
 func (btc *multiClient) OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error) {
 	for i, client := range btc.clients {
-		if bal, err := client.OmniGetBalance(token, address); err == nil || i+1 == len(btc.clients) {
+		if bal, err := OmniGetBalance(token, address); err == nil || i+1 == len(btc.clients) {
 			return bal, err
 		}
 	}
@@ -92,7 +92,7 @@ func (btc *multiClient) OmniGetBalance(token int64, address string) (OmniGetBala
 func (btc *multiClient) Health() bool {
 	var health bool
 	for _, client := range btc.clients {
-		health = health || client.Health()
+		health = health || Health()
 	}
 	return health
 }

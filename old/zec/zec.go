@@ -130,7 +130,7 @@ type UTXO struct {
 }
 
 func (zec *fnClient) GetUTXOs(address string, limit, confitmations int64) ([]UTXO, error) {
-	unspents, err := zec.client2.ListUnspent(0, 999999, address)
+	unspents, err := ListUnspent(0, 999999, address)
 	if err != nil {
 		return []UTXO{}, err
 	}
@@ -140,7 +140,7 @@ func (zec *fnClient) GetUTXOs(address string, limit, confitmations int64) ([]UTX
 			return []UTXO{}, err
 		}
 
-		unspents, err = zec.client2.ListUnspent(0, 999999, address)
+		unspents, err = ListUnspent(0, 999999, address)
 		if err != nil {
 			return []UTXO{}, err
 		}
@@ -148,15 +148,15 @@ func (zec *fnClient) GetUTXOs(address string, limit, confitmations int64) ([]UTX
 
 	utxos := []UTXO{}
 	for _, unspent := range unspents {
-		amount, err := btcutil.NewAmount(unspent.Amount)
+		amount, err := btcutil.NewAmount(Amount)
 		if err != nil {
 			return utxos, err
 		}
 		utxos = append(utxos, UTXO{
-			TxHash:       unspent.TxID,
+			TxHash:       TxID,
 			Amount:       int64(amount.ToUnit(btcutil.AmountSatoshi)),
-			ScriptPubKey: unspent.ScriptPubKey,
-			Vout:         unspent.Vout,
+			ScriptPubKey: ScriptPubKey,
+			Vout:         Vout,
 		})
 	}
 	if len(utxos) > int(limit) {
@@ -181,11 +181,11 @@ func (zec *fnClient) ScriptFunded(address string, value int64) (bool, int64, err
 	if err := zec.client.ImportAddressRescan(address, "", false); err != nil {
 		return false, value, err
 	}
-	resp, err := zec.client2.ListReceivedByAddress(address)
+	resp, err := ListReceivedByAddress(address)
 	if err != nil {
 		return false, value, err
 	}
-	amount := resp.Amount * math.Pow10(8)
+	amount := Amount * math.Pow10(8)
 	return int64(amount) >= value, int64(amount), nil
 }
 
@@ -193,11 +193,11 @@ func (zec *fnClient) ScriptRedeemed(address string, value int64) (bool, int64, e
 	if err := zec.client.ImportAddressRescan(address, "", false); err != nil {
 		return false, value, err
 	}
-	resp, err := zec.client2.ListReceivedByAddress(address)
+	resp, err := ListReceivedByAddress(address)
 	if err != nil {
 		return false, value, err
 	}
-	amount := resp.Amount * math.Pow10(8)
+	amount := Amount * math.Pow10(8)
 	utxos, err := zec.GetUTXOs(address, 999999, 0)
 	if err != nil {
 		return false, value, err
@@ -218,31 +218,31 @@ func (zec *fnClient) ScriptSpent(scriptAddress, spenderAddress string) (bool, st
 		return false, "", err
 	}
 
-	txs, err := zec.client2.ListTransansactions("")
+	txs, err := ListTransansactions("")
 	if err != nil {
 		return false, "", err
 	}
 
 	var hash string
 	for _, tx := range txs {
-		if tx.Address == scriptAddress && tx.Category == "receive" {
-			hash = reverse(tx.TxID)
+		if Address == scriptAddress && Category == "receive" {
+			hash = reverse(TxID)
 		}
 	}
 
-	txList, err := zec.client2.AddressTxIDs(spenderAddress)
+	txList, err := AddressTxIDs(spenderAddress)
 	if err != nil {
 		return false, "", err
 	}
 
 	for _, txID := range txList {
-		rawTx, err := zec.client2.GetRawTransaction(txID)
+		rawTx, err := GetRawTransaction(txID)
 		if err != nil {
 			return false, "", err
 		}
 
 		if strings.Contains(rawTx, hash) {
-			scriptSig, err := zec.client2.ExtractScriptSig(rawTx)
+			scriptSig, err := ExtractScriptSig(rawTx)
 			return err == nil, scriptSig, err
 		}
 	}
@@ -251,7 +251,7 @@ func (zec *fnClient) ScriptSpent(scriptAddress, spenderAddress string) (bool, st
 }
 
 func (zec *fnClient) PublishTransaction(stx []byte) error {
-	_, err := zec.client2.SendRawTransaction(stx)
+	_, err := SendRawTransaction(stx)
 	return err
 }
 

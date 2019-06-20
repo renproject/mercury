@@ -25,11 +25,11 @@ func (btc *bitcoin) AddRoutes(r *mux.Router) {
 
 // Handlers of the bitcoin blockchain
 func (btc *bitcoin) AddRoutePrefix(route string) string {
-	return fmt.Sprintf("/%s%s", btc.prefix, route)
+	return fmt.Sprintf("/%s%s", prefix, route)
 }
 
 func (btc *bitcoin) Initiated() bool {
-	return btc.initiated
+	return initiated
 }
 
 func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
@@ -49,7 +49,7 @@ func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		utxos, err := btc.client.GetUTXOs(ctx, addr, int(limit), int(confirmations))
+		utxos, err := GetUTXOs(ctx, addr, int(limit), int(confirmations))
 		if err != nil {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -74,39 +74,39 @@ func (btc *bitcoin) getScriptHandler() http.HandlerFunc {
 		var err error
 		switch state {
 		case "spent":
-			status, script, err2 := btc.client.ScriptSpent(ctx, addr, r.URL.Query().Get("spender"))
+			status, script, err2 := ScriptSpent(ctx, addr, r.URL.Query().Get("spender"))
 			if err2 != nil {
 				err = err2
 				break
 			}
-			resp.Script = script
-			resp.Status = status
+			Script = script
+			Status = status
 		case "funded":
 			value, err2 := strconv.ParseInt(r.URL.Query().Get("value"), 10, 64)
 			if err2 != nil {
 				err = err2
 				break
 			}
-			status, val, err2 := btc.client.ScriptFunded(ctx, addr, value)
+			status, val, err2 := ScriptFunded(ctx, addr, value)
 			if err2 != nil {
 				err = err2
 				break
 			}
-			resp.Value = val
-			resp.Status = status
+			Value = val
+			Status = status
 		case "redeemed":
 			value, err2 := strconv.ParseInt(r.URL.Query().Get("value"), 10, 64)
 			if err2 != nil {
 				err = err2
 				break
 			}
-			status, val, err2 := btc.client.ScriptRedeemed(ctx, addr, value)
+			status, val, err2 := ScriptRedeemed(ctx, addr, value)
 			if err2 != nil {
 				err = err2
 				break
 			}
-			resp.Value = val
-			resp.Status = status
+			Value = val
+			Status = status
 		default:
 			err = fmt.Errorf("unsupported script state: %s", state)
 		}
@@ -127,7 +127,7 @@ func (btc *bitcoin) getConfirmationsHandler() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		conf, err := btc.client.Confirmations(ctx, opts["txHash"])
+		conf, err := Confirmations(ctx, opts["txHash"])
 		if err != nil {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -149,12 +149,12 @@ func (btc *bitcoin) postTransaction() http.HandlerFunc {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		stx, err := hex.DecodeString(req.SignedTransaction)
+		stx, err := hex.DecodeString(SignedTransaction)
 		if err != nil {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		if err := btc.client.PublishTransaction(ctx, stx); err != nil {
+		if err := PublishTransaction(ctx, stx); err != nil {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
@@ -170,7 +170,7 @@ func (btc *bitcoin) getOmniBalanceHandler() http.HandlerFunc {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		bal, err := btc.client.OmniGetBalance(token, opts["address"])
+		bal, err := OmniGetBalance(token, opts["address"])
 		if err != nil {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return
@@ -184,10 +184,10 @@ func (btc *bitcoin) getOmniBalanceHandler() http.HandlerFunc {
 
 func (btc *bitcoin) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
 	if statusCode >= 500 {
-		btc.logger.Errorf("failed to call %s with error %v", r.URL.String(), err)
+		logger.Errorf("failed to call %s with error %v", r.URL.String(), err)
 	}
 	if statusCode >= 400 {
-		btc.logger.Warningf("failed to call %s with error %v", r.URL.String(), err)
+		logger.Warningf("failed to call %s with error %v", r.URL.String(), err)
 	}
 	http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), statusCode)
 }

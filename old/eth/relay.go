@@ -36,12 +36,12 @@ func (eth *ethereum) Relay(req RelayRequest) (RelayResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	f, err := eth.account.ContractTransactCtor(ctx, common.HexToAddress(req.Address), req.FnName, data...)
+	f, err := account.ContractTransactCtor(ctx, common.HexToAddress(req.Address), req.FnName, data...)
 	if err != nil {
 		return RelayResponse{}, err
 	}
 
-	tx, err := eth.account.Transact(ctx, libeth.Fast, nil, f, nil, 1)
+	tx, err := account.Transact(ctx, libeth.Fast, nil, f, nil, 1)
 	if err != libeth.ErrPreConditionCheckFailed && err != nil {
 		return RelayResponse{}, err
 	}

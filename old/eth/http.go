@@ -130,7 +130,7 @@ func (eth *ethereum) relayHandler() http.HandlerFunc {
 			eth.writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
-		resp, err := eth.Relay(req)
+		resp, err := Relay(req)
 		if err != nil {
 			eth.writeError(w, r, http.StatusBadRequest, err)
 			return

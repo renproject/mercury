@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/ethtypes"
 )
 
 // EthClient is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
@@ -19,13 +20,13 @@ type EthClient struct {
 }
 
 // NewEthClient returns a new EthClient of given bitcoin network.
-func NewEthClient(network types.EthNetwork) *EthClient {
+func NewEthClient(network ethtypes.EthNetwork) *EthClient {
 	switch network {
-	case types.EthMainnet:
+	case ethtypes.EthMainnet:
 		return &EthClient{
 			url: "https://ren-mercury.herokuapp.com/eth",
 		}
-	case types.EthKovan:
+	case ethtypes.EthKovan:
 		return &EthClient{
 			url: "https://ren-mercury.herokuapp.com/eth-kovan",
 		}
@@ -36,7 +37,7 @@ func NewEthClient(network types.EthNetwork) *EthClient {
 
 // Balance returns the balance of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded.
-func (client *EthClient) Balance(ctx context.Context, address types.EthAddr) (types.WeiValue, error) {
+func (client *EthClient) Balance(ctx context.Context, address ethtypes.EthAddr) (ethtypes.WeiValue, error) {
 	b := []string{address.Hex(), "latest"}
 	data, err := json.Marshal(b)
 	if err != nil {

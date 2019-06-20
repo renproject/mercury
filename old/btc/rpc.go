@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/renproject/mercury/rpc"
+	rpc2 "github.com/renproject/mercury/old/rpc"
 )
 
 type Response struct {
@@ -39,11 +39,11 @@ type OmniGetBalanceResponse struct {
 }
 
 type rpcClient struct {
-	rpc.Client
+	rpc2.Client
 }
 
 func NewRPCClient(host, user, password string) RPCCLient {
-	return &rpcClient{rpc.NewClient(host, user, password)}
+	return &rpcClient{rpc2.NewClient(host, user, password)}
 }
 
 func (client *rpcClient) ListTransansactions(accName string) (ListTransansactionsResponse, error) {
