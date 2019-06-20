@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/types"
 )
 
