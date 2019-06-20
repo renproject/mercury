@@ -3,12 +3,12 @@ package ethclient_test
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/ethclient"
+
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
@@ -29,7 +29,7 @@ var _ = Describe("eth client", func() {
 		return address
 	}
 
-	for _, network := range []ethtypes.EthNetwork{ethtypes.EthMainnet} {
+	for _, network := range []ethtypes.EthNetwork{ethtypes.EthMainnet, ethtypes.EthKovan} {
 		network := network
 		Context(fmt.Sprintf("when querying info of ethereum %s", network), func() {
 			It("should return the right balance", func() {
@@ -41,7 +41,7 @@ var _ = Describe("eth client", func() {
 				balance, err := client.Balance(ctx, address)
 				// fmt.Println(balance)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(balance.Cmp(big.NewInt(0))).Should(Equal(1))
+				Expect(balance.Gt(ethtypes.Wei(0))).Should(BeTrue())
 			})
 		})
 	}

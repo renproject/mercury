@@ -73,7 +73,7 @@ func (client chainSoClient) GetUTXOs(ctx context.Context, address string, limit,
 		if output.Confirmations >= confitmations {
 			amount, err := strToInt(output.Value)
 			if err != nil {
-				return nil, fmt.Errorf("unable to convert %f into sat: %v", output.Value, err)
+				return nil, fmt.Errorf("unable to convert %s into sat: %v", output.Value, err)
 			}
 
 			utxos = append(utxos, UTXO{

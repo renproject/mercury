@@ -1,0 +1,39 @@
+version: 2.1
+
+executors:
+  go_exec:
+    docker:
+      - image: circleci/golang:1.12
+jobs:
+  build:
+    executor: go_exec
+    steps:
+      - checkout
+      - restore_cache: # Restore saved cache if no changes are detected since last run
+          key: go-mod-v1-{{ checksum "go.sum" }}
+      - run:
+          name: Run tests
+          command: |
+            go get -u github.com/onsi/ginkgo/ginkgo
+            go get -u github.com/loongy/covermerge
+            go get -u github.com/mattn/goveralls
+            # make sure all the tests pass
+            go test -v ./...
+            # all the tests passed so update coverage
+            CI=true /go/bin/ginkgo -v --race --cover --coverprofile coverprofile.out ./...
+            /go/bin/covermerge                \
+              types/eth/coverprofile.out          \
+              sdk/client/coverprofile.out          \
+              sdk/client/zecclient/coverprofile.out \
+              sdk/client/btcclient/coverprofile.out      \
+              sdk/client/ethclient/coverprofile.out > coverprofile.out
+            goveralls -coverprofile=coverprofile.out -service=circleci
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+workflows:
+  build:
+    jobs:
+      - build
+

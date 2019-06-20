@@ -92,7 +92,7 @@ func (client *BtcClient) UTXOs(ctx context.Context, address btctypes.Addr, limit
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
-func (client *BtcClient) Confirmations(ctx context.Context, hash btctypes.TxHash) (int64, error) {
+func (client *BtcClient) Confirmations(ctx context.Context, hash string) (int64, error) {
 	url := fmt.Sprintf("%v/confirmations/%v", client.url, hash)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
