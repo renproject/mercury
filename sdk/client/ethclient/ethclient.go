@@ -1,14 +1,8 @@
 package ethclient
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -32,7 +26,7 @@ func NewEthClient(network ethtypes.EthNetwork) (*EthClient, error) {
 	case ethtypes.EthKovan:
 		url = "https://ren-mercury.herokuapp.com/eth-kovan"
 	default:
-		return &EthClient{}, errors.New("unknown network")
+		return &EthClient{}, types.ErrUnknownNetwork
 	}
 	client, err := ethclient.Dial(url)
 	if err != nil {
@@ -52,25 +46,4 @@ func (client *EthClient) Balance(ctx context.Context, address ethtypes.EthAddr) 
 	}
 	fmt.Println(value)
 	return ethtypes.WeiFromBig(value), nil
-}
-
-// sendRequest sends the JSON-2.0 request to the target url and returns the response and any error.
-func (client *EthClient) sendRequest(request types.JSONRequest) (*http.Response, error) {
-	var url string
-	if !strings.HasPrefix(client.url, "http") {
-		url = "http://" + client.url
-	} else {
-		url = client.url
-	}
-
-	httpclient := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-	buff := bytes.NewBuffer(data)
-
-	return httpclient.Post(url, "application/json", buff)
 }
