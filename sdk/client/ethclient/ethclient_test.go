@@ -33,7 +33,8 @@ var _ = Describe("eth client", func() {
 		network := network
 		Context(fmt.Sprintf("when querying info of ethereum %s", network), func() {
 			It("should return the right balance", func() {
-				client := NewEthClient(network)
+				client, err := NewEthClient(network)
+				Expect(err).NotTo(HaveOccurred())
 				address := testAddress(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
