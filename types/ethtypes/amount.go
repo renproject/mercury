@@ -62,9 +62,9 @@ func (a Amount) Mul(other Amount) Amount {
 	}
 }
 
-func newAmount(bigWeiValue *big.Int) Amount {
+func newAmount(value *big.Int) Amount {
 	return Amount{
-		value: bigWeiValue,
+		value: value,
 	}
 }
 
