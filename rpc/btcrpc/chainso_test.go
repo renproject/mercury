@@ -17,7 +17,7 @@ var _ = Describe("chainso client", func() {
 	}
 
 	Context("rpc client of chainso API", func() {
-		FIt("should be able to get utxos", func() {
+		It("should be able to get utxos", func() {
 			client := initNodeClient()
 			address, err := btctypes.AddressFromBase58String("myCBiJUDAuyJLXUTGPekaw4PDCQqiKwcdy", btctypes.Testnet)
 			Expect(err).NotTo(HaveOccurred())
