@@ -9,10 +9,6 @@ import (
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
-func divideByZero() {
-	ethtypes.Wei(9).Div(ethtypes.Wei(0))
-}
-
 var _ = Describe("eth amounts", func() {
 
 	Context("when comparing amounts", func() {
@@ -74,7 +70,9 @@ var _ = Describe("eth amounts", func() {
 			Expect(ethtypes.Wei(9).Div(ethtypes.Wei(2)).Eq(ethtypes.Wei(4))).Should(BeTrue())
 
 			// Divide by zero should panic
-			Expect(divideByZero).To(Panic())
+			Expect(func() {
+				ethtypes.Wei(9).Div(ethtypes.Wei(0))
+			}).To(Panic())
 		})
 
 		It("can accurately multiply amounts", func() {
