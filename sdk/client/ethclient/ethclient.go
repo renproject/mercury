@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	coretypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
@@ -54,4 +55,9 @@ func (client *EthClient) BlockNumber(ctx context.Context) (*big.Int, error) {
 		return nil, err
 	}
 	return value.Number, nil
+}
+
+// PublishSTX publishes a signed transaction
+func (client *EthClient) PublishSTX(ctx context.Context, stx ethtypes.EthSignedTx) error {
+	return client.client.SendTransaction(ctx, (*coretypes.Transaction)(stx))
 }
