@@ -20,7 +20,7 @@ type Client interface {
 	GetUTXOs(address btctypes.Addr, limit, confirmations int) ([]btctypes.UTXO, error)
 
 	// Confirmations returns the number of block confirmations of the given txHash.
-	Confirmations(txHashStr string) (int64, error)
+	Confirmations(txHash string) (int64, error)
 
 	// PublishTransaction publish the raw tx to the blockchain.
 	PublishTransaction(stx []byte) error

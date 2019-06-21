@@ -28,6 +28,7 @@ require (
 	github.com/rs/cors v1.6.0
 	github.com/sirupsen/logrus v1.4.0
 	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/tyler-smith/go-bip39 v1.0.0
 	golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect
 	golang.org/x/crypto v0.0.0-20190411191339-88737f569e3a // indirect
 	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3 // indirect

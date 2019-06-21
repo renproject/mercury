@@ -2,63 +2,66 @@ package btcclient_test
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
+	"log"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/btcclient"
 
+	"github.com/renproject/mercury/testutils"
 	"github.com/renproject/mercury/types/btctypes"
 )
 
 var _ = Describe("btc client", func() {
 
-	testAddress := func(network btctypes.Network) btctypes.Addr {
-		var address btctypes.Addr
-		var err error
-		switch network {
-		case btctypes.Mainnet:
-			address, err = btctypes.AddressFromBase58String("1MVC7MErbaqzgvXt647r7R9vy284HUJF5c", network)
-		case btctypes.Testnet:
-			address, err = btctypes.AddressFromBase58String("mmmj7f5M1DK7Foq7oHejQYvmFCHdiRPk91", network)
-		default:
-			Fail("unknown network")
-		}
+	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
+	// test. (i.e have known balance, utxos.)
+	loadTestAccounts := func() testutils.HdKey{
+		key, err:= testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE")
 		Expect(err).NotTo(HaveOccurred())
-		return address
+		return key
 	}
 
+	// Fixme : currently not testing mainnet.
 	for _, network := range []btctypes.Network{ /*types.Mainnet,*/ btctypes.Testnet} {
 		network := network
 		Context(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
 			It("should return the right balance", func() {
 				client := NewBtcClient(network)
-				address := testAddress(network)
+				address, err := loadTestAccounts().Address(network, 44, 1, 1, 0, 0)
+				Expect(err).NotTo(HaveOccurred())
+
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
 				balance, err := client.Balance(ctx, address, 0)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(balance).Should(BeZero())
+				Expect(balance).Should(Equal(1000000 * btctypes.Satoshi))
 			})
 
 			It("should return the utxos of the given address", func() {
 				client := NewBtcClient(network)
-				address := testAddress(network)
+				address, err := loadTestAccounts().Address(network, 44, 1, 1, 0, 0)
+				Expect(err).NotTo(HaveOccurred())
+
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
 				utxos, err := client.UTXOs(ctx, address, 999999, 0)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(len(utxos)).Should(BeZero())
+				Expect(len(utxos)).Should(Equal(1))
+				Expect(utxos[0].Amount).Should(Equal(1000000 * btctypes.Satoshi))
+				Expect(utxos[0].TxHash).Should(Equal("413c031d7841c7a4793f719dd14dfbfadcb457bf841a24724c40addbeb58cfc6"))
 			})
 
 			It("should return the confirmations of a tx", func() {
 				client := NewBtcClient(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-				hash :="4b1f166b72d7838174c63aec75c27066fd1d9963982e22377d44ae485501c937"
+				hash :="413c031d7841c7a4793f719dd14dfbfadcb457bf841a24724c40addbeb58cfc6"
 
 				confirmations, err := client.Confirmations(ctx, hash)
 				Expect(err).NotTo(HaveOccurred())
@@ -66,13 +69,25 @@ var _ = Describe("btc client", func() {
 			})
 		})
 
-		PContext(fmt.Sprintf("when submitting stx to bitcoin %s", network), func() {
-			It("should be able to send a stx", func() {
+		Context(fmt.Sprintf("when submitting stx to bitcoin %s", network), func() {
+			PIt("should be able to send a stx", func() {
 				client := NewBtcClient(network)
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				key,err  := loadTestAccounts().EcdsaKey(44, 1, 2, 0, 0)
+				Expect(err).NotTo(HaveOccurred())
+				address, err := loadTestAccounts().Address(network, 44, 1, 2, 0, 0)
+				Expect(err).NotTo(HaveOccurred())
+
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
-				stx := []byte{}
+				utxos, err := client.UTXOs(ctx, address, 999999, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(utxos)).Should(BeNumerically(">=", 1))
+
+				stx, err := testutils.GenerateSignedTx(network, key, address.String(), int64(utxos[0].Amount), utxos[0].TxHash)
+				Expect(err).NotTo(HaveOccurred())
+
+				log.Println("successfully sign the tx,", hex.EncodeToString(stx))
 				Expect(client.SubmitSTX(ctx, stx)).Should(Succeed())
 			})
 		})
