@@ -34,22 +34,34 @@ func (a Amount) Mul(other Amount) Amount {
 	}
 }
 
-func NewAmount(bigWeiValue *big.Int) Amount {
+func newAmount(bigWeiValue *big.Int) Amount {
 	return Amount{
 		value: bigWeiValue,
 	}
 }
 
+func WeiFromBig(weiAmount *big.Int) Amount {
+	return newAmount(weiAmount)
+}
+
 func Wei(val uint64) Amount {
-	return NewAmount(new(big.Int).SetUint64(val))
+	return WeiFromBig(new(big.Int).SetUint64(val))
+}
+
+func GweiFromBig(gweiAmount *big.Int) Amount {
+	return newAmount(gweiAmount).Mul(GWEI)
 }
 
 func Gwei(val uint64) Amount {
-	return NewAmount(new(big.Int).SetUint64(val)).Mul(GWEI)
+	return GweiFromBig(new(big.Int).SetUint64(val))
+}
+
+func EtherFromBig(etherAmount *big.Int) Amount {
+	return newAmount(etherAmount).Mul(ETHER)
 }
 
 func Ether(val uint64) Amount {
-	return NewAmount(new(big.Int).SetUint64(val)).Mul(ETHER)
+	return EtherFromBig(new(big.Int).SetUint64(val))
 }
 
 var (

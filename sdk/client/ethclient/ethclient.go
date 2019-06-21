@@ -65,7 +65,7 @@ func (client *EthClient) Balance(ctx context.Context, address ethtypes.EthAddr) 
 	if err != nil {
 		return ethtypes.Amount{}, err
 	}
-	return ethtypes.NewAmount(value), nil
+	return ethtypes.WeiFromBig(value), nil
 }
 
 // sendRequest sends the JSON-2.0 request to the target url and returns the response and any error.
