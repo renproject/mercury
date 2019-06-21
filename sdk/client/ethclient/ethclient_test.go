@@ -3,6 +3,7 @@ package ethclient_test
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -32,16 +33,29 @@ var _ = Describe("eth client", func() {
 	for _, network := range []ethtypes.EthNetwork{ethtypes.EthMainnet, ethtypes.EthKovan} {
 		network := network
 		Context(fmt.Sprintf("when querying info of ethereum %s", network), func() {
-			It("should return the right balance", func() {
-				client := NewEthClient(network)
+			It("should return a non-zero balance", func() {
+				client, err := NewEthClient(network)
+				Expect(err).NotTo(HaveOccurred())
 				address := testAddress(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
 				balance, err := client.Balance(ctx, address)
-				// fmt.Println(balance)
 				Expect(err).NotTo(HaveOccurred())
+				// fmt.Println(balance)
 				Expect(balance.Gt(ethtypes.Wei(0))).Should(BeTrue())
+			})
+
+			It("should return a non-zero block number", func() {
+				client, err := NewEthClient(network)
+				Expect(err).NotTo(HaveOccurred())
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+
+				blockNumber, err := client.BlockNumber(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				// fmt.Println(blockNumber)
+				Expect(blockNumber.Cmp(big.NewInt(0))).Should(Equal(1))
 			})
 		})
 	}

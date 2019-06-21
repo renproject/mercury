@@ -61,8 +61,8 @@ var _ = Describe("btc client", func() {
 				client := NewBtcClient(network)
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-				hash :="413c031d7841c7a4793f719dd14dfbfadcb457bf841a24724c40addbeb58cfc6"
 
+				hash :="413c031d7841c7a4793f719dd14dfbfadcb457bf841a24724c40addbeb58cfc6"
 				confirmations, err := client.Confirmations(ctx, hash)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(confirmations).Should(BeNumerically(">", 0))

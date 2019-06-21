@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 const (
@@ -27,6 +28,7 @@ func (network EthNetwork) String() string {
 
 type EthNetwork uint8
 
+type EthSignedTx *types.Transaction
 type EthAddr common.Address
 
 func HexStringToEthAddr(addr string) EthAddr {

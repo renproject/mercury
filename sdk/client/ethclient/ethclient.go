@@ -1,14 +1,12 @@
 package ethclient
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"net/http"
-	"strings"
-	"time"
+	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common"
+	coretypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
 )
@@ -16,75 +14,50 @@ import (
 // EthClient is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 type EthClient struct {
-	url string
+	url    string
+	client *ethclient.Client
 }
 
 // NewEthClient returns a new EthClient of given bitcoin network.
-func NewEthClient(network ethtypes.EthNetwork) *EthClient {
+func NewEthClient(network ethtypes.EthNetwork) (*EthClient, error) {
+	var url string
 	switch network {
 	case ethtypes.EthMainnet:
-		return &EthClient{
-			url: "https://ren-mercury.herokuapp.com/eth",
-		}
+		url = "https://ren-mercury.herokuapp.com/eth"
 	case ethtypes.EthKovan:
-		return &EthClient{
-			url: "https://ren-mercury.herokuapp.com/eth-kovan",
-		}
+		url = "https://ren-mercury.herokuapp.com/eth-kovan"
 	default:
-		panic("unknown eth network")
+		return &EthClient{}, types.ErrUnknownNetwork
 	}
+	client, err := ethclient.Dial(url)
+	if err != nil {
+		return &EthClient{}, err
+	}
+	return &EthClient{
+		url:    url,
+		client: client,
+	}, nil
 }
 
-// Balance returns the balance of the given bitcoin address. It filters the utxos which have less confirmations than
-// required. It times out if the context exceeded.
+// Balance returns the balance of the given ethereum address.
 func (client *EthClient) Balance(ctx context.Context, address ethtypes.EthAddr) (ethtypes.Amount, error) {
-	b := []string{address.Hex(), "latest"}
-	data, err := json.Marshal(b)
+	value, err := client.client.BalanceAt(ctx, common.Address(address), nil)
 	if err != nil {
 		return ethtypes.Amount{}, err
 	}
-	request := types.JSONRequest{
-		JSONRPC: "2.0",
-		ID:      1,
-		Method:  "eth_getBalance",
-		Params:  data,
-	}
-	var response types.JSONResponse
-	resp, err := client.sendRequest(request)
-	if err != nil {
-		return ethtypes.Amount{}, err
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return ethtypes.Amount{}, err
-	}
-	var res string
-	if err := json.Unmarshal(response.Result, &res); err != nil {
-		return ethtypes.Amount{}, err
-	}
-	value, err := hexutil.DecodeBig(res)
-	if err != nil {
-		return ethtypes.Amount{}, err
-	}
-	return ethtypes.NewAmount(value), nil
+	return ethtypes.WeiFromBig(value), nil
 }
 
-// sendRequest sends the JSON-2.0 request to the target url and returns the response and any error.
-func (client *EthClient) sendRequest(request types.JSONRequest) (*http.Response, error) {
-	var url string
-	if !strings.HasPrefix(client.url, "http") {
-		url = "http://" + client.url
-	} else {
-		url = client.url
-	}
-
-	httpclient := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	data, err := json.Marshal(request)
+// BlockNumber returns the current highest block number.
+func (client *EthClient) BlockNumber(ctx context.Context) (*big.Int, error) {
+	value, err := client.client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	buff := bytes.NewBuffer(data)
+	return value.Number, nil
+}
 
-	return httpclient.Post(url, "application/json", buff)
+// PublishSTX publishes a signed transaction
+func (client *EthClient) PublishSTX(ctx context.Context, stx ethtypes.EthSignedTx) error {
+	return client.client.SendTransaction(ctx, (*coretypes.Transaction)(stx))
 }
