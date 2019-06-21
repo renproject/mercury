@@ -12,6 +12,14 @@ type BtcProxy struct {
 	Network btctypes.Network
 }
 
+// NewBtcProxy returns a new BtcProxy for given network.
+func NewBtcProxy(network btctypes.Network, clients ...btcrpc.Client) *BtcProxy {
+	return &BtcProxy{
+		Clients: clients,
+		Network: network,
+	}
+}
+
 // BlockInfo implements the `btcrpc.Client` interface.
 func (proxy *BtcProxy) BlockInfo() btctypes.Network {
 	return proxy.Network

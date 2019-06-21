@@ -59,4 +59,6 @@ var _ = Describe("btc rpc client", func() {
 			Expect(confirmations).Should(BeNumerically(">", 0))
 		})
 	})
+
+	Context("signing ")
 })

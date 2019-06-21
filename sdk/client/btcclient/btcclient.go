@@ -75,19 +75,8 @@ func (client *BtcClient) UTXOs(ctx context.Context, address btctypes.Addr, limit
 	}
 	request.WithContext(ctx)
 
-	// Use a new http.Client to send the request.
-	httpClient := &http.Client{}
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check the response code and decode the response.
-	if response.StatusCode != http.StatusOK {
-		return nil, types.UnexpectedStatusCode(http.StatusOK, response.StatusCode)
-	}
 	var utxos []btctypes.UTXO
-	err = json.NewDecoder(response.Body).Decode(&utxos)
+	err = client.sendRequest(request, http.StatusOK, utxos)
 	return utxos, err
 }
 
@@ -100,6 +89,7 @@ func (client *BtcClient) Confirmations(ctx context.Context, hash string) (int64,
 	}
 	request.WithContext(ctx)
 
+	// TODO: CURRENT MERCURY DOESN'T RETURN A JSON RESPONSE FOR CONFIRMATIONS.
 	// Use a new http.Client to send the request.
 	httpClient := &http.Client{}
 	response, err := httpClient.Do(request)
@@ -123,7 +113,7 @@ func (client *BtcClient) Confirmations(ctx context.Context, hash string) (int64,
 func (client *BtcClient) SubmitSTX(ctx context.Context, stx []byte) error {
 	buf := bytes.NewBuffer(stx)
 	url := fmt.Sprintf("%v/tx", client.url)
-	request, err := http.NewRequest("GET", url, buf)
+	request, err := http.NewRequest("POST", url, buf)
 	if err != nil {
 		return err
 	}
@@ -143,4 +133,18 @@ func (client *BtcClient) SubmitSTX(ctx context.Context, stx []byte) error {
 
 	// todo : Check the response
 	return nil
+}
+
+func (client *BtcClient) sendRequest(request *http.Request, statusCode int, result interface{}) error {
+	httpClient := &http.Client{}
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+
+	// Check the response code and decode the response.
+	if response.StatusCode != statusCode {
+		return types.UnexpectedStatusCode(statusCode, response.StatusCode)
+	}
+	return json.NewDecoder(response.Body).Decode(&result)
 }
