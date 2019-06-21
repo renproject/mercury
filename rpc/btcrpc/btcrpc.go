@@ -13,8 +13,8 @@ import (
 // Client is a RPC client which can send and retrieve information from bitcoin blockchain through JSON-RPC.
 type Client interface {
 
-	// Blockinfo returns a boolean indicates the health status of the Client.
-	Blockinfo() btctypes.Network
+	// BlockInfo returns a boolean indicates the health status of the Client.
+	BlockInfo() btctypes.Network
 
 	// GetUTXOs returns the utxos of the given address filtered by the given limit and confirmations .
 	GetUTXOs(address btctypes.Addr, limit, confirmations int) ([]btctypes.UTXO, error)
@@ -26,12 +26,13 @@ type Client interface {
 	PublishTransaction(stx []byte) error
 }
 
-//
+// nodeClient implements the Client interface.
 type nodeClient struct {
 	client  *rpcclient.Client
 	network btctypes.Network
 }
 
+// NewNodeClient returns a new nodeClient.
 func NewNodeClient(network btctypes.Network, host, username, password string) (Client, error) {
 	config := &rpcclient.ConnConfig{
 		Host:         host,
@@ -51,10 +52,12 @@ func NewNodeClient(network btctypes.Network, host, username, password string) (C
 	}, nil
 }
 
-func (node *nodeClient) Blockinfo() btctypes.Network {
+// BlockInfo implements the `Client` interface.
+func (node *nodeClient) BlockInfo() btctypes.Network {
 	return node.network
 }
 
+// GetUTXOs implements the `Client` interface.
 func (node *nodeClient) GetUTXOs(address btctypes.Addr, limit, confirmation int) ([]btctypes.UTXO, error) {
 	addresses := []btcutil.Address{address}
 	utxoResult, err := node.client.ListUnspentMinMaxAddresses(confirmation, 999999, addresses)
@@ -82,6 +85,7 @@ func (node *nodeClient) GetUTXOs(address btctypes.Addr, limit, confirmation int)
 	return utxos, nil
 }
 
+// Confirmations implements the `Client` interface.
 func (node *nodeClient) Confirmations(hash string) (int64, error) {
 	txHash, err := chainhash.NewHashFromStr(hash)
 	if err != nil {
@@ -95,6 +99,7 @@ func (node *nodeClient) Confirmations(hash string) (int64, error) {
 	return tx.Confirmations, nil
 }
 
+// PublishTransaction implements the `Client` interface.
 func (node *nodeClient) PublishTransaction(stx []byte) error {
 	tx := wire.NewMsgTx(2)
 	if err := tx.Deserialize(bytes.NewBuffer(stx)); err != nil {

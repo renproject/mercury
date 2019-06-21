@@ -19,8 +19,8 @@ var _ = Describe("btc client", func() {
 
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
-	loadTestAccounts := func() testutils.HdKey{
-		key, err:= testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE")
+	loadTestAccounts := func() testutils.HdKey {
+		key, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE")
 		Expect(err).NotTo(HaveOccurred())
 		return key
 	}
@@ -67,7 +67,7 @@ var _ = Describe("btc client", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
-				hash :="5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7"
+				hash := "5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7"
 				confirmations, err := client.Confirmations(ctx, hash)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(confirmations).Should(BeNumerically(">", 0))
@@ -77,7 +77,7 @@ var _ = Describe("btc client", func() {
 		Context(fmt.Sprintf("when submitting stx to bitcoin %s", network), func() {
 			PIt("should be able to send a stx", func() {
 				client := NewBtcClient(network)
-				key,err  := loadTestAccounts().EcdsaKey(44, 1, 0, 0, 2)
+				key, err := loadTestAccounts().EcdsaKey(44, 1, 0, 0, 2)
 				Expect(err).NotTo(HaveOccurred())
 				address, err := loadTestAccounts().Address(network, 44, 1, 0, 0, 2)
 				Expect(err).NotTo(HaveOccurred())

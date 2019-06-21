@@ -26,9 +26,9 @@ type HdKey struct {
 }
 
 // LoadHdWalletFromEnv loads the mnemonic and passphrase from environment variables and generate a HdKey from that.
-func LoadHdWalletFromEnv(mnemonicEnv, passphraseEnv string)(HdKey, error) {
+func LoadHdWalletFromEnv(mnemonicEnv, passphraseEnv string) (HdKey, error) {
 	mnemonic, passphrase := os.Getenv(mnemonicEnv), os.Getenv(passphraseEnv)
-	if mnemonic == ""{
+	if mnemonic == "" {
 		return HdKey{}, ErrInvalidMnemonic
 	}
 	seed := bip39.NewSeed(mnemonic, passphrase)
@@ -39,7 +39,7 @@ func LoadHdWalletFromEnv(mnemonicEnv, passphraseEnv string)(HdKey, error) {
 }
 
 // LoadHdWallet generates a HdKey from the given mnemonic and passphrase.
-func LoadHdWallet(mnemonic, passphrase string) (HdKey, error){
+func LoadHdWallet(mnemonic, passphrase string) (HdKey, error) {
 	seed := bip39.NewSeed(mnemonic, passphrase)
 	key, err := hdkeychain.NewMaster(seed, &chaincfg.MainNetParams)
 	return HdKey{
@@ -48,11 +48,11 @@ func LoadHdWallet(mnemonic, passphrase string) (HdKey, error){
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) EcdsaKey(path ...uint32)(*ecdsa.PrivateKey, error){
+func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 	var key *hdkeychain.ExtendedKey
 	var err error
 	for _, val := range path {
-		key ,err = hdkey.Child(val)
+		key, err = hdkey.Child(val)
 		if err != nil {
 			return nil, err
 		}
@@ -65,21 +65,21 @@ func (hdkey HdKey) EcdsaKey(path ...uint32)(*ecdsa.PrivateKey, error){
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) Address(network btctypes.Network, path ...uint32)(btctypes.Addr, error){
+func (hdkey HdKey) Address(network btctypes.Network, path ...uint32) (btctypes.Addr, error) {
 	var key *hdkeychain.ExtendedKey
 	var err error
 	for _, val := range path {
-		key ,err = hdkey.Child(val)
+		key, err = hdkey.Child(val)
 		if err != nil {
 			return nil, err
 		}
 	}
-	address, err:= key.Address(network.Params())
+	address, err := key.Address(network.Params())
 	if err != nil {
 		return nil, err
 	}
-	addressStr :=  address.String()
-	return btctypes.AddressFromBase58String(addressStr,network )
+	addressStr := address.String()
+	return btctypes.AddressFromBase58String(addressStr, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.
