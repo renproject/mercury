@@ -39,7 +39,7 @@ var _ = Describe("btc client", func() {
 
 				balance, err := client.Balance(ctx, address, 0)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(balance).Should(Equal(100000 * btctypes.Satoshi))
+				Expect(balance).Should(Equal(2100000 * btctypes.Satoshi))
 			})
 
 			It("should return the utxos of the given address", func() {
@@ -52,9 +52,14 @@ var _ = Describe("btc client", func() {
 
 				utxos, err := client.UTXOs(ctx, address, 999999, 0)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(len(utxos)).Should(Equal(1))
+				Expect(len(utxos)).Should(Equal(3))
 				Expect(utxos[0].Amount).Should(Equal(100000 * btctypes.Satoshi))
 				Expect(utxos[0].TxHash).Should(Equal("5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7"))
+				Expect(utxos[1].Amount).Should(Equal(1000000 * btctypes.Satoshi))
+				Expect(utxos[1].TxHash).Should(Equal("801046d60d631b908fdcd8ab81ae1b7275bbb5a06aae57f1f1925de72483e1d4"))
+				Expect(utxos[2].Amount).Should(Equal(1000000 * btctypes.Satoshi))
+				Expect(utxos[2].TxHash).Should(Equal("375190ced26f4437bb5ef6766081f18cb730f6d0454612cb34d100db1a3626fb"))
+
 			})
 
 			It("should return the confirmations of a tx", func() {
