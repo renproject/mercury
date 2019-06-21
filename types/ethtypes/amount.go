@@ -22,6 +22,14 @@ func (a Amount) Eq(other Amount) bool {
 	return a.value.Cmp(other.value) == 0
 }
 
+func (a Amount) Lte(other Amount) bool {
+	return a.Lt(other) || a.Eq(other)
+}
+
+func (a Amount) Gte(other Amount) bool {
+	return a.Gt(other) || a.Eq(other)
+}
+
 func (a Amount) Sub(other Amount) Amount {
 	v := big.NewInt(1)
 	v.Sub(a.value, other.value)

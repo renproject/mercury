@@ -12,6 +12,19 @@ import (
 var _ = Describe("eth amounts", func() {
 
 	Context("when comparing amounts", func() {
+
+		It("should define WEI, GWEI, and ETHER correctly", func() {
+			Expect(ethtypes.WEI.Lt(ethtypes.GWEI)).Should(BeTrue())
+			Expect(ethtypes.WEI.Lte(ethtypes.GWEI)).Should(BeTrue())
+			Expect(ethtypes.GWEI.Lt(ethtypes.ETHER)).Should(BeTrue())
+			Expect(ethtypes.GWEI.Lte(ethtypes.ETHER)).Should(BeTrue())
+			Expect(ethtypes.GWEI.Lte(ethtypes.GWEI)).Should(BeTrue())
+			Expect(ethtypes.ETHER.Lte(ethtypes.ETHER)).Should(BeTrue())
+			Expect(ethtypes.ETHER.Gte(ethtypes.ETHER)).Should(BeTrue())
+			Expect(ethtypes.ETHER.Gte(ethtypes.GWEI)).Should(BeTrue())
+			Expect(ethtypes.GWEI.Gte(ethtypes.WEI)).Should(BeTrue())
+		})
+
 		It("should correctly compare amounts", func() {
 			zero := ethtypes.Wei(0)
 			five := ethtypes.Wei(5)
