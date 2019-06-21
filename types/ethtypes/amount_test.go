@@ -40,9 +40,23 @@ var _ = Describe("eth amounts", func() {
 		})
 	})
 
-	Context("when adding amounts", func() {
+	Context("when applying arithmetic operations on amounts", func() {
 		It("can accurately add amounts", func() {
 			Expect(ethtypes.Wei(3).Add(ethtypes.Wei(5)).Eq(ethtypes.Wei(8))).Should(BeTrue())
+		})
+
+		It("can accurately subtract amounts", func() {
+			Expect(ethtypes.Wei(5).Sub(ethtypes.Wei(3)).Eq(ethtypes.Wei(2))).Should(BeTrue())
+		})
+
+		It("can accurately divide amounts", func() {
+			Expect(ethtypes.Wei(8).Div(ethtypes.Wei(2)).Eq(ethtypes.Wei(4))).Should(BeTrue())
+			Expect(ethtypes.Wei(9).Div(ethtypes.Wei(2)).Eq(ethtypes.Wei(4))).Should(BeTrue())
+		})
+
+		It("can accurately multiply amounts", func() {
+			Expect(ethtypes.Wei(3).Mul(ethtypes.Wei(2)).Eq(ethtypes.Wei(6))).Should(BeTrue())
+			Expect(ethtypes.Wei(5).Mul(ethtypes.Wei(2)).Eq(ethtypes.Wei(10))).Should(BeTrue())
 		})
 	})
 })

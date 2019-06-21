@@ -22,6 +22,22 @@ func (a Amount) Eq(other Amount) bool {
 	return a.value.Cmp(other.value) == 0
 }
 
+func (a Amount) Sub(other Amount) Amount {
+	v := big.NewInt(1)
+	v.Sub(a.value, other.value)
+	return Amount{
+		value: v,
+	}
+}
+
+func (a Amount) Div(other Amount) Amount {
+	v := big.NewInt(1)
+	v.Div(a.value, other.value)
+	return Amount{
+		value: v,
+	}
+}
+
 func (a Amount) Add(other Amount) Amount {
 	v := big.NewInt(1)
 	v.Add(a.value, other.value)
