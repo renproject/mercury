@@ -6,6 +6,10 @@ type Amount struct {
 	value *big.Int
 }
 
+func (a Amount) String() string {
+	return a.value.String()
+}
+
 func (a Amount) Gt(other Amount) bool {
 	return a.value.Cmp(other.value) > 0
 }
