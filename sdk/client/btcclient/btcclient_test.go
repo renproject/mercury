@@ -31,7 +31,7 @@ var _ = Describe("btc client", func() {
 		Context(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
 			It("should return the right balance", func() {
 				client := NewBtcClient(network)
-				address, err := loadTestAccounts().Address(network, 44, 1, 1, 0, 0)
+				address, err := loadTestAccounts().Address(network, 44, 1, 0, 0, 1)
 				Expect(err).NotTo(HaveOccurred())
 
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -39,12 +39,12 @@ var _ = Describe("btc client", func() {
 
 				balance, err := client.Balance(ctx, address, 0)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(balance).Should(Equal(1000000 * btctypes.Satoshi))
+				Expect(balance).Should(Equal(100000 * btctypes.Satoshi))
 			})
 
 			It("should return the utxos of the given address", func() {
 				client := NewBtcClient(network)
-				address, err := loadTestAccounts().Address(network, 44, 1, 1, 0, 0)
+				address, err := loadTestAccounts().Address(network, 44, 1, 0, 0, 1)
 				Expect(err).NotTo(HaveOccurred())
 
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -53,8 +53,8 @@ var _ = Describe("btc client", func() {
 				utxos, err := client.UTXOs(ctx, address, 999999, 0)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(Equal(1))
-				Expect(utxos[0].Amount).Should(Equal(1000000 * btctypes.Satoshi))
-				Expect(utxos[0].TxHash).Should(Equal("413c031d7841c7a4793f719dd14dfbfadcb457bf841a24724c40addbeb58cfc6"))
+				Expect(utxos[0].Amount).Should(Equal(100000 * btctypes.Satoshi))
+				Expect(utxos[0].TxHash).Should(Equal("5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7"))
 			})
 
 			It("should return the confirmations of a tx", func() {
@@ -62,7 +62,7 @@ var _ = Describe("btc client", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
-				hash :="413c031d7841c7a4793f719dd14dfbfadcb457bf841a24724c40addbeb58cfc6"
+				hash :="5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7"
 				confirmations, err := client.Confirmations(ctx, hash)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(confirmations).Should(BeNumerically(">", 0))
@@ -72,9 +72,9 @@ var _ = Describe("btc client", func() {
 		Context(fmt.Sprintf("when submitting stx to bitcoin %s", network), func() {
 			PIt("should be able to send a stx", func() {
 				client := NewBtcClient(network)
-				key,err  := loadTestAccounts().EcdsaKey(44, 1, 2, 0, 0)
+				key,err  := loadTestAccounts().EcdsaKey(44, 1, 0, 0, 2)
 				Expect(err).NotTo(HaveOccurred())
-				address, err := loadTestAccounts().Address(network, 44, 1, 2, 0, 0)
+				address, err := loadTestAccounts().Address(network, 44, 1, 0, 0, 2)
 				Expect(err).NotTo(HaveOccurred())
 
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
