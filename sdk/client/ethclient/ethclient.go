@@ -2,7 +2,7 @@ package ethclient
 
 import (
 	"context"
-	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -44,6 +44,14 @@ func (client *EthClient) Balance(ctx context.Context, address ethtypes.EthAddr) 
 	if err != nil {
 		return ethtypes.Amount{}, err
 	}
-	fmt.Println(value)
 	return ethtypes.WeiFromBig(value), nil
+}
+
+// BlockNumber returns the current highest block number.
+func (client *EthClient) BlockNumber(ctx context.Context) (*big.Int, error) {
+	value, err := client.client.HeaderByNumber(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	return value.Number, nil
 }
