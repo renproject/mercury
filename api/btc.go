@@ -15,27 +15,27 @@ type BtcBackend struct {
 	proxy *proxy.BtcProxy
 }
 
-func NewBtcBackend (proxy *proxy.BtcProxy) *BtcBackend{
+func NewBtcBackend(proxy *proxy.BtcProxy) *BtcBackend {
 	return &BtcBackend{
 		proxy: proxy,
 	}
 }
 
-func (btc *BtcBackend) AddHandler(r *mux.Router){
+func (btc *BtcBackend) AddHandler(r *mux.Router) {
 	network := btc.proxy.Network
 	r.HandleFunc(btc.networkPrefix(network, "/utxo/{address}"), btc.utxoHandler()).Methods("GET")
 	r.HandleFunc(btc.networkPrefix(network, "/balance/{address}"), btc.balanceHandler()).Methods("GET")
 	r.HandleFunc(btc.networkPrefix(network, "/confirmations/{tx}"), btc.confirmationHandler()).Methods("GET")
 }
 
-func (btc *BtcBackend) networkPrefix (network btctypes.Network, path string) string {
+func (btc *BtcBackend) networkPrefix(network btctypes.Network, path string) string {
 	return fmt.Sprintf("/btc/%s%s", network, path)
 }
 
 func (btc *BtcBackend) utxoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		address, err:= btctypes.AddressFromBase58String(vars["address"], btc.proxy.Network)
+		address, err := btctypes.AddressFromBase58String(vars["address"], btc.proxy.Network)
 		if err != nil {
 			http.Error(w, "invalid btc address", http.StatusBadRequest)
 			return
@@ -67,7 +67,7 @@ func (btc *BtcBackend) utxoHandler() http.HandlerFunc {
 func (btc *BtcBackend) balanceHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		address, err:= btctypes.AddressFromBase58String(vars["address"], btc.proxy.Network)
+		address, err := btctypes.AddressFromBase58String(vars["address"], btc.proxy.Network)
 		if err != nil {
 			http.Error(w, "invalid btc address", http.StatusBadRequest)
 			return
@@ -84,7 +84,7 @@ func (btc *BtcBackend) balanceHandler() http.HandlerFunc {
 			return
 		}
 		amount := 0 * btctypes.Satoshi
-		for _, utxo := range utxos{
+		for _, utxo := range utxos {
 			amount += utxo.Amount
 		}
 
@@ -112,4 +112,3 @@ func (btc *BtcBackend) confirmationHandler() http.HandlerFunc {
 		}
 	}
 }
-

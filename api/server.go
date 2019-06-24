@@ -19,8 +19,8 @@ const DefaultMaxHeaderBytes = 1 << 10 // 1 KB
 
 type Server struct {
 	blockchains []BlockchainBackend
-	port   string
-	logger logrus.FieldLogger
+	port        string
+	logger      logrus.FieldLogger
 }
 
 // NewServer returns a server which supports given blockchains.
@@ -36,7 +36,7 @@ func NewServer(logger logrus.FieldLogger, port string, blockchains ...Blockchain
 func (server *Server) Run() {
 	// Add handlers for each blockchain.
 	r := mux.NewRouter()
-	for _ , blockchain := range server.blockchains{
+	for _, blockchain := range server.blockchains {
 		blockchain.AddHandler(r)
 	}
 

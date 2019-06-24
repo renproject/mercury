@@ -66,4 +66,3 @@ func (proxy *BtcProxy) PublishTransaction(stx []byte) error {
 	}
 	return errs
 }
-

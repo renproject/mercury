@@ -22,7 +22,7 @@ func NewErrList(n int) ErrList {
 func (errs ErrList) Error() string {
 	errMsg := ""
 	for i := range errs {
-		errMsg += fmt.Sprintf("[%v] %v |", i, errs[i].Error())
+		errMsg += fmt.Sprintf("[%v] %v, ", i, errs[i].Error())
 	}
 	return errMsg
 }
