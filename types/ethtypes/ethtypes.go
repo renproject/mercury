@@ -1,19 +1,15 @@
 package ethtypes
 
 import (
-	"errors"
-
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	coretypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/renproject/mercury/types"
 )
 
 const (
 	EthMainnet EthNetwork = 1
 	EthKovan   EthNetwork = 42
 )
-
-// ErrUnknownEthNetwork is returned when the given bitcoin network is unknwon to us.
-var ErrUnknownEthNetwork = errors.New("unknown ethereum network")
 
 func (network EthNetwork) String() string {
 	switch network {
@@ -22,13 +18,13 @@ func (network EthNetwork) String() string {
 	case EthKovan:
 		return "kovan"
 	default:
-		panic(ErrUnknownEthNetwork)
+		panic(types.ErrUnknownNetwork)
 	}
 }
 
 type EthNetwork uint8
 
-type EthSignedTx *types.Transaction
+type EthSignedTx *coretypes.Transaction
 type EthAddr common.Address
 
 func HexStringToEthAddr(addr string) EthAddr {
