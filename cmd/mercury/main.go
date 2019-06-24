@@ -29,10 +29,6 @@ func main() {
 	btcBackend := api.NewBtcBackend(btcProxy)
 
 	// Initialize ETH proxy
-	ethProxy, err := proxy.NewEthProxy(ethtypes.EthKovan)
-	if err != nil {
-		panic(err)
-	}
 	apiKeys := map[string]string{
 		"":         os.Getenv("INFURA_KEY_DEFAULT"),
 		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
@@ -41,9 +37,20 @@ func main() {
 		"renex-ui": os.Getenv("INFURA_KEY_RENEX_UI"),
 		"dcc":      os.Getenv("INFURA_KEY_DCC"),
 	}
-	ethBackend := api.NewEthBackend(ethProxy, apiKeys, logger)
+	// Infura Mainnet
+	ethMainnetProxy, err := proxy.NewEthProxy(ethtypes.EthMainnet)
+	if err != nil {
+		panic(err)
+	}
+	ethMainnetBackend := api.NewEthBackend(ethMainnetProxy, apiKeys, logger)
+	// Infura Kovan
+	ethKovanProxy, err := proxy.NewEthProxy(ethtypes.EthKovan)
+	if err != nil {
+		panic(err)
+	}
+	ethKovanBackend := api.NewEthBackend(ethKovanProxy, apiKeys, logger)
 
 	// Set up the server and start running
-	server := api.NewServer(logger, "5000", btcBackend, ethBackend)
+	server := api.NewServer(logger, "5000", btcBackend, ethMainnetBackend, ethKovanBackend)
 	server.Run()
 }
