@@ -151,7 +151,7 @@ func (chainso *chainsoClient) PublishTransaction(stx []byte) error {
 	return json.NewDecoder(resp.Body).Decode(&response)
 }
 
-// chainsoUrl constructs the endpoint of chain.so API with given given query name and parameters.
+// chainsoUrl constructs the endpoint of chain.so API with given query name and parameters.
 func chainsoUrl(network btctypes.Network, query string, params ...string) string {
 	var net string
 	switch network {
