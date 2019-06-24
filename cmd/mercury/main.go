@@ -29,8 +29,8 @@ func main() {
 	btcBackend := api.NewBtcBackend(btcProxy)
 
 	// Initialize ETH proxy
-	apiKeys := map[string]string{
-		"":         os.Getenv("INFURA_KEY_DEFAULT"),
+	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
+	taggedKeys := map[string]string{
 		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
 		"darknode": os.Getenv("INFURA_KEY_DARKNODE"),
 		"renex":    os.Getenv("INFURA_KEY_RENEX"),
@@ -38,17 +38,17 @@ func main() {
 		"dcc":      os.Getenv("INFURA_KEY_DCC"),
 	}
 	// Infura Mainnet
-	ethMainnetProxy, err := proxy.NewEthProxy(ethtypes.EthMainnet)
+	ethMainnetProxy, err := proxy.NewInfuraProxy(ethtypes.EthMainnet, infuraAPIKey, taggedKeys)
 	if err != nil {
 		panic(err)
 	}
-	ethMainnetBackend := api.NewEthBackend(ethMainnetProxy, apiKeys, logger)
+	ethMainnetBackend := api.NewEthBackend(ethMainnetProxy, logger)
 	// Infura Kovan
-	ethKovanProxy, err := proxy.NewEthProxy(ethtypes.EthKovan)
+	ethKovanProxy, err := proxy.NewInfuraProxy(ethtypes.EthKovan, infuraAPIKey, taggedKeys)
 	if err != nil {
 		panic(err)
 	}
-	ethKovanBackend := api.NewEthBackend(ethKovanProxy, apiKeys, logger)
+	ethKovanBackend := api.NewEthBackend(ethKovanProxy, logger)
 
 	// Set up the server and start running
 	server := api.NewServer(logger, "5000", btcBackend, ethMainnetBackend, ethKovanBackend)

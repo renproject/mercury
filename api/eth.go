@@ -12,15 +12,13 @@ import (
 )
 
 type EthBackend struct {
-	proxy  *proxy.EthProxy
-	tags   map[string]string
+	proxy  proxy.EthProxy
 	logger logrus.FieldLogger
 }
 
-func NewEthBackend(proxy *proxy.EthProxy, tags map[string]string, logger logrus.FieldLogger) *EthBackend {
+func NewEthBackend(proxy proxy.EthProxy, logger logrus.FieldLogger) *EthBackend {
 	return &EthBackend{
 		proxy:  proxy,
-		tags:   tags,
 		logger: logger,
 	}
 }
@@ -32,7 +30,7 @@ func (eth *EthBackend) AddHandler(r *mux.Router) {
 
 func (eth *EthBackend) addNetworkPrefix(route string) string {
 	var prefix string
-	switch eth.proxy.Network {
+	switch eth.proxy.Network() {
 	case ethtypes.EthKovan:
 		prefix = "eth-kovan"
 	default:
@@ -43,12 +41,7 @@ func (eth *EthBackend) addNetworkPrefix(route string) string {
 
 func (eth *EthBackend) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apiKey := eth.tags[r.URL.Query().Get("tag")]
-		if apiKey == "" {
-			apiKey = eth.tags[""]
-		}
-
-		resp, err := eth.proxy.ForwardRequest(r, apiKey)
+		resp, err := eth.proxy.ForwardRequest(r)
 		if err != nil {
 			eth.writeError(w, r, resp.StatusCode, err)
 			return

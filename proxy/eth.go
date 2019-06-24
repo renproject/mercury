@@ -9,26 +9,46 @@ import (
 )
 
 // EthProxy proxies the request to different bitcoin clients.
-type EthProxy struct {
-	Network ethtypes.EthNetwork
+type EthProxy interface {
+	Network() ethtypes.EthNetwork
+	ForwardRequest(r *http.Request) (*http.Response, error)
 }
 
-// NewEthProxy returns a new ethProxy for given network.
-func NewEthProxy(network ethtypes.EthNetwork) (*EthProxy, error) {
-	client := &EthProxy{
-		Network: network,
-	}
+type infuraProxy struct {
+	network    ethtypes.EthNetwork
+	url        string
+	apiKey     string
+	taggedKeys map[string]string
+}
+
+// NewInfuraProxy returns a new infuraProxy which implements the EthProxy interface
+func NewInfuraProxy(network ethtypes.EthNetwork, apiKey string, taggedKeys map[string]string) (EthProxy, error) {
+	var infuraNetwork string
 	switch network {
 	case ethtypes.EthMainnet:
-		return client, nil
+		infuraNetwork = "mainnet"
 	case ethtypes.EthKovan:
-		return client, nil
+		infuraNetwork = "kovan"
 	default:
-		return &EthProxy{}, types.ErrUnknownNetwork
+		return &infuraProxy{}, types.ErrUnknownNetwork
 	}
+	return &infuraProxy{
+		network:    network,
+		url:        fmt.Sprintf("https://%s.infura.io/v3", infuraNetwork),
+		apiKey:     apiKey,
+		taggedKeys: taggedKeys,
+	}, nil
 }
 
-func (eth *EthProxy) ForwardRequest(r *http.Request, apiKey string) (*http.Response, error) {
-	network := eth.Network.String()
-	return http.Post(fmt.Sprintf("https://%s.infura.io/v3/%s", network, apiKey), "application/json", r.Body)
+func (eth *infuraProxy) Network() ethtypes.EthNetwork {
+	return eth.network
+}
+
+func (eth *infuraProxy) ForwardRequest(r *http.Request) (*http.Response, error) {
+	tag := r.URL.Query().Get("tag")
+	apiKey := eth.taggedKeys[tag]
+	if apiKey == "" {
+		apiKey = eth.apiKey
+	}
+	return http.Post(fmt.Sprintf("%s/%s", eth.url, apiKey), "application/json", r.Body)
 }
