@@ -11,7 +11,7 @@ import (
 // EthProxy proxies the request to different bitcoin clients.
 type EthProxy interface {
 	Network() ethtypes.EthNetwork
-	ForwardRequest(r *http.Request) (*http.Response, error)
+	HandleRequest(r *http.Request) (*http.Response, error)
 }
 
 type infuraProxy struct {
@@ -44,7 +44,7 @@ func (eth *infuraProxy) Network() ethtypes.EthNetwork {
 	return eth.network
 }
 
-func (eth *infuraProxy) ForwardRequest(r *http.Request) (*http.Response, error) {
+func (eth *infuraProxy) HandleRequest(r *http.Request) (*http.Response, error) {
 	tag := r.URL.Query().Get("tag")
 	apiKey := eth.taggedKeys[tag]
 	if apiKey == "" {

@@ -41,7 +41,7 @@ func (eth *EthBackend) addNetworkPrefix(route string) string {
 
 func (eth *EthBackend) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := eth.proxy.ForwardRequest(r)
+		resp, err := eth.proxy.HandleRequest(r)
 		if err != nil {
 			eth.writeError(w, r, resp.StatusCode, err)
 			return
