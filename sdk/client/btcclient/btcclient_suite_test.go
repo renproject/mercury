@@ -9,5 +9,5 @@ import (
 
 func TestBtcClient(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "BtcClient Suite")
+	RunSpecs(t, "Client Suite")
 }

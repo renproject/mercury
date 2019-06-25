@@ -19,7 +19,7 @@ func main() {
 	btcUser := os.Getenv("BITCOIN_TESTNET_RPC_USER")
 	btcPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
 
-	// Initialize BTC proxy
+	// Initialize Bitcoin proxy
 	nodeClient, err := btcrpc.NewNodeClient(btctypes.Testnet, btcHost, btcUser, btcPassword)
 	if err != nil {
 		panic(err)

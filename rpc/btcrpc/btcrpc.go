@@ -76,7 +76,7 @@ func (node *nodeClient) GetUTXOs(address btctypes.Addr, limit, confirmation int)
 		}
 		utxos[i] = btctypes.UTXO{
 			TxHash:       unspent.TxID,
-			Amount:       btctypes.Value(amount),
+			Amount:       btctypes.Amount(amount),
 			ScriptPubKey: unspent.ScriptPubKey,
 			Vout:         unspent.Vout,
 		}
