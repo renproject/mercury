@@ -18,7 +18,7 @@ type EthClient struct {
 	client *ethclient.Client
 }
 
-// NewEthClient returns a new EthClient of given bitcoin network.
+// NewEthClient returns a new EthClient of given ethereum network.
 func NewEthClient(network ethtypes.EthNetwork) (*EthClient, error) {
 	var url string
 	switch network {
@@ -29,6 +29,11 @@ func NewEthClient(network ethtypes.EthNetwork) (*EthClient, error) {
 	default:
 		return &EthClient{}, types.ErrUnknownNetwork
 	}
+	return NewCustomEthClient(url)
+}
+
+// NewCustomEthClient returns an EthClient for a specific RPC url
+func NewCustomEthClient(url string) (*EthClient, error) {
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return &EthClient{}, err
