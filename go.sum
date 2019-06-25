@@ -105,7 +105,6 @@ github.com/renproject/mercury v0.0.0-20190501041323-cbd9733b74c3/go.mod h1:ze+cL
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80 h1:jcfajT2zPmtzIGn/JnWCkaWwz1kFprPYO9Y5qBUv0/U=
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80/go.mod h1:NdfPrY+l1x6DwEs+wn5eJejQ+DibNnXGia8tkxumgsU=
 github.com/republicprotocol/libbtc-go v0.0.0-20190218031145-13bd5bd75d7c/go.mod h1:piHewjEGMHuvrbWYZ14DtdJNpotcmVjMKCp/Xey+Xao=
-github.com/republicprotocol/renvm-go v0.0.0-20190320052535-795f34011fa2/go.mod h1:cqu/ZRgyxN3+O2CgRdOjDtr0BV98tdqH+fZA9eqdCB8=
 github.com/republicprotocol/tau v0.0.0-20190116001021-54c2ea27fbc3/go.mod h1:8uPHnWJeb3PNNRnIxVWe8oJcq/b6nPKi6SExe/5gr4M=
 github.com/rjeczalik/notify v0.9.2 h1:MiTWrPj55mNDHEiIX5YUSKefw/+lCQVoAFmD6oQm5w8=
 github.com/rjeczalik/notify v0.9.2/go.mod h1:aErll2f0sUX9PXZnVNyeiObbmTlk5jnMoCa4QEjJeqM=
