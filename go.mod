@@ -15,7 +15,6 @@ require (
 	github.com/renproject/libbtc-go v0.0.0-20190611061055-a84ac3221f0e
 	github.com/renproject/libeth-go v0.0.0-20190624071538-50a5e4e47175
 	github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80
-	github.com/republicprotocol/darknode-go v0.0.0-20190625000158-a06d4f098893 // indirect
 	github.com/rs/cors v1.6.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/tyler-smith/go-bip39 v1.0.0

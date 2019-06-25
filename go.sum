@@ -284,8 +284,6 @@ github.com/renproject/phi v0.0.0-20190611065603-fa4b96ee5438/go.mod h1:Hrxx2ONVp
 github.com/renproject/phi v0.0.0-20190619015553-3757e8391525/go.mod h1:Hrxx2ONVpfByficRjyRd1trecalYr0lo7Z0akx8UXqg=
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80 h1:jcfajT2zPmtzIGn/JnWCkaWwz1kFprPYO9Y5qBUv0/U=
 github.com/republicprotocol/co-go v0.0.0-20180723052914-4e299fdb0e80/go.mod h1:NdfPrY+l1x6DwEs+wn5eJejQ+DibNnXGia8tkxumgsU=
-github.com/republicprotocol/darknode-go v0.0.0-20190625000158-a06d4f098893 h1:Tma6VDTyo4aIvGw4VAYWcef2lytHtq165AfrnzWal38=
-github.com/republicprotocol/darknode-go v0.0.0-20190625000158-a06d4f098893/go.mod h1:f7jUR+j34slYfbYu1bPFuojw5Y4N1DatptQYY7uYWIE=
 github.com/republicprotocol/libbtc-go v0.0.0-20190218031145-13bd5bd75d7c/go.mod h1:piHewjEGMHuvrbWYZ14DtdJNpotcmVjMKCp/Xey+Xao=
 github.com/republicprotocol/mercury v0.0.0-20171019233132-f4b85b785e6f h1:QtpVIsFiAltkpTXnpWsxdwlzgxt56BsKDsviD6HLs1k=
 github.com/republicprotocol/registry v0.0.0-20190415061645-12929f382dc0 h1:NLjFns7Syff6HqFbTANTHUDtPJRb9U7KsoW8xM29lG4=
