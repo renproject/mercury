@@ -14,6 +14,10 @@ jobs:
       - run:
           name: Run tests
           command: |
+            # install ganache-cli
+            sudo apt install nodejs
+            npm install -g ganache-cli
+            # install go deps
             go get -u github.com/onsi/ginkgo/ginkgo
             go get -u github.com/loongy/covermerge
             go get -u github.com/mattn/goveralls
