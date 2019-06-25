@@ -23,9 +23,9 @@ func NewEthClient(network ethtypes.EthNetwork) (*EthClient, error) {
 	var url string
 	switch network {
 	case ethtypes.EthMainnet:
-		url = "https://ren-mercury.herokuapp.com/eth"
+		url = "http://localhost:5000/eth"
 	case ethtypes.EthKovan:
-		url = "https://ren-mercury.herokuapp.com/eth-kovan"
+		url = "http://localhost:5000/eth-kovan"
 	default:
 		return &EthClient{}, types.ErrUnknownNetwork
 	}

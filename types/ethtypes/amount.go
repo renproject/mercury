@@ -6,6 +6,10 @@ type Amount struct {
 	value *big.Int
 }
 
+func (a Amount) ToBig() *big.Int {
+	return a.value
+}
+
 func (a Amount) String() string {
 	return a.value.String()
 }
