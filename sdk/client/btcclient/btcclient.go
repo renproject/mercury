@@ -80,7 +80,7 @@ func (client *Client) UTXOs(ctx context.Context, address btctypes.Addr, limit, c
 	request.WithContext(ctx)
 
 	var utxos []btctypes.UTXO
-	err = client.sendRequest(request, http.StatusOK, utxos)
+	err = client.sendRequest(request, http.StatusOK, &utxos)
 	return utxos, err
 }
 

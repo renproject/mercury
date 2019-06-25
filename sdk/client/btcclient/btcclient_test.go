@@ -36,7 +36,6 @@ var _ = Describe("btc client", func() {
 
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-
 				balance, err := client.Balance(ctx, address, 0)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(balance).Should(Equal(2100000 * btctypes.Satoshi))
