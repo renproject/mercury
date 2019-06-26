@@ -2,28 +2,34 @@ package ethclient_test
 
 import (
 	"context"
-	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/ethclient"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/renproject/mercury/testutils"
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
 var _ = Describe("eth client", func() {
+	var client *EthClient
 
 	Context("when fetching balances", func() {
-		It("should return a non-zero balance", func() {
-			client, err := NewCustomEthClient("http://127.0.0.1:8545")
+		It("can fetch a zero balance address", func() {
+			_, addr, err := testutils.NewAccount()
 			Expect(err).NotTo(HaveOccurred())
-			address := ethtypes.HexStringToEthAddr(crypto.PubkeyToAddress(Key.PublicKey).Hex())
+			client, err = NewCustomEthClient("http://127.0.0.1:8545")
+			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
-			balance, err := client.Balance(ctx, address)
+			balance, err := client.Balance(ctx, ethtypes.HexStringToEthAddr(addr))
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(balance)
-			Expect(balance.Gt(ethtypes.Wei(0))).Should(BeTrue())
+			Expect(balance.Eq(ethtypes.Wei(0))).Should(BeTrue())
+		})
+
+		It("can suggest a gas price", func() {
+			ctx := context.Background()
+			_, err := client.SuggestGasPrice(ctx)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 	})

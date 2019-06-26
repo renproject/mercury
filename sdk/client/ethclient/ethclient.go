@@ -62,6 +62,14 @@ func (client *EthClient) BlockNumber(ctx context.Context) (*big.Int, error) {
 	return value.Number, nil
 }
 
+func (client *EthClient) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, error) {
+	price, err := client.client.SuggestGasPrice(ctx)
+	if err != nil {
+		return ethtypes.Amount{}, err
+	}
+	return ethtypes.WeiFromBig(price), err
+}
+
 // PublishSTX publishes a signed transaction
 func (client *EthClient) PublishSTX(ctx context.Context, stx ethtypes.EthSignedTx) error {
 	return client.client.SendTransaction(ctx, (*coretypes.Transaction)(stx))
