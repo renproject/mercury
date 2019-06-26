@@ -27,7 +27,7 @@ func (zec *multiClient) Init() error {
 
 func (zec *multiClient) GetUTXOs(address string, limit, confitmations int64) ([]UTXO, error) {
 	for i, client := range zec.clients {
-		if utxos, err := client.GetUTXOs(address, limit, confitmations); (err == nil && len(utxos) > 0) || i+1 == len(zec.clients) {
+		if utxos, err := client.GetUTXOs(address, limit, confitmations); i+1 == len(zec.clients) {
 			return utxos, err
 		}
 	}
