@@ -2,6 +2,7 @@ package ethclient
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -70,8 +71,25 @@ func (client *EthClient) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, 
 	return ethtypes.WeiFromBig(price), err
 }
 
+func (client *EthClient) PendingNonceAt(ctx context.Context, fromAddress ethtypes.EthAddr) (uint64, error) {
+	return client.client.PendingNonceAt(ctx, common.Address(fromAddress))
+}
+
 func (client *EthClient) CreateUTX(nonce uint64, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) ethtypes.EthUnsignedTx {
 	return ethtypes.EthUnsignedTx(coretypes.NewTransaction(nonce, common.Address(toAddress), value.ToBig(), gasLimit, gasPrice.ToBig(), data))
+}
+
+func (client *EthClient) SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx, key *ecdsa.PrivateKey) (ethtypes.EthSignedTx, error) {
+	chainID, err := client.client.NetworkID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	signedTx, err := coretypes.SignTx((*coretypes.Transaction)(utx), coretypes.NewEIP155Signer(chainID), key)
+	if err != nil {
+		return nil, err
+	}
+	return ethtypes.EthSignedTx(signedTx), nil
 }
 
 // PublishSTX publishes a signed transaction
