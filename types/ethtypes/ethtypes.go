@@ -24,6 +24,7 @@ func (network EthNetwork) String() string {
 
 type EthNetwork uint8
 
+type EthUnsignedTx *coretypes.Transaction
 type EthSignedTx *coretypes.Transaction
 type EthAddr common.Address
 

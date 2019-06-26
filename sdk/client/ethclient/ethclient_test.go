@@ -21,7 +21,7 @@ var _ = Describe("eth client", func() {
 			client, err = NewCustomEthClient("http://127.0.0.1:8545")
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
-			balance, err := client.Balance(ctx, ethtypes.HexStringToEthAddr(addr))
+			balance, err := client.Balance(ctx, addr)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(balance.Eq(ethtypes.Wei(0))).Should(BeTrue())
 		})
@@ -30,6 +30,19 @@ var _ = Describe("eth client", func() {
 			ctx := context.Background()
 			_, err := client.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("can create unsigned transactions", func() {
+			ctx := context.Background()
+			amount := ethtypes.Ether(3)
+			nonce := uint64(1)
+			gasLimit := uint64(1000)
+			gasPrice, err := client.SuggestGasPrice(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, addr, err := testutils.NewAccount()
+			Expect(err).NotTo(HaveOccurred())
+			var data []byte
+			_ = client.CreateUTX(nonce, addr, amount, gasLimit, gasPrice, data)
 		})
 
 	})

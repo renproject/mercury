@@ -70,6 +70,10 @@ func (client *EthClient) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, 
 	return ethtypes.WeiFromBig(price), err
 }
 
+func (client *EthClient) CreateUTX(nonce uint64, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) ethtypes.EthUnsignedTx {
+	return ethtypes.EthUnsignedTx(coretypes.NewTransaction(nonce, common.Address(toAddress), value.ToBig(), gasLimit, gasPrice.ToBig(), data))
+}
+
 // PublishSTX publishes a signed transaction
 func (client *EthClient) PublishSTX(ctx context.Context, stx ethtypes.EthSignedTx) error {
 	return client.client.SendTransaction(ctx, (*coretypes.Transaction)(stx))
