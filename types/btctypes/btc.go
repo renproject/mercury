@@ -115,3 +115,6 @@ type UTXO struct {
 	ScriptPubKey string `json:"scriptPubKey"`
 	Vout         uint32 `json:"vout"`
 }
+
+
+type Signature btcec.Signature

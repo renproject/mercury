@@ -59,4 +59,18 @@ var _ = Describe("btc rpc client", func() {
 			Expect(confirmations).Should(BeNumerically(">", 0))
 		})
 	})
+
+	// Context ("testing ", func() {
+	//
+	// 	FIt("should", func() {
+	// 		network := btctypes.Testnet
+	//
+	// 		client := initNodeClient(network)
+	// 		address ,err  := btctypes.AddressFromBase58String("moJt8bi1t9sx4Pneb5v1QrfBzBkoyey6DH",network)
+	// 		Expect(err).NotTo(HaveOccurred())
+	// 		utxos, err := client.GetUTXOs(address, 999999, 0)
+	// 		Expect(err).NotTo(HaveOccurred())
+	// 		log.Print(utxos)
+	// 	})
+	// })
 })

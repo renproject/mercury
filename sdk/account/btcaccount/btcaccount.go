@@ -3,22 +3,23 @@ package btcaccount
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
+	"fmt"
+	"log"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
 
-type Transaction struct {
-	TxId               string `json:"txid"`
-	SourceAddress      string `json:"source_address"`
-	DestinationAddress string `json:"destination_address"`
-	Amount             int64  `json:"amount"`
-	UnsignedTx         string `json:"unsignedtx"`
-	SignedTx           string `json:"signedtx"`
+// ErrInsufficientBalance returns an error which returned when account doesn't have enough funds to make the tx.
+func ErrInsufficientBalance(expect, have string) error  {
+	return fmt.Errorf("insufficient balance, got = %v, have = %v", expect, have)
 }
 
+// Account is a bitcoin wallet which can transfer funds and building tx.
 type Account struct {
 	Client *btcclient.Client
 
@@ -26,7 +27,8 @@ type Account struct {
 	key *ecdsa.PrivateKey
 }
 
-func NewBtcAccount (logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) *Account{
+// NewAccount returns a new Account from the given private key.
+func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) *Account{
 	return &Account{
 		Client: client,
 		logger: logger,
@@ -34,6 +36,7 @@ func NewBtcAccount (logger logrus.FieldLogger, client *btcclient.Client, key *ec
 	}
 }
 
+// NewAccountFromWIF returns a new Account from the given WIF
 func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifStr string) (*Account, error){
 	wif, err:= btcutil.DecodeWIF(wifStr )
 	if err != nil {
@@ -47,76 +50,65 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 	}, nil
 }
 
-func (account Account) Address() (btctypes.Addr, error){
-	return btctypes.AddressFromPubKey(&account.key.PublicKey, account.Client.Network)
+// Address returns the Address of the account
+func (acc *Account) Address() (btctypes.Addr, error){
+	return btctypes.AddressFromPubKey(&acc.key.PublicKey, acc.Client.Network)
 }
 
-func (account Account) Transfer(ctx context.Context, to btctypes.Addr, value, fees btctypes.Amount) error {
-	panic("unimplemented")
-	// senderAddr, err := account.Address()
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// // Get utxos
-	// utxos, err := account.Client.UTXOs(ctx, senderAddr, 999999, 0 )
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// // Construct the tx.
-	// sourceTx := wire.NewMsgTx(wire.TxVersion)
-	// sourceUtxoHash, err := chainhash.NewHashFromStr(utxos[0].TxHash)
-	// if err != nil {
-	// 	return err
-	// }
-	// sourceUtxo := wire.NewOutPoint(sourceUtxoHash, 0)
-	// sourceTxIn := wire.NewTxIn(sourceUtxo, nil, nil)
-	//
-	//
-	// destinationPkScript, err := txscript.PayToAddrScript(to)
-	// if err != nil {
-	// 	return err
-	// }
-	// sourcePkScript, err := txscript.PayToAddrScript(senderAddr)
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// sourceTxOut := wire.NewTxOut(int64(value), sourcePkScript)
-	// sourceTx.AddTxIn(sourceTxIn)
-	// sourceTx.AddTxOut(sourceTxOut)
-	// sourceTxHash := sourceTx.TxHash()
-	// redeemTx := wire.NewMsgTx(wire.TxVersion)
-	// prevOut := wire.NewOutPoint(&sourceTxHash, 0)
-	// redeemTxIn := wire.NewTxIn(prevOut, nil, nil)
-	// redeemTx.AddTxIn(redeemTxIn)
-	// redeemTxOut := wire.NewTxOut(int64(value), destinationPkScript)
-	// redeemTx.AddTxOut(redeemTxOut)
-	// sigScript, err := txscript.SignatureScript(redeemTx, 0, sourceTx.TxOut[0].PkScript, txscript.SigHashAll, wif.PrivKey, false)
-	// if err != nil {
-	// 	return err
-	// }
-	// redeemTx.TxIn[0].SignatureScript = sigScript
-	// flags := txscript.StandardVerifyFlags
-	// vm, err := txscript.NewEngine(sourceTx.TxOut[0].PkScript, redeemTx, 0, flags, nil, nil, amount)
-	// if err != nil {
-	// 	return  err
-	// }
-	// if err := vm.Execute(); err != nil {
-	// 	return  err
-	// }
-	// var unsignedTx bytes.Buffer
-	// var signedTx bytes.Buffer
-	// sourceTx.Serialize(&unsignedTx)
-	// redeemTx.Serialize(&signedTx)
-	// transaction.TxId = sourceTxHash.String()
-	// transaction.UnsignedTx = hex.EncodeToString(unsignedTx.Bytes())
-	// transaction.Amount = amount
-	// transaction.SignedTx = hex.EncodeToString(signedTx.Bytes())
-	// transaction.SourceAddress = sourceAddress.EncodeAddress()
-	// transaction.DestinationAddress = destinationAddress.EncodeAddress()
-	// return transaction, nil
+// Transfer transfer certain amount value to the target address.
+func (acc *Account) Transfer(ctx context.Context, to btctypes.Addr, value btctypes.Amount, fee int64) error {
+	log.Print(1)
+	// Get all utxos owned by the acc
+	address, err := acc.Address()
+	if err != nil {
+		return err
+	}
+	utxos, err := acc.Client.UTXOs(ctx, address, 999999, 0)
+	if err != nil {
+		return err
+	}
+
+	log.Print(2)
+	// Check if we have enough funds
+	balance, err:= acc.Client.Balance(ctx, address, 0 )
+	if err != nil {
+		return err
+	}
+	if balance < value{
+		return ErrInsufficientBalance(fmt.Sprintf("%v",value), fmt.Sprintf("%v",balance))
+	}
+	log.Print(3)
+
+
+	// todo : select some utxos from all the utxos we have.
+	builder := builder{}
+	tx, err := builder.Build(acc.Client.Network, utxos, Recipient{to, value})
+	if err != nil {
+		return err
+	}
+
+	subScripts := tx.SignatureHashes()
+	sigs := make([]*btcec.Signature, len(subScripts))
+
+	for i, subScript:= range subScripts{
+		sigs[i], err = (*btcec.PrivateKey)(acc.key).Sign(subScript)
+		if err != nil {
+			return err
+		}
+	}
+	serializedPK := btctypes.SerializePublicKey(&acc.key.PublicKey, acc.Client.Network)
+	if err := tx.InjectSignature(sigs,serializedPK) ; err != nil {
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Print("stx = ",hex.EncodeToString(tx.Serialize() ))
+
+	return nil
+
+	// Submit the signed tx
+	return acc.Client.SubmitSTX(ctx, tx.Serialize())
 }
 
 

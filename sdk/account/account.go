@@ -16,6 +16,6 @@ type Account struct {
 
 func NewAccount(logger logrus.FieldLogger, key *ecdsa.PrivateKey, client client.Client) Account {
 	return Account{
-		BtcAccount: btcaccount.NewBtcAccount(logger, client.BtcClient, key),
+		BtcAccount: btcaccount.NewAccount(logger, client.BtcClient, key),
 	}
 }

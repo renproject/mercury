@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -72,7 +73,8 @@ func (client *Client) Balance(ctx context.Context, address btctypes.Addr, confir
 // required. It times out if the context exceeded.
 func (client *Client) UTXOs(ctx context.Context, address btctypes.Addr, limit, confirmations int) ([]btctypes.UTXO, error) {
 	// Construct the http request.
-	url := fmt.Sprintf("%v/utxo/%v?limit=%v&confirmations=%v", client.url, address.String(), limit, confirmations)
+	url := fmt.Sprintf("%v/utxo/%v?limit=%v&confirmations=%v", client.url, address.EncodeAddress(), limit, confirmations)
+	log.Printf("url = %v", url)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
