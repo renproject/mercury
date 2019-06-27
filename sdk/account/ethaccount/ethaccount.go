@@ -12,6 +12,7 @@ import (
 type Account interface {
 	CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error)
 	SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx) (ethtypes.EthSignedTx, error)
+	Address() ethtypes.EthAddr
 }
 
 type account struct {
@@ -41,4 +42,8 @@ func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, v
 
 func (acc *account) SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx) (ethtypes.EthSignedTx, error) {
 	return acc.client.SignUTX(ctx, utx, acc.key)
+}
+
+func (acc *account) Address() ethtypes.EthAddr {
+	return acc.address
 }
