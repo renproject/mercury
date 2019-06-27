@@ -27,7 +27,7 @@ func NewEthAccount(client *ethclient.EthClient, key *ecdsa.PrivateKey) *Account 
 }
 
 func (account Account) CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error) {
-	nonce, err := account.Client.PendingNonceAt(context.Background(), account.Address)
+	nonce, err := account.Client.PendingNonceAt(ctx, account.Address)
 	if err != nil {
 		return nil, err
 	}
