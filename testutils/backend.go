@@ -18,6 +18,9 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
+// PORT defines the port to run the Ganache server on
+const PORT = 8545
+
 func CreateSimulatedEthNetwork() (*bind.TransactOpts, *backends.SimulatedBackend, error) {
 	key, err := crypto.GenerateKey()
 	if err != nil {
@@ -44,7 +47,7 @@ func StartGanacheServer(ctx context.Context, key *ecdsa.PrivateKey, balance *big
 	errorChan := make(chan error, 1)
 	doneChan := make(chan bool, 1)
 
-	client, err := ethclient.Dial("http://localhost:8545")
+	client, err := ethclient.Dial(fmt.Sprintf("http://localhost:%v", PORT))
 	hexAddr := crypto.PubkeyToAddress(key.PublicKey).Hex()
 
 	go func() {

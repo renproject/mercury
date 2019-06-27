@@ -2,6 +2,7 @@ package ethclient_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,13 +13,13 @@ import (
 )
 
 var _ = Describe("eth client", func() {
-	var client *EthClient
+	var client EthClient
 
 	Context("when fetching balances", func() {
 		It("can fetch a zero balance address", func() {
 			_, addr, err := testutils.NewAccount()
 			Expect(err).NotTo(HaveOccurred())
-			client, err = NewCustomEthClient("http://127.0.0.1:8545")
+			client, err = NewCustomEthClient(fmt.Sprintf("http://127.0.0.1:%v", testutils.PORT))
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
 			balance, err := client.Balance(ctx, addr)
@@ -30,6 +31,13 @@ var _ = Describe("eth client", func() {
 			ctx := context.Background()
 			_, err := client.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("can check the gas limit", func() {
+			ctx := context.Background()
+			gl, err := client.GasLimit(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("gas limit: %v", gl)
 		})
 
 		It("can create unsigned transactions", func() {

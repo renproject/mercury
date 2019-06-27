@@ -16,13 +16,13 @@ type Account interface {
 }
 
 type account struct {
-	client *ethclient.EthClient
+	client ethclient.EthClient
 
 	address ethtypes.EthAddr
 	key     *ecdsa.PrivateKey
 }
 
-func NewEthAccount(client *ethclient.EthClient, key *ecdsa.PrivateKey) Account {
+func NewEthAccount(client ethclient.EthClient, key *ecdsa.PrivateKey) Account {
 	addressString := crypto.PubkeyToAddress(key.PublicKey).Hex()
 	address := ethtypes.HexStringToEthAddr(addressString)
 	return &account{
