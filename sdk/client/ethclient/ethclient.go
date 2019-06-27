@@ -34,10 +34,11 @@ type ethClient struct {
 func NewEthClient(network ethtypes.EthNetwork) (EthClient, error) {
 	var url string
 	switch network {
+
 	case ethtypes.EthMainnet:
-		url = "http://localhost:5000/eth"
+		url = "https://ren-mercury.herokuapp.com/eth"
 	case ethtypes.EthKovan:
-		url = "http://localhost:5000/eth-kovan"
+		url = "https://ren-mercury.herokuapp.com/eth-kovan"
 	default:
 		return &ethClient{}, types.ErrUnknownNetwork
 	}
