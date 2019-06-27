@@ -9,31 +9,36 @@ import (
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
-type Account struct {
-	Client *ethclient.EthClient
+type Account interface {
+	CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error)
+	SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx) (ethtypes.EthSignedTx, error)
+}
 
-	Address ethtypes.EthAddr
+type account struct {
+	client *ethclient.EthClient
+
+	address ethtypes.EthAddr
 	key     *ecdsa.PrivateKey
 }
 
-func NewEthAccount(client *ethclient.EthClient, key *ecdsa.PrivateKey) *Account {
+func NewEthAccount(client *ethclient.EthClient, key *ecdsa.PrivateKey) Account {
 	addressString := crypto.PubkeyToAddress(key.PublicKey).Hex()
 	address := ethtypes.HexStringToEthAddr(addressString)
-	return &Account{
-		Client:  client,
-		Address: address,
+	return &account{
+		client:  client,
+		address: address,
 		key:     key,
 	}
 }
 
-func (account Account) CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error) {
-	nonce, err := account.Client.PendingNonceAt(ctx, account.Address)
+func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error) {
+	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
 	if err != nil {
 		return nil, err
 	}
-	return account.Client.CreateUTX(nonce, toAddress, value, gasLimit, gasPrice, data), nil
+	return acc.client.CreateUTX(nonce, toAddress, value, gasLimit, gasPrice, data), nil
 }
 
-func (account Account) SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx) (ethtypes.EthSignedTx, error) {
-	return account.Client.SignUTX(ctx, utx, account.key)
+func (acc *account) SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx) (ethtypes.EthSignedTx, error) {
+	return acc.client.SignUTX(ctx, utx, acc.key)
 }
