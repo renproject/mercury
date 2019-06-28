@@ -7,31 +7,31 @@ import (
 )
 
 const (
-	EthMainnet EthNetwork = 1
-	EthKovan   EthNetwork = 42
+	Mainnet Network = 1
+	Kovan   Network = 42
 )
 
-func (network EthNetwork) String() string {
+func (network Network) String() string {
 	switch network {
-	case EthMainnet:
+	case Mainnet:
 		return "mainnet"
-	case EthKovan:
+	case Kovan:
 		return "kovan"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
 }
 
-type EthNetwork uint8
+type Network uint8
 
-type EthUnsignedTx *coretypes.Transaction
-type EthSignedTx *coretypes.Transaction
-type EthAddr common.Address
+type UTX *coretypes.Transaction
+type STX *coretypes.Transaction
+type Address common.Address
 
-func HexStringToEthAddr(addr string) EthAddr {
-	return EthAddr(common.HexToAddress(addr))
+func HexStringToAddress(addr string) Address {
+	return Address(common.HexToAddress(addr))
 }
 
-func (addr EthAddr) Hex() string {
+func (addr Address) Hex() string {
 	return common.Address(addr).Hex()
 }

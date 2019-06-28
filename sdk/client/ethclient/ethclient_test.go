@@ -56,14 +56,14 @@ var _ = Describe("eth client", func() {
 	})
 
 	/*
-		testAddress := func(network ethtypes.EthNetwork) ethtypes.EthAddr {
-			var address ethtypes.EthAddr
+		testAddress := func(network ethtypes.EthNetwork) ethtypes.Address {
+			var address ethtypes.Address
 			var err error
 			switch network {
 			case ethtypes.EthMainnet:
-				address = ethtypes.HexStringToEthAddr("0xF02c1c8e6114b1Dbe8937a39260b5b0a374432bB")
+				address = ethtypes.HexStringToAddress("0xF02c1c8e6114b1Dbe8937a39260b5b0a374432bB")
 			case ethtypes.EthKovan:
-				address = ethtypes.HexStringToEthAddr("0xec58d8b8c3cc568e247fcf2dc96d221bac548dfc")
+				address = ethtypes.HexStringToAddress("0xec58d8b8c3cc568e247fcf2dc96d221bac548dfc")
 			default:
 				Fail("unknown network")
 			}

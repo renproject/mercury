@@ -11,21 +11,21 @@ import (
 )
 
 type Account interface {
-	CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error)
-	SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx) (ethtypes.EthSignedTx, error)
-	Address() ethtypes.EthAddr
+	CreateUTX(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.UTX, error)
+	SignUTX(ctx context.Context, utx ethtypes.UTX) (ethtypes.STX, error)
+	Address() ethtypes.Address
 }
 
 type account struct {
 	client ethclient.EthClient
 
-	address ethtypes.EthAddr
+	address ethtypes.Address
 	key     *ecdsa.PrivateKey
 }
 
 func NewAccountFromPrivateKey(client ethclient.EthClient, key *ecdsa.PrivateKey) (Account, error) {
 	addressString := crypto.PubkeyToAddress(key.PublicKey).Hex()
-	address := ethtypes.HexStringToEthAddr(addressString)
+	address := ethtypes.HexStringToAddress(addressString)
 	return &account{
 		client:  client,
 		address: address,
@@ -52,7 +52,7 @@ func NewAccountFromMnemonic(client ethclient.EthClient, mnemonic, derivationPath
 	return NewAccountFromPrivateKey(client, key)
 }
 
-func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error) {
+func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.UTX, error) {
 	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
 	if err != nil {
 		return nil, err
@@ -60,10 +60,10 @@ func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, v
 	return acc.client.CreateUTX(nonce, toAddress, value, gasLimit, gasPrice, data), nil
 }
 
-func (acc *account) SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx) (ethtypes.EthSignedTx, error) {
+func (acc *account) SignUTX(ctx context.Context, utx ethtypes.UTX) (ethtypes.STX, error) {
 	return acc.client.SignUTX(ctx, utx, acc.key)
 }
 
-func (acc *account) Address() ethtypes.EthAddr {
+func (acc *account) Address() ethtypes.Address {
 	return acc.address
 }

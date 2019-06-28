@@ -15,13 +15,13 @@ import (
 // EthClient is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 type EthClient interface {
-	Balance(context.Context, ethtypes.EthAddr) (ethtypes.Amount, error)
+	Balance(context.Context, ethtypes.Address) (ethtypes.Amount, error)
 	BlockNumber(context.Context) (*big.Int, error)
 	SuggestGasPrice(context.Context) (ethtypes.Amount, error)
-	PendingNonceAt(context.Context, ethtypes.EthAddr) (uint64, error)
-	CreateUTX(uint64, ethtypes.EthAddr, ethtypes.Amount, uint64, ethtypes.Amount, []byte) ethtypes.EthUnsignedTx
-	SignUTX(context.Context, ethtypes.EthUnsignedTx, *ecdsa.PrivateKey) (ethtypes.EthSignedTx, error)
-	PublishSTX(context.Context, ethtypes.EthSignedTx) error
+	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
+	CreateUTX(uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) ethtypes.UTX
+	SignUTX(context.Context, ethtypes.UTX, *ecdsa.PrivateKey) (ethtypes.STX, error)
+	PublishSTX(context.Context, ethtypes.STX) error
 	GasLimit(context.Context) (uint64, error)
 }
 
@@ -31,13 +31,13 @@ type ethClient struct {
 }
 
 // NewEthClient returns a new EthClient of given ethereum network.
-func NewEthClient(network ethtypes.EthNetwork) (EthClient, error) {
+func NewEthClient(network ethtypes.Network) (EthClient, error) {
 	var url string
 	switch network {
 
-	case ethtypes.EthMainnet:
+	case ethtypes.Mainnet:
 		url = "https://ren-mercury.herokuapp.com/eth"
-	case ethtypes.EthKovan:
+	case ethtypes.Kovan:
 		url = "https://ren-mercury.herokuapp.com/eth-kovan"
 	default:
 		return &ethClient{}, types.ErrUnknownNetwork
@@ -58,7 +58,7 @@ func NewCustomEthClient(url string) (EthClient, error) {
 }
 
 // Balance returns the balance of the given ethereum address.
-func (client *ethClient) Balance(ctx context.Context, address ethtypes.EthAddr) (ethtypes.Amount, error) {
+func (client *ethClient) Balance(ctx context.Context, address ethtypes.Address) (ethtypes.Amount, error) {
 	value, err := client.client.BalanceAt(ctx, common.Address(address), nil)
 	if err != nil {
 		return ethtypes.Amount{}, err
@@ -83,15 +83,15 @@ func (client *ethClient) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, 
 	return ethtypes.WeiFromBig(price), err
 }
 
-func (client *ethClient) PendingNonceAt(ctx context.Context, fromAddress ethtypes.EthAddr) (uint64, error) {
+func (client *ethClient) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Address) (uint64, error) {
 	return client.client.PendingNonceAt(ctx, common.Address(fromAddress))
 }
 
-func (client *ethClient) CreateUTX(nonce uint64, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) ethtypes.EthUnsignedTx {
-	return ethtypes.EthUnsignedTx(coretypes.NewTransaction(nonce, common.Address(toAddress), value.ToBig(), gasLimit, gasPrice.ToBig(), data))
+func (client *ethClient) CreateUTX(nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) ethtypes.UTX {
+	return ethtypes.UTX(coretypes.NewTransaction(nonce, common.Address(toAddress), value.ToBig(), gasLimit, gasPrice.ToBig(), data))
 }
 
-func (client *ethClient) SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx, key *ecdsa.PrivateKey) (ethtypes.EthSignedTx, error) {
+func (client *ethClient) SignUTX(ctx context.Context, utx ethtypes.UTX, key *ecdsa.PrivateKey) (ethtypes.STX, error) {
 	chainID, err := client.client.NetworkID(ctx)
 	if err != nil {
 		return nil, err
@@ -101,11 +101,11 @@ func (client *ethClient) SignUTX(ctx context.Context, utx ethtypes.EthUnsignedTx
 	if err != nil {
 		return nil, err
 	}
-	return ethtypes.EthSignedTx(signedTx), nil
+	return ethtypes.STX(signedTx), nil
 }
 
 // PublishSTX publishes a signed transaction
-func (client *ethClient) PublishSTX(ctx context.Context, stx ethtypes.EthSignedTx) error {
+func (client *ethClient) PublishSTX(ctx context.Context, stx ethtypes.STX) error {
 	return client.client.SendTransaction(ctx, (*coretypes.Transaction)(stx))
 }
 
