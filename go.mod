@@ -9,6 +9,7 @@ require (
 	github.com/evalphobia/logrus_sentry v0.8.2
 	github.com/getsentry/raven-go v0.2.0
 	github.com/gorilla/mux v1.7.2
+	github.com/miguelmota/go-ethereum-hdwallet v0.0.0-20190601230056-2da794f11e15
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1

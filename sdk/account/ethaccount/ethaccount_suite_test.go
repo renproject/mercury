@@ -40,7 +40,8 @@ var _ = BeforeSuite(func() {
 	// go cmd.Wait()
 	Client, err = ethclient.NewCustomEthClient(fmt.Sprintf("http://localhost:%v", testutils.PORT))
 	Expect(err).NotTo(HaveOccurred())
-	Account = ethaccount.NewEthAccount(Client, key)
+	Account, err = ethaccount.NewAccountFromPrivateKey(Client, key)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {

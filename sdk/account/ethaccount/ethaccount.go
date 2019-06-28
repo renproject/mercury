@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/renproject/mercury/sdk/client/ethclient"
 	"github.com/renproject/mercury/types/ethtypes"
 )
@@ -22,14 +23,33 @@ type account struct {
 	key     *ecdsa.PrivateKey
 }
 
-func NewEthAccount(client ethclient.EthClient, key *ecdsa.PrivateKey) Account {
+func NewAccountFromPrivateKey(client ethclient.EthClient, key *ecdsa.PrivateKey) (Account, error) {
 	addressString := crypto.PubkeyToAddress(key.PublicKey).Hex()
 	address := ethtypes.HexStringToEthAddr(addressString)
 	return &account{
 		client:  client,
 		address: address,
 		key:     key,
+	}, nil
+}
+
+func NewAccountFromMnemonic(client ethclient.EthClient, mnemonic, derivationPath string) (Account, error) {
+	// Get the wallet
+	wallet, err := hdwallet.NewFromMnemonic(mnemonic)
+	if err != nil {
+		return &account{}, err
 	}
+
+	// Get the account
+	path := hdwallet.MustParseDerivationPath(derivationPath)
+	acc, err := wallet.Derive(path, false)
+	if err != nil {
+		return &account{}, err
+	}
+
+	// Get the key
+	key, err := wallet.PrivateKey(acc)
+	return NewAccountFromPrivateKey(client, key)
 }
 
 func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.EthAddr, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.EthUnsignedTx, error) {
