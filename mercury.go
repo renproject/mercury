@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/republicprotocol/co-go"
+	"github.com/renproject/phi/co"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 )
