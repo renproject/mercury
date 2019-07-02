@@ -3,6 +3,7 @@ package ethaccount
 import (
 	"context"
 	"crypto/ecdsa"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
@@ -54,6 +55,7 @@ func NewAccountFromMnemonic(client ethclient.EthClient, mnemonic, derivationPath
 
 func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.UTX, error) {
 	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
+	fmt.Printf("nonce fetched back from infura: %v", nonce)
 	if err != nil {
 		return nil, err
 	}
