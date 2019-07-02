@@ -3,6 +3,7 @@ package ethclient_test
 import (
 	"context"
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +20,7 @@ var _ = Describe("eth client", func() {
 		It("can fetch a zero balance address", func() {
 			_, addr, err := testutils.NewAccount()
 			Expect(err).NotTo(HaveOccurred())
-			client, err = NewCustomEthClient(fmt.Sprintf("http://127.0.0.1:%v", testutils.PORT))
+			client, err = NewCustomEthClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
 			balance, err := client.Balance(ctx, addr)

@@ -18,6 +18,7 @@ import (
 var _ = Describe("eth account", func() {
 
 	Context("can sign", func() {
+
 		It("can create an unsigned transaction", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
@@ -145,25 +146,25 @@ var _ = Describe("eth account", func() {
 			network := network
 			Context(fmt.Sprintf("when querying info of ethereum %s", network), func() {
 				It("should return a non-zero balance", func() {
-					client, err := NewEthClient(network)
+					Client, err := NewEthClient(network)
 					Expect(err).NotTo(HaveOccurred())
 					address := testAddress(network)
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
 
-					balance, err := client.Balance(ctx, address)
+					balance, err := Client.Balance(ctx, address)
 					Expect(err).NotTo(HaveOccurred())
 					// fmt.Println(balance)
 					Expect(balance.Gt(ethtypes.Wei(0))).Should(BeTrue())
 				})
 
 				It("should return a non-zero block number", func() {
-					client, err := NewEthClient(network)
+					Client, err := NewEthClient(network)
 					Expect(err).NotTo(HaveOccurred())
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
 
-					blockNumber, err := client.BlockNumber(ctx)
+					blockNumber, err := Client.BlockNumber(ctx)
 					Expect(err).NotTo(HaveOccurred())
 					// fmt.Println(blockNumber)
 					Expect(blockNumber.Cmp(big.NewInt(0))).Should(Equal(1))
