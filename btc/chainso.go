@@ -230,6 +230,7 @@ func strToInt(val string) (int64, error) {
 	if !ok {
 		return -1, fmt.Errorf("failed to convert %s to float", val)
 	}
+	amt = big.NewFloat(0).Mul(amt, big.NewFloat(10e8))
 	value, _ := amt.Int64()
 	return value, nil
 }
