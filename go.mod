@@ -24,4 +24,5 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.0
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
 )
