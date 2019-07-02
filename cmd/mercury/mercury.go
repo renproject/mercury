@@ -38,22 +38,22 @@ func main() {
 		logger.Error(err)
 		return
 	}
-	testnetBIClient, err := btc.NewBI("testnet")
-	if err != nil {
-		logger.Error(err)
-		return
-	}
+	// testnetBIClient, err := btc.NewBI("testnet")
+	// if err != nil {
+	// 	logger.Error(err)
+	// 	return
+	// }
 
 	mainnetCSClient, err := btc.NewCS("mainnet")
 	if err != nil {
 		logger.Error(err)
 		return
 	}
-	testnetCSClient, err := btc.NewCS("testnet")
-	if err != nil {
-		logger.Error(err)
-		return
-	}
+	// testnetCSClient, err := btc.NewCS("testnet")
+	// if err != nil {
+	// 	logger.Error(err)
+	// 	return
+	// }
 
 	zecMainnetCSClient, err := zec.NewCS("mainnet")
 	if err != nil {
@@ -68,14 +68,14 @@ func main() {
 
 	// mainnetFNClient := btc.NewFN("mainnet", os.Getenv("BITCOIN_MAINNET_RPC_URL"), os.Getenv("BITCOIN_MAINNET_RPC_USER"), os.Getenv("BITCOIN_MAINNET_RPC_PASSWORD"))
 	testnetFNClient := btc.NewFN("testnet", os.Getenv("BITCOIN_TESTNET_RPC_URL"), os.Getenv("TESTNET_RPC_USER"), os.Getenv("TESTNET_RPC_PASSWORD"))
-	omniTestnetFNClient := btc.NewFN("testnet", os.Getenv("OMNI_TESTNET_RPC_URL"), os.Getenv("TESTNET_RPC_USER"), os.Getenv("TESTNET_RPC_PASSWORD"))
+	// omniTestnetFNClient := btc.NewFN("testnet", os.Getenv("OMNI_TESTNET_RPC_URL"), os.Getenv("TESTNET_RPC_USER"), os.Getenv("TESTNET_RPC_PASSWORD"))
 	omniMainnetFNClient := btc.NewFN("mainnet", os.Getenv("OMNI_MAINNET_RPC_URL"), os.Getenv("BITCOIN_MAINNET_RPC_USER"), os.Getenv("BITCOIN_MAINNET_RPC_PASSWORD"))
 
 	zecTestnetFNClient := zec.NewFN("testnet", os.Getenv("ZCASH_TESTNET_RPC_URL"), os.Getenv("TESTNET_RPC_USER"), os.Getenv("TESTNET_RPC_PASSWORD"))
 	// zecMainnetFNClient := zec.NewFN(os.Getenv("ZCASH_MAINNET_RPC_URL"), os.Getenv("ZCASH_MAINNET_RPC_USER"), os.Getenv("ZCASH_MAINNET_RPC_PASSWORD"), "mainnet")
 
 	btcMainnetPlugin := btc.New("btc", btc.NewMulti(mainnetBIClient, mainnetCSClient, omniMainnetFNClient), logger)
-	btcTestnetPlugin := btc.New("btc-testnet3", btc.NewMulti(testnetFNClient, testnetBIClient, testnetCSClient, omniTestnetFNClient), logger)
+	btcTestnetPlugin := btc.New("btc-testnet3", testnetFNClient, logger)
 	zecTestnetPlugin := zec.New("zec", zec.NewMulti(zecMainnetCSClient), logger)
 	zecMainnetPlugin := zec.New("zec-testnet", zecTestnetFNClient, logger)
 	apiKeys := map[string]string{
