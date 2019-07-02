@@ -12,16 +12,23 @@ jobs:
       - restore_cache: # Restore saved cache if no changes are detected since last run
           key: go-mod-v1-{{ checksum "go.sum" }}
       - run:
-          name: Run tests
+          name: Install dependencies
           command: |
-            # install ganache-cli
-            curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            sudo npm install -g ganache-cli
             # install go deps
             go get -u github.com/onsi/ginkgo/ginkgo
             go get -u github.com/loongy/covermerge
             go get -u github.com/mattn/goveralls
+            # install ganache-cli
+            curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            sudo npm install -g ganache-cli
+      - run:
+          name: Start ganache server
+          command: |
+            ./start_ganache.sh
+      - run:
+          name: Run tests
+          command: |
             # make sure all the tests pass
             go test -v ./...
             # all the tests passed so update coverage
