@@ -49,6 +49,10 @@ var _ = Describe("eth account", func() {
 		It("can transfer funds", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
+			ownerBal, err := Account.Balance(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("owner balance: %v", ownerBal)
+			Expect(ownerBal.Gte(amount)).Should(BeTrue())
 			gasLimit := uint64(30000)
 			gasPrice, err := Client.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())

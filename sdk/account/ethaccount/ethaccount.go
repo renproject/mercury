@@ -15,6 +15,7 @@ type Account interface {
 	CreateUTX(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.UTX, error)
 	SignUTX(ctx context.Context, utx ethtypes.UTX) (ethtypes.STX, error)
 	Address() ethtypes.Address
+	Balance(ctx context.Context) (ethtypes.Amount, error)
 }
 
 type account struct {
@@ -60,6 +61,10 @@ func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.Address, v
 		return nil, err
 	}
 	return acc.client.CreateUTX(nonce, toAddress, value, gasLimit, gasPrice, data), nil
+}
+
+func (acc *account) Balance(ctx context.Context) (ethtypes.Amount, error) {
+	return acc.client.Balance(ctx, acc.Address())
 }
 
 func (acc *account) SignUTX(ctx context.Context, utx ethtypes.UTX) (ethtypes.STX, error) {
