@@ -38,13 +38,13 @@ func main() {
 		"dcc":      os.Getenv("INFURA_KEY_DCC"),
 	}
 	// Infura Mainnet
-	ethMainnetProxy, err := proxy.NewInfuraProxy(ethtypes.EthMainnet, infuraAPIKey, taggedKeys)
+	ethMainnetProxy, err := proxy.NewInfuraProxy(ethtypes.Mainnet, infuraAPIKey, taggedKeys)
 	if err != nil {
 		panic(err)
 	}
 	ethMainnetBackend := api.NewEthBackend(ethMainnetProxy, logger)
 	// Infura Kovan
-	ethKovanProxy, err := proxy.NewInfuraProxy(ethtypes.EthKovan, infuraAPIKey, taggedKeys)
+	ethKovanProxy, err := proxy.NewInfuraProxy(ethtypes.Kovan, infuraAPIKey, taggedKeys)
 	if err != nil {
 		panic(err)
 	}

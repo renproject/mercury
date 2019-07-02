@@ -31,7 +31,7 @@ func (eth *EthBackend) AddHandler(r *mux.Router) {
 func (eth *EthBackend) addNetworkPrefix(route string) string {
 	var prefix string
 	switch eth.proxy.Network() {
-	case ethtypes.EthKovan:
+	case ethtypes.Kovan:
 		prefix = "eth-kovan"
 	default:
 		prefix = "eth"

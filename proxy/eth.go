@@ -10,24 +10,24 @@ import (
 
 // EthProxy proxies the request to different bitcoin clients.
 type EthProxy interface {
-	Network() ethtypes.EthNetwork
+	Network() ethtypes.Network
 	HandleRequest(r *http.Request) (*http.Response, error)
 }
 
 type infuraProxy struct {
-	network    ethtypes.EthNetwork
+	network    ethtypes.Network
 	url        string
 	apiKey     string
 	taggedKeys map[string]string
 }
 
 // NewInfuraProxy returns a new infuraProxy which implements the EthProxy interface
-func NewInfuraProxy(network ethtypes.EthNetwork, apiKey string, taggedKeys map[string]string) (EthProxy, error) {
+func NewInfuraProxy(network ethtypes.Network, apiKey string, taggedKeys map[string]string) (EthProxy, error) {
 	var infuraNetwork string
 	switch network {
-	case ethtypes.EthMainnet:
+	case ethtypes.Mainnet:
 		infuraNetwork = "mainnet"
-	case ethtypes.EthKovan:
+	case ethtypes.Kovan:
 		infuraNetwork = "kovan"
 	default:
 		return &infuraProxy{}, types.ErrUnknownNetwork
@@ -40,7 +40,7 @@ func NewInfuraProxy(network ethtypes.EthNetwork, apiKey string, taggedKeys map[s
 	}, nil
 }
 
-func (eth *infuraProxy) Network() ethtypes.EthNetwork {
+func (eth *infuraProxy) Network() ethtypes.Network {
 	return eth.network
 }
 
