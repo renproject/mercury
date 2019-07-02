@@ -156,7 +156,7 @@ func chainsoUrl(network btctypes.Network, query string, params ...string) string
 	var net string
 	switch network {
 	case btctypes.Mainnet:
-		net = "BTC"
+		net = "Bitcoin"
 	case btctypes.Testnet:
 		net = "BTCTEST"
 	default:
@@ -188,12 +188,12 @@ func validateChainsoResponse(resp *http.Response, data interface{}) error {
 	return json.Unmarshal(chainsoResp.Data, &data)
 }
 
-// parseChainsoValue parses the bitcoin amount returned by chain.so API to `btctypes.Value` (BTC -> Satoshi)
-func parseChainsoValue(value string) (btctypes.Value, error) {
+// parseChainsoValue parses the bitcoin amount returned by chain.so API to `btctypes.Amount` (Bitcoin -> Satoshi)
+func parseChainsoValue(value string) (btctypes.Amount, error) {
 	valueFloat, err := strconv.ParseFloat(value, 10)
 	if err != nil {
 		return 0, err
 	}
 	valueInSat := valueFloat * math.Pow10(8)
-	return btctypes.Value(valueInSat), nil
+	return btctypes.Amount(valueInSat), nil
 }

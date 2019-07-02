@@ -9,6 +9,7 @@
 
 # Test binary, built with `go test -c`
 *.test
+*.coverprofile
 
 # Environment variables for local tests
 .env
@@ -22,3 +23,7 @@
 # IDE
 .idea
 .vscode
+
+/ip4/54.221.29.240/tcp/18514/ren/8MKKBjzisaHtKvxpQw5zDq1tUhtwgw,/ip4/34.213.51.170/tcp/18514/ren/8MGfDYvgYsJKqBFktrwnk5sG9xgiEn,/ip4/34.205.143.11/tcp/18514/ren/8MGUF8iuyovwCksjVYWHwpbGVAAsSK,/ip4/99.79.61.64/tcp/18514/ren/8MK1Kg1RdwFqFxpjgUonpQZSKoDZB3,/ip4/35.154.42.26/tcp/18514/ren/8MKbd4zm2ouSv1UvsUTPDZgoFA2cwT,/ip4/34.220.215.156/tcp/18514/ren/8MGPt7PTeG3gQvFSZCVaX62vyoWYDK,/ip4/18.196.15.243/tcp/18514/ren/8MJiYT1nMbAiFWQ7o3p36mcVuXWc5X,/ip4/18.231.179.161/tcp/18514/ren/8MGeQsjk54LXTBz55Tv4MCDQs3cMGs,
+
+/ip4/54.221.29.240/tcp/18514/ren/8MJF6WEFR5SM7g652Uj52LH5GAfgGE,/ip4/34.213.51.170/tcp/18514/ren/8MJFpCbi2jkVMLu4LdLywCPKuLdYFu,/ip4/34.205.143.11/tcp/18514/ren/8MHAgaq5NcujBZy1SayoG1DtbjF8pH,/ip4/99.79.61.64/tcp/18514/ren/8MJyd8wXBvC8xoinLxECskbUgMVrBy,/ip4/35.154.42.26/tcp/18514/ren/8MJRT4E1yS1HN2JwZt9DRFkwCGuzcV,/ip4/34.220.215.156/tcp/18514/ren/8MJ5yefA76JSeu4c7mSP5UBevuXr3N,/ip4/18.196.15.243/tcp/18514/ren/8MHgw9WH3KAqwRv8GHHpBsdBai9Nw9,/ip4/18.231.179.161/tcp/18514/ren/8MKJXQrye3EG5PEEwVebkaRXBUCn9g

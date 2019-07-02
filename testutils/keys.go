@@ -32,7 +32,7 @@ func LoadHdWalletFromEnv(mnemonicEnv, passphraseEnv string) (HdKey, error) {
 		return HdKey{}, ErrInvalidMnemonic
 	}
 	seed := bip39.NewSeed(mnemonic, passphrase)
-	key, err := hdkeychain.NewMaster(seed, &chaincfg.MainNetParams)
+	key, err := hdkeychain.NewMaster(seed, &chaincfg.TestNet3Params)
 	return HdKey{
 		ExtendedKey: key,
 	}, err
@@ -41,7 +41,7 @@ func LoadHdWalletFromEnv(mnemonicEnv, passphraseEnv string) (HdKey, error) {
 // LoadHdWallet generates a HdKey from the given mnemonic and passphrase.
 func LoadHdWallet(mnemonic, passphrase string) (HdKey, error) {
 	seed := bip39.NewSeed(mnemonic, passphrase)
-	key, err := hdkeychain.NewMaster(seed, &chaincfg.MainNetParams)
+	key, err := hdkeychain.NewMaster(seed, &chaincfg.TestNet3Params)
 	return HdKey{
 		ExtendedKey: key,
 	}, err
@@ -89,7 +89,10 @@ func GenerateSignedTx(network btctypes.Network, key *ecdsa.PrivateKey, destinati
 		return nil, err
 	}
 
-	addresspubkey, _ := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeUncompressed(), &chaincfg.MainNetParams)
+	addresspubkey, err := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeUncompressed(), &chaincfg.MainNetParams)
+	if err != nil {
+		return nil, err
+	}
 	sourceTx := wire.NewMsgTx(wire.TxVersion)
 	sourceUtxoHash, _ := chainhash.NewHashFromStr(txHash)
 	sourceUtxo := wire.NewOutPoint(sourceUtxoHash, 0)

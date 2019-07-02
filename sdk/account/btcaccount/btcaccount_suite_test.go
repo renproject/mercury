@@ -1,4 +1,4 @@
-package btcclient_test
+package btcaccount_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestBtcClient(t *testing.T) {
+func TestBtcaccount(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Client Suite")
+	RunSpecs(t, "Btcaccount Suite")
 }

@@ -2,29 +2,32 @@ package btctypes
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/types"
 )
 
-//
-type Value int64
+// Amount represents bitcoin value in Satoshi (1e-8 Bitcoin).
+type Amount int64
 
 const (
-	Satoshi Value = 1
-	BTC           = 100000000 * Satoshi
+	Satoshi Amount = 1
+	Bitcoin        = 1e8 * Satoshi
 )
 
+// Network params for different networks.
 var (
 	TestNet3Params = &chaincfg.TestNet3Params
 
 	MainNetParams = &chaincfg.MainNetParams
 )
 
-//
+// Network of Ethereum blockchain.
 type Network uint8
 
 const (
@@ -69,7 +72,9 @@ func (network Network) String() string {
 	}
 }
 
-//
+// Addr is an interface type for any type of destination a transaction output may spend to. This includes pay-to-pubkey
+// (P2PK), pay-to-pubkey-hash (P2PKH), and pay-to-script-hash (P2SH). Address is designed to be generic enough that
+// other kinds of addresses may be added in the future without changing the decoding and encoding API.
 type Addr btcutil.Address
 
 // AddressFromBase58String decodes the base58 encoding bitcoin address to a `Addr`.
@@ -94,105 +99,22 @@ func SerializePublicKey(pubKey *ecdsa.PublicKey, network Network) []byte {
 	}
 }
 
+// RandAddressPubKey returns a random Addr on given network.
+func RandAddressPubKey(network Network) (Addr, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return AddressFromPubKey(&key.PublicKey,network)
+}
+
 type UTXO struct {
 	TxHash       string `json:"txHash"`
-	Amount       Value  `json:"amount"`
+	Amount       Amount `json:"amount"`
 	ScriptPubKey string `json:"scriptPubKey"`
 	Vout         uint32 `json:"vout"`
 }
 
-type PreviousOut struct {
-	TransactionHash  string `json:"hash"`
-	Value            uint64 `json:"value"`
-	TransactionIndex uint64 `json:"tx_index"`
-	VoutNumber       uint8  `json:"n"`
-	Address          string `json:"addr"`
-}
 
-type Input struct {
-	PrevOut PreviousOut `json:"prev_out"`
-	Script  string      `json:"script"`
-}
-
-type Output struct {
-	Value           uint64 `json:"value"`
-	TransactionHash string `json:"hash"`
-	Script          string `json:"script"`
-}
-
-type Transaction struct {
-	TransactionHash  string   `json:"hash"`
-	Version          uint8    `json:"ver"`
-	VinSize          uint32   `json:"vin_sz"`
-	VoutSize         uint32   `json:"vout_sz"`
-	Size             int64    `json:"size"`
-	RelayedBy        string   `json:"relayed_by"`
-	BlockHeight      int64    `json:"block_height"`
-	TransactionIndex uint64   `json:"tx_index"`
-	Inputs           []Input  `json:"inputs"`
-	Outputs          []Output `json:"out"`
-}
-
-type Block struct {
-	BlockHash         string        `json:"hash"`
-	Version           uint8         `json:"ver"`
-	PreviousBlockHash string        `json:"prev_block"`
-	MerkleRoot        string        `json:"mrkl_root"`
-	Time              int64         `json:"time"`
-	Bits              int64         `json:"bits"`
-	Nonce             int64         `json:"nonce"`
-	TransactionCount  int           `json:"n_tx"`
-	Size              int64         `json:"size"`
-	BlockIndex        uint64        `json:"block_index"`
-	MainChain         bool          `json:"main_chain"`
-	Height            int64         `json:"height"`
-	ReceivedTime      int64         `json:"received_time"`
-	RelayedBy         string        `json:"relayed_by"`
-	Transactions      []Transaction `json:"tx"`
-}
-
-type Blocks struct {
-	Blocks []Block `json:"block"`
-}
-
-type SingleAddress struct {
-	Address      string        `json:"address"`
-	Received     int64         `json:"total_received"`
-	Sent         int64         `json:"total_sent"`
-	Balance      int64         `json:"final_balance"`
-	Transactions []Transaction `json:"txs"`
-}
-
-type Address struct {
-	PublicKeyHash    string `json:"hash160"`
-	Address          string `json:"address"`
-	TransactionCount int64  `json:"n_tx"`
-	Received         int64  `json:"total_received"`
-	Sent             int64  `json:"total_sent"`
-	Balance          int64  `json:"final_balance"`
-}
-
-type MultiAddress struct {
-	Addresses    []Address     `json:"addresses"`
-	Transactions []Transaction `json:"txs"`
-}
-
-type UnspentOutput struct {
-	TransactionAge          string `json:"tx_age"`
-	TransactionHash         string `json:"tx_hash_big_endian"`
-	TransactionIndex        uint32 `json:"tx_index"`
-	TransactionOutputNumber uint32 `json:"tx_output_n"`
-	ScriptPubKey            string `json:"script"`
-	Amount                  int64  `json:"value"`
-}
-
-type Unspent struct {
-	Outputs []UnspentOutput `json:"unspent_outputs"`
-}
-
-type LatestBlock struct {
-	Hash       string `json:"hash"`
-	Time       int64  `json:"time"`
-	BlockIndex int64  `json:"block_index"`
-	Height     int64  `json:"height"`
-}
+type Signature btcec.Signature
