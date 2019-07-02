@@ -56,13 +56,13 @@ var _ = Describe("eth client", func() {
 	})
 
 	/*
-		testAddress := func(network ethtypes.EthNetwork) ethtypes.Address {
+		testAddress := func(network ethtypes.Network) ethtypes.Address {
 			var address ethtypes.Address
 			var err error
 			switch network {
-			case ethtypes.EthMainnet:
+			case ethtypes.Mainnet:
 				address = ethtypes.HexStringToAddress("0xF02c1c8e6114b1Dbe8937a39260b5b0a374432bB")
-			case ethtypes.EthKovan:
+			case ethtypes.Kovan:
 				address = ethtypes.HexStringToAddress("0xec58d8b8c3cc568e247fcf2dc96d221bac548dfc")
 			default:
 				Fail("unknown network")
@@ -71,7 +71,7 @@ var _ = Describe("eth client", func() {
 			return address
 		}
 
-		for _, network := range []ethtypes.EthNetwork{ethtypes.EthMainnet, ethtypes.EthKovan} {
+		for _, network := range []ethtypes.Network{ethtypes.Mainnet, ethtypes.Kovan} {
 			network := network
 			Context(fmt.Sprintf("when querying info of ethereum %s", network), func() {
 				It("should return a non-zero balance", func() {

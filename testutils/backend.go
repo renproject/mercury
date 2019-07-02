@@ -21,7 +21,7 @@ import (
 // PORT defines the port to run the Ganache server on
 const PORT = 8545
 
-func CreateSimulatedEthNetwork() (*bind.TransactOpts, *backends.SimulatedBackend, error) {
+func CreateSimulatedNetwork() (*bind.TransactOpts, *backends.SimulatedBackend, error) {
 	key, err := crypto.GenerateKey()
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot generate private key: %v", err)
