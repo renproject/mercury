@@ -26,6 +26,7 @@ jobs:
           name: Start ganache server
           command: |
             ./start_ganache.sh
+          background: true
       - run:
           name: Run tests
           command: |
