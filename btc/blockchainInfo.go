@@ -209,7 +209,7 @@ func (client *blockchainInfoClient) GetRawTransaction(ctx context.Context, txhas
 	return transaction, err
 }
 
-func (client *blockchainInfoClient) Confirmations(ctx context.Context, txhash string) (int64, error) {
+func (client *blockchainInfoClient) Confirmations(ctx context.Context, txhash string) (uint64, error) {
 	tx, err := client.GetRawTransaction(ctx, txhash)
 	if err != nil {
 		return 0, err
@@ -219,7 +219,7 @@ func (client *blockchainInfoClient) Confirmations(ctx context.Context, txhash st
 		if err != nil {
 			return 0, err
 		}
-		return 1 + (latest.Height - tx.BlockHeight), nil
+		return 1 + uint64(latest.Height-tx.BlockHeight), nil
 	}
 	return 0, nil
 }

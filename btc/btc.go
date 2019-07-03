@@ -51,7 +51,7 @@ type BitcoinClient interface {
 	Health() bool
 	GetUTXO(ctx context.Context, txHash string, vout int64) (UTXO, error)
 	GetUTXOs(ctx context.Context, address string, limit, confitmations int) ([]UTXO, error)
-	Confirmations(ctx context.Context, txHashStr string) (int64, error)
+	Confirmations(ctx context.Context, txHashStr string) (uint64, error)
 	ScriptFunded(ctx context.Context, address string, value int64) (bool, int64, error)
 	ScriptRedeemed(ctx context.Context, address string, value int64) (bool, int64, error)
 	ScriptSpent(ctx context.Context, scriptAddress, spenderAddress string) (bool, string, error)
@@ -183,12 +183,20 @@ func (btc *fullnodeClient) GetUTXO(_ context.Context, txHash string, vout int64)
 	}, nil
 }
 
-func (btc *fullnodeClient) Confirmations(_ context.Context, txHashStr string) (int64, error) {
+func (btc *fullnodeClient) Confirmations(_ context.Context, txHashStr string) (uint64, error) {
 	txHash, err := chainhash.NewHashFromStr(txHashStr)
 	if err != nil {
 		return 0, err
 	}
-	tx, err := btc.client.GetTransaction(txHash)
+	txRaw, err := btc.client.GetRawTransaction(txHash)
+	if err != nil {
+		return 0, err
+	}
+
+	buffer := new(bytes.Buffer)
+	txRaw.MsgTx().Serialize(buffer)
+
+	tx, err := btc.client.DecodeRawTransaction(buffer.Bytes())
 	if err != nil {
 		return 0, err
 	}

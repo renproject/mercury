@@ -35,7 +35,7 @@ func (btc *multiClient) GetUTXOs(ctx context.Context, address string, limit, con
 	return []UTXO{}, fmt.Errorf("no clients provided")
 }
 
-func (btc *multiClient) Confirmations(ctx context.Context, txHashStr string) (int64, error) {
+func (btc *multiClient) Confirmations(ctx context.Context, txHashStr string) (uint64, error) {
 	for i, client := range btc.clients {
 		if conf, err := client.Confirmations(ctx, txHashStr); err == nil || i+1 == len(btc.clients) {
 			return conf, err

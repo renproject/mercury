@@ -157,8 +157,8 @@ func (client chainSoClient) OmniGetBalance(token int64, address string) (OmniGet
 	return OmniGetBalanceResponse{}, fmt.Errorf("chain.so api doesnot support omnilayer")
 }
 
-func (client chainSoClient) Confirmations(ctx context.Context, txHashStr string) (int64, error) {
-	return 0, fmt.Errorf("TODO: chain.so api doesnot support omnilayer")
+func (client chainSoClient) Confirmations(ctx context.Context, txHashStr string) (uint64, error) {
+	return 0, fmt.Errorf("TODO: chain.so api doesnot support confirmations")
 }
 
 func (client chainSoClient) GetRawAddressInformation(ctx context.Context, addr string) (RawAddress, error) {
