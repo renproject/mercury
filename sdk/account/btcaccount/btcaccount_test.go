@@ -18,9 +18,8 @@ var _ = Describe("btc account ", func() {
 	Context("when generating a random account", func() {
 		It("should have a zero balance", func() {
 			client := btcclient.NewBtcClient(btctypes.Testnet)
-			account, randomKey, err := RandomAccount(logrus.StandardLogger(), client)
+			account, err := RandomAccount(logrus.StandardLogger(), client)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(randomKey).NotTo(BeNil())
 			balance, err := account.Balance(context.Background())
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("address: %v has balance: %v\n", account.Address().EncodeAddress(), balance)
@@ -45,9 +44,8 @@ var _ = Describe("btc account ", func() {
 			Expect(balance > 0).Should(BeTrue())
 
 			// Create a random account to receive the funds
-			toAccount, randomKey, err := RandomAccount(logrus.StandardLogger(), client)
+			toAccount, err := RandomAccount(logrus.StandardLogger(), client)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(randomKey).NotTo(BeNil())
 			amount := 180000 * btctypes.SAT
 			fee := 10000 * btctypes.SAT
 			err = account.Transfer(context.Background(), toAccount.Address(), amount, fee)
