@@ -88,7 +88,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	}
 
 	// Check if we have enough funds
-	balance, err := acc.Client.Balance(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
+	balance, err := acc.Balance(ctx)
 	if err != nil {
 		return err
 	}
