@@ -23,6 +23,7 @@ func ErrInsufficientBalance(expect, have string) error {
 
 type Account interface {
 	Address() btctypes.Address
+	PrivateKey() *ecdsa.PrivateKey
 	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) error
 	Balance(ctx context.Context) (value btctypes.Amount, err error)
 	UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error)
@@ -76,6 +77,11 @@ func RandomAccount(logger logrus.FieldLogger, client *btcclient.Client) (Account
 // Address returns the Address of the account
 func (acc *account) Address() btctypes.Address {
 	return acc.address
+}
+
+// Address returns the Address of the account
+func (acc *account) PrivateKey() *ecdsa.PrivateKey {
+	return acc.key
 }
 
 // Transfer transfer certain amount value to the target address.
