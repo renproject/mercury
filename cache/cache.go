@@ -38,11 +38,14 @@ func (cache *Cache) Get(hash string, f func() ([]byte, error)) ([]byte, error) {
 	if !ok {
 		mu := new(sync.RWMutex)
 		mu.Lock()
+		defer mu.Unlock()
+		defer cache.locks.Delete(hash)
+
+		// Store mutex.
 		cache.locks.Store(hash, mu)
 
 		data, err := f()
 		if err != nil {
-			mu.RUnlock()
 			return nil, err
 		}
 
@@ -50,8 +53,6 @@ func (cache *Cache) Get(hash string, f func() ([]byte, error)) ([]byte, error) {
 			cache.logger.Errorf("cannot store response data: %v", err)
 		}
 
-		cache.locks.Delete(hash)
-		mu.Unlock()
 		return data, nil
 	}
 
