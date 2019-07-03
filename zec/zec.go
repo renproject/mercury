@@ -1,7 +1,6 @@
 package zec
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math"
@@ -174,15 +173,7 @@ func (zec *fnClient) GetUTXO(txHash string, vout int64) (UTXO, error) {
 		return UTXO{}, err
 	}
 
-	txRaw, err := zec.client.GetRawTransaction(hash)
-	if err != nil {
-		return UTXO{}, err
-	}
-
-	buffer := new(bytes.Buffer)
-	txRaw.MsgTx().Serialize(buffer)
-
-	tx, err := zec.client.DecodeRawTransaction(buffer.Bytes())
+	tx,err := zec.client.GetRawTransactionVerbose(hash)
 	if err != nil {
 		return UTXO{}, err
 	}
