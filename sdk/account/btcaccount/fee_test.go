@@ -1,6 +1,7 @@
 package btcaccount_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -13,23 +14,24 @@ import (
 var _ = Describe("bitcoin tx fee", func() {
 	Context("when getting tx fee of different speed tier", func() {
 		It("should return the live data", func() {
-			logger:= logrus.StandardLogger()
-			fee := NewBitcoinFee(logger, 5 * time.Second)
+			logger := logrus.StandardLogger()
+			fee := NewBitcoinGas(logger, 5*time.Second)
 
-			fastFee := fee.RecommendedTxFee(Fast)
-			Expect(fastFee).Should(BeNumerically(">", 1))
-			logger.Infof("fast fee = %v sat/byte", fastFee)
+			ctx := context.Background()
+			fastGas := fee.GasRequired(ctx, Fast)
+			Expect(fastGas).Should(BeNumerically(">", 1))
+			logger.Infof("fast fee = %v sat/byte", fastGas)
 
-			standardFee := fee.RecommendedTxFee(Standard)
-			Expect(standardFee).Should(BeNumerically(">", 1))
-			logger.Infof("standard fee = %v sat/byte", standardFee)
+			standardGas := fee.GasRequired(ctx, Standard)
+			Expect(standardGas).Should(BeNumerically(">", 1))
+			logger.Infof("standard fee = %v sat/byte", standardGas)
 
-			slowFee := fee.RecommendedTxFee(Slow)
-			Expect(slowFee).Should(BeNumerically(">", 1))
-			logger.Infof("slow fee = %v sat/byte", slowFee)
+			slowGas := fee.GasRequired(ctx, Slow)
+			Expect(slowGas).Should(BeNumerically(">", 1))
+			logger.Infof("slow fee = %v sat/byte", slowGas)
 
-			Expect(fastFee >= standardFee).Should(BeTrue())
-			Expect(standardFee >= slowFee).Should(BeTrue())
+			Expect(fastGas >= standardGas).Should(BeTrue())
+			Expect(standardGas >= slowGas).Should(BeTrue())
 		})
 	})
 })

@@ -26,12 +26,13 @@ const (
 	MinConfirmations = 0
 	MaxConfirmations = 99
 
-	MainnetMercuryURL = "https://ren-mercury.herokuapp.com/btc"
-	TestnetMercuryURL = "https://ren-mercury.herokuapp.com/btc-testnet3"
+	MainnetMercuryURL = "http://139.59.221.34/btc"
+	TestnetMercuryURL = "http://139.59.221.34/btc-testnet3"
 )
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
 // through Mercury server.
+// FIXME: Make Client an interface
 type Client struct {
 	Network btctypes.Network
 
@@ -103,7 +104,7 @@ func (client *Client) UTXOs(ctx context.Context, address btctypes.Address, limit
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
-func (client *Client) Confirmations(ctx context.Context, hash string) (int64, error) {
+func (client *Client) Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error) {
 	url := fmt.Sprintf("%v/confirmations/%v", client.url, hash)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -128,7 +129,12 @@ func (client *Client) Confirmations(ctx context.Context, hash string) (int64, er
 		return 0, err
 	}
 
-	return strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64)
+	confirmations, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return btctypes.Confirmations(confirmations), nil
 }
 
 func (client *Client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error) {
@@ -172,18 +178,31 @@ func (client *Client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btcty
 	return btctypes.NewUnsignedTx(client.Network, newTx, sigHashes), nil
 }
 
-// SubmitSTX submits the signed transactions
-func (client *Client) SubmitSTX(ctx context.Context, stx btctypes.Tx) error {
+type PostTransactionRequest struct {
+	SignedTransaction string `json:"stx"`
+}
+
+// SubmitSignedTx submits the signed transactions
+func (client *Client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
 	// Pre-condition checks
 	if !stx.IsSigned() {
 		panic("pre-condition violation: cannot submit unsigned transaction")
 	}
 
-	buf := bytes.NewBuffer(stx.Serialize())
+	req := PostTransactionRequest{
+		SignedTransaction: hex.EncodeToString(stx.Serialize()),
+	}
+
+	// reqBytes = stx.Serialize()
+	reqBytes, err := json.Marshal(req)
+
+	fmt.Println(string(reqBytes))
+	buf := bytes.NewBuffer(reqBytes)
 	url := fmt.Sprintf("%v/tx", client.url)
+	fmt.Printf("sending post request to: %v\n", url)
 	request, err := http.NewRequest("POST", url, buf)
 	if err != nil {
-		return err
+		return fmt.Errorf("error building 'submit signed transaction' http request: %v", err)
 	}
 	request.WithContext(ctx)
 
@@ -191,15 +210,21 @@ func (client *Client) SubmitSTX(ctx context.Context, stx btctypes.Tx) error {
 	httpClient := &http.Client{}
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return err
+		return fmt.Errorf("error executing 'submit signed transaction' http request: %v", err)
 	}
+	defer response.Body.Close()
 
+	expectedStatusCode := http.StatusCreated
 	// Check the response code and decode the response.
-	if response.StatusCode != http.StatusOK {
-		return types.UnexpectedStatusCode(http.StatusOK, response.StatusCode)
+	if response.StatusCode != expectedStatusCode {
+		body, err := ioutil.ReadAll(response.Body)
+		fmt.Printf("body: %v", string(body))
+		if err != nil {
+			return fmt.Errorf("error reading http response body: %v", err)
+		}
+		return types.NewErrHTTPResponse(expectedStatusCode, response.StatusCode, body)
 	}
 
-	// todo : Check the response
 	return nil
 }
 

@@ -201,3 +201,7 @@ type Recipient struct {
 	Address Address
 	Amount  Amount
 }
+
+type TxHash string
+
+type Confirmations int64
