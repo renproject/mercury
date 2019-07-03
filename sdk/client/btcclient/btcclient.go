@@ -178,18 +178,31 @@ func (client *Client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btcty
 	return btctypes.NewUnsignedTx(client.Network, newTx, sigHashes), nil
 }
 
-// SubmitSTX submits the signed transactions
-func (client *Client) SubmitSTX(ctx context.Context, stx btctypes.Tx) error {
+type PostTransactionRequest struct {
+	SignedTransaction string `json:"stx"`
+}
+
+// SubmitSignedTx submits the signed transactions
+func (client *Client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
 	// Pre-condition checks
 	if !stx.IsSigned() {
 		panic("pre-condition violation: cannot submit unsigned transaction")
 	}
 
-	buf := bytes.NewBuffer(stx.Serialize())
+	req := PostTransactionRequest{
+		SignedTransaction: hex.EncodeToString(stx.Serialize()),
+	}
+
+	// reqBytes = stx.Serialize()
+	reqBytes, err := json.Marshal(req)
+
+	fmt.Println(string(reqBytes))
+	buf := bytes.NewBuffer(reqBytes)
 	url := fmt.Sprintf("%v/tx", client.url)
+	fmt.Printf("sending post request to: %v\n", url)
 	request, err := http.NewRequest("POST", url, buf)
 	if err != nil {
-		return err
+		return fmt.Errorf("error building 'submit signed transaction' http request: %v", err)
 	}
 	request.WithContext(ctx)
 
@@ -197,15 +210,21 @@ func (client *Client) SubmitSTX(ctx context.Context, stx btctypes.Tx) error {
 	httpClient := &http.Client{}
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return err
+		return fmt.Errorf("error executing 'submit signed transaction' http request: %v", err)
 	}
+	defer response.Body.Close()
 
+	expectedStatusCode := http.StatusCreated
 	// Check the response code and decode the response.
-	if response.StatusCode != http.StatusOK {
-		return types.UnexpectedStatusCode(http.StatusOK, response.StatusCode)
+	if response.StatusCode != expectedStatusCode {
+		body, err := ioutil.ReadAll(response.Body)
+		fmt.Printf("body: %v", string(body))
+		if err != nil {
+			return fmt.Errorf("error reading http response body: %v", err)
+		}
+		return types.NewErrHTTPResponse(expectedStatusCode, response.StatusCode, body)
 	}
 
-	// todo : Check the response
 	return nil
 }
 

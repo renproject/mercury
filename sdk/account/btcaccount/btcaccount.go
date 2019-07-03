@@ -106,5 +106,5 @@ func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	log.Print("stx = ", hex.EncodeToString(tx.Serialize()))
 
 	// Submit the signed tx
-	return acc.Client.SubmitSTX(ctx, tx)
+	return acc.Client.SubmitSignedTx(ctx, tx)
 }

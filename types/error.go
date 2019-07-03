@@ -6,6 +6,35 @@ import (
 	"github.com/pkg/errors"
 )
 
+type ErrUnexpectedNetwork struct {
+	error
+
+	GotNetwork string
+}
+
+func NewErrUnexpectedNetwork(gotNetwork string) error {
+	return ErrUnexpectedNetwork{
+		error: fmt.Errorf("unexpected network error. network=%v", gotNetwork),
+	}
+}
+
+type ErrHTTPResponse struct {
+	error
+
+	ExpectedStatusCode int
+	GotStatusCode      int
+	GotBody            []byte
+}
+
+func NewErrHTTPResponse(expectedStatusCode, gotStatusCode int, gotBody []byte) error {
+	return ErrHTTPResponse{
+		error:              fmt.Errorf("bad http response: expected status=%v got status=%v\nbody: %v", expectedStatusCode, gotStatusCode, string(gotBody)),
+		ExpectedStatusCode: expectedStatusCode,
+		GotStatusCode:      gotStatusCode,
+		GotBody:            gotBody,
+	}
+}
+
 // UnexpectedStatusCode returns an meaning error to be returned when getting unexpected status code.
 func UnexpectedStatusCode(expected, got int) error {
 	return fmt.Errorf("unexpected status code, expect %v, got %v", expected, got)
