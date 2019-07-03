@@ -16,12 +16,15 @@ import (
 	"github.com/renproject/mercury/types/btctypes"
 )
 
-var (
+const (
 	// DefaultLimit is the default limit when querying utxos and balances.
 	DefaultLimit = 999999
 
 	// DefaultConfirmations is the default confirmations when querying utxos and balances.
 	DefaultConfirmations = 0
+
+	MainnetMercuryURL = "https://ren-mercury.herokuapp.com/btc"
+	TestnetMercuryURL = "https://ren-mercury.herokuapp.com/btc-testnet3"
 )
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
@@ -40,13 +43,13 @@ func NewBtcClient(network btctypes.Network) *Client {
 		return &Client{
 			Network: network,
 			config:  chaincfg.MainNetParams,
-			url:     "https://ren-mercury.herokuapp.com/btc",
+			url:     MainnetMercuryURL,
 		}
 	case btctypes.Testnet:
 		return &Client{
 			Network: network,
 			config:  chaincfg.TestNet3Params,
-			url:     "https://ren-mercury.herokuapp.com/btc-testnet3",
+			url:     TestnetMercuryURL,
 		}
 	default:
 		panic("unknown bitcoin network")
