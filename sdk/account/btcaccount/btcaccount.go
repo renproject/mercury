@@ -22,6 +22,7 @@ func ErrInsufficientBalance(expect, have string) error {
 type Account interface {
 	Address() btctypes.Address
 	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error
+	Balance(ctx context.Context) (value btctypes.Amount, err error)
 }
 
 // account is a bitcoin wallet which can transfer funds and building tx.
@@ -67,6 +68,11 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 // Address returns the Address of the account
 func (acc *account) Address() btctypes.Address {
 	return acc.address
+}
+
+// Transfer transfer certain amount value to the target address.
+func (acc *account) Balance(ctx context.Context) (value btctypes.Amount, err error) {
+	return acc.Client.Balance(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 }
 
 // Transfer transfer certain amount value to the target address.
