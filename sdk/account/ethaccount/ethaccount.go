@@ -27,7 +27,7 @@ type account struct {
 
 func NewAccountFromPrivateKey(client ethclient.EthClient, key *ecdsa.PrivateKey) (Account, error) {
 	addressString := crypto.PubkeyToAddress(key.PublicKey).Hex()
-	address := ethtypes.HexStringToAddress(addressString)
+	address := ethtypes.AddressFromHex(addressString)
 	return &account{
 		client:  client,
 		address: address,

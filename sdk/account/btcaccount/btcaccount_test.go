@@ -23,9 +23,9 @@ var _ = Describe("btc account ", func() {
 			Expect(err).NotTo(HaveOccurred())
 			account := NewAccount(logrus.StandardLogger(), client, key)
 
-			to, err := btctypes.AddressFromBase58String("mhM9V7ENbJPpRnTGpVhNiHf631pzX2be74", btctypes.Testnet)
+			to, err := btctypes.AddressFromBase58("mhM9V7ENbJPpRnTGpVhNiHf631pzX2be74", btctypes.Testnet)
 			Expect(err).NotTo(HaveOccurred())
-			err = account.Transfer(context.Background(), to, 180000*btctypes.Satoshi, 0)
+			err = account.Transfer(context.Background(), to, 180000*btctypes.SAT, 0)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
