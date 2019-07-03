@@ -13,19 +13,19 @@ import (
 
 type Account interface {
 	CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
-	SignUnsignedTx(ctx context.Context, utx ethtypes.Tx) error
+	SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error
 	Address() ethtypes.Address
 	Balance(ctx context.Context) (ethtypes.Amount, error)
 }
 
 type account struct {
-	client ethclient.EthClient
+	client ethclient.Client
 
 	address ethtypes.Address
 	key     *ecdsa.PrivateKey
 }
 
-func NewAccountFromPrivateKey(client ethclient.EthClient, key *ecdsa.PrivateKey) (Account, error) {
+func NewAccountFromPrivateKey(client ethclient.Client, key *ecdsa.PrivateKey) (Account, error) {
 	addressString := crypto.PubkeyToAddress(key.PublicKey).Hex()
 	address := ethtypes.AddressFromHex(addressString)
 	return &account{
@@ -35,7 +35,7 @@ func NewAccountFromPrivateKey(client ethclient.EthClient, key *ecdsa.PrivateKey)
 	}, nil
 }
 
-func NewAccountFromMnemonic(client ethclient.EthClient, mnemonic, derivationPath string) (Account, error) {
+func NewAccountFromMnemonic(client ethclient.Client, mnemonic, derivationPath string) (Account, error) {
 	// Get the wallet
 	wallet, err := hdwallet.NewFromMnemonic(mnemonic)
 	if err != nil {
@@ -60,7 +60,7 @@ func (acc *account) CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Add
 	if err != nil {
 		return ethtypes.Tx{}, err
 	}
-	return acc.client.CreateUnsignedTx(ctx, nonce, toAddress, value, gasLimit, gasPrice, data)
+	return acc.client.BuildUnsignedTx(ctx, nonce, toAddress, value, gasLimit, gasPrice, data)
 }
 
 func (acc *account) Balance(ctx context.Context) (ethtypes.Amount, error) {
