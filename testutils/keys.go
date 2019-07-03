@@ -83,15 +83,15 @@ func (hdkey HdKey) Address(network btctypes.Network, path ...uint32) (btctypes.A
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.
-func GenerateSignedTx(network btctypes.Network, key *ecdsa.PrivateKey, destination string, amount int64, txHash string) (btctypes.Tx, error) {
+func GenerateSignedTx(network btctypes.Network, key *ecdsa.PrivateKey, destination string, amount int64, txHash string) ([]byte, error) {
 	wif, err := btcutil.NewWIF((*btcec.PrivateKey)(key), network.Params(), network == btctypes.Mainnet)
 	if err != nil {
-		return btctypes.Tx{}, err
+		return nil, err
 	}
 
 	addresspubkey, err := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeUncompressed(), &chaincfg.MainNetParams)
 	if err != nil {
-		return btctypes.Tx{}, err
+		return nil, err
 	}
 	sourceTx := wire.NewMsgTx(wire.TxVersion)
 	sourceUtxoHash, _ := chainhash.NewHashFromStr(txHash)
@@ -100,7 +100,7 @@ func GenerateSignedTx(network btctypes.Network, key *ecdsa.PrivateKey, destinati
 	destinationAddress, err := btcutil.DecodeAddress(destination, &chaincfg.MainNetParams)
 	sourceAddress, err := btcutil.DecodeAddress(addresspubkey.EncodeAddress(), &chaincfg.MainNetParams)
 	if err != nil {
-		return btctypes.Tx{}, err
+		return nil, err
 	}
 	destinationPkScript, _ := txscript.PayToAddrScript(destinationAddress)
 	sourcePkScript, _ := txscript.PayToAddrScript(sourceAddress)
@@ -116,16 +116,16 @@ func GenerateSignedTx(network btctypes.Network, key *ecdsa.PrivateKey, destinati
 	redeemTx.AddTxOut(redeemTxOut)
 	sigScript, err := txscript.SignatureScript(redeemTx, 0, sourceTx.TxOut[0].PkScript, txscript.SigHashAll, wif.PrivKey, false)
 	if err != nil {
-		return btctypes.Tx{}, err
+		return nil, err
 	}
 	redeemTx.TxIn[0].SignatureScript = sigScript
 	flags := txscript.StandardVerifyFlags
 	vm, err := txscript.NewEngine(sourceTx.TxOut[0].PkScript, redeemTx, 0, flags, nil, nil, amount)
 	if err != nil {
-		return btctypes.Tx{}, err
+		return nil, err
 	}
 	if err := vm.Execute(); err != nil {
-		return btctypes.Tx{}, err
+		return nil, err
 	}
 	var unsignedTx bytes.Buffer
 	var signedTx bytes.Buffer
