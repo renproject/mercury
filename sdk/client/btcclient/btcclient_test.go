@@ -66,7 +66,7 @@ var _ = Describe("btc client", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
-				hash := "5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7"
+				hash := btctypes.TxHash("5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7")
 				confirmations, err := client.Confirmations(ctx, hash)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(confirmations).Should(BeNumerically(">", 0))
@@ -92,7 +92,7 @@ var _ = Describe("btc client", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				log.Println("successfully sign the tx,", hex.EncodeToString(stx))
-				Expect(client.SubmitSTX(ctx, stx)).Should(Succeed())
+				Expect(client.SubmitSignedTx(ctx, stx)).Should(Succeed())
 			})
 		})
 	}
