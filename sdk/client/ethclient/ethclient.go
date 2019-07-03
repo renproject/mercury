@@ -44,19 +44,19 @@ func New(network ethtypes.Network) (Client, error) {
 
 // NewCustomClient returns an Client for a specific RPC url
 func NewCustomClient(url string) (Client, error) {
-	client, err := ethclient.Dial(url)
+	ec, err := ethclient.Dial(url)
 	if err != nil {
-		return &client{}, err
+		return nil, err
 	}
 	return &client{
 		url:    url,
-		client: client,
+		client: ec,
 	}, nil
 }
 
 // Balance returns the balance of the given ethereum address.
-func (client *client) Balance(ctx context.Context, address ethtypes.Address) (ethtypes.Amount, error) {
-	value, err := client.client.BalanceAt(ctx, common.Address(address), nil)
+func (c *client) Balance(ctx context.Context, address ethtypes.Address) (ethtypes.Amount, error) {
+	value, err := c.client.BalanceAt(ctx, common.Address(address), nil)
 	if err != nil {
 		return ethtypes.Amount{}, err
 	}
@@ -64,16 +64,16 @@ func (client *client) Balance(ctx context.Context, address ethtypes.Address) (et
 }
 
 // BlockNumber returns the current highest block number.
-func (client *client) BlockNumber(ctx context.Context) (*big.Int, error) {
-	value, err := client.client.HeaderByNumber(ctx, nil)
+func (c *client) BlockNumber(ctx context.Context) (*big.Int, error) {
+	value, err := c.client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	return value.Number, nil
 }
 
-func (client *client) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, error) {
-	price, err := client.client.SuggestGasPrice(ctx)
+func (c *client) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, error) {
+	price, err := c.client.SuggestGasPrice(ctx)
 	if err != nil {
 		return ethtypes.Amount{}, err
 	}
@@ -84,8 +84,8 @@ func (client *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.A
 	return client.client.PendingNonceAt(ctx, common.Address(fromAddress))
 }
 
-func (client *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
-	chainID, err := client.client.NetworkID(ctx)
+func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
+	chainID, err := c.client.NetworkID(ctx)
 	if err != nil {
 		return ethtypes.Tx{}, err
 	}
@@ -93,17 +93,17 @@ func (client *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddre
 }
 
 // PublishSTX publishes a signed transaction
-func (client *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) error {
+func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) error {
 	// Pre-condition checks
 	if !tx.IsSigned() {
 		panic("pre-condition violation: cannot publish unsigned transaction")
 	}
-	return client.client.SendTransaction(ctx, tx.ToTransaction())
+	return c.client.SendTransaction(ctx, tx.ToTransaction())
 }
 
 // BlockNumber returns the gas limit of the latest block.
-func (client *client) GasLimit(ctx context.Context) (uint64, error) {
-	value, err := client.client.HeaderByNumber(ctx, nil)
+func (c *client) GasLimit(ctx context.Context) (uint64, error) {
+	value, err := c.client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
