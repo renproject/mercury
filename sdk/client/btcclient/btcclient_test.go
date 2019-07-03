@@ -84,15 +84,18 @@ var _ = Describe("btc client", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
-				utxos, err := client.UTXOs(ctx, address, 999999, 0)
+				utxos, err := client.UTXOs(ctx, address, MaxUTXOLimit, MinConfirmations)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(BeNumerically(">=", 1))
 
-				stx, err := testutils.GenerateSignedTx(network, key, address.String(), int64(utxos[0].Amount), utxos[0].TxHash)
+				tx, err := client.BuildUnsignedTx(utxos, btctypes.Recipient{Address: address, Amount: utxos[0].Amount})
 				Expect(err).NotTo(HaveOccurred())
 
-				log.Println("successfully sign the tx,", hex.EncodeToString(stx))
-				Expect(client.SubmitSignedTx(ctx, stx)).Should(Succeed())
+				err = tx.Sign(key)
+				Expect(err).NotTo(HaveOccurred())
+
+				log.Println("successfully sign the tx,", hex.EncodeToString(tx.Serialize()))
+				Expect(client.SubmitSignedTx(ctx, tx)).Should(Succeed())
 			})
 		})
 	}
