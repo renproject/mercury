@@ -15,7 +15,7 @@ import (
 )
 
 // ErrInsufficientBalance returns an error which returned when account doesn't have enough funds to make the tx.
-func ErrInsufficientBalance(expect, have string) error  {
+func ErrInsufficientBalance(expect, have string) error {
 	return fmt.Errorf("insufficient balance, got = %v, have = %v", expect, have)
 }
 
@@ -24,11 +24,11 @@ type Account struct {
 	Client *btcclient.Client
 
 	logger logrus.FieldLogger
-	key *ecdsa.PrivateKey
+	key    *ecdsa.PrivateKey
 }
 
 // NewAccount returns a new Account from the given private key.
-func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) *Account{
+func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) *Account {
 	return &Account{
 		Client: client,
 		logger: logger,
@@ -37,8 +37,8 @@ func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.
 }
 
 // NewAccountFromWIF returns a new Account from the given WIF
-func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifStr string) (*Account, error){
-	wif, err:= btcutil.DecodeWIF(wifStr )
+func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifStr string) (*Account, error) {
+	wif, err := btcutil.DecodeWIF(wifStr)
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +51,12 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 }
 
 // Address returns the Address of the account
-func (acc *Account) Address() (btctypes.Addr, error){
+func (acc *Account) Address() (btctypes.Addr, error) {
 	return btctypes.AddressFromPubKey(&acc.key.PublicKey, acc.Client.Network)
 }
 
 // Transfer transfer certain amount value to the target address.
 func (acc *Account) Transfer(ctx context.Context, to btctypes.Addr, value btctypes.Amount, fee int64) error {
-	log.Print(1)
 	// Get all utxos owned by the acc
 	address, err := acc.Address()
 	if err != nil {
@@ -68,17 +67,14 @@ func (acc *Account) Transfer(ctx context.Context, to btctypes.Addr, value btctyp
 		return err
 	}
 
-	log.Print(2)
 	// Check if we have enough funds
-	balance, err:= acc.Client.Balance(ctx, address, 0 )
+	balance, err := acc.Client.Balance(ctx, address, 0)
 	if err != nil {
 		return err
 	}
-	if balance < value{
-		return ErrInsufficientBalance(fmt.Sprintf("%v",value), fmt.Sprintf("%v",balance))
+	if balance < value {
+		return ErrInsufficientBalance(fmt.Sprintf("%v", value), fmt.Sprintf("%v", balance))
 	}
-	log.Print(3)
-
 
 	// todo : select some utxos from all the utxos we have.
 	builder := builder{}
@@ -90,25 +86,21 @@ func (acc *Account) Transfer(ctx context.Context, to btctypes.Addr, value btctyp
 	subScripts := tx.SignatureHashes()
 	sigs := make([]*btcec.Signature, len(subScripts))
 
-	for i, subScript:= range subScripts{
+	for i, subScript := range subScripts {
 		sigs[i], err = (*btcec.PrivateKey)(acc.key).Sign(subScript)
 		if err != nil {
 			return err
 		}
 	}
 	serializedPK := btctypes.SerializePublicKey(&acc.key.PublicKey, acc.Client.Network)
-	if err := tx.InjectSignature(sigs,serializedPK) ; err != nil {
+	if err := tx.InjectSignature(sigs, serializedPK); err != nil {
 		if err != nil {
 			return err
 		}
 	}
 
-	log.Print("stx = ",hex.EncodeToString(tx.Serialize() ))
-
-	return nil
+	log.Print("stx = ", hex.EncodeToString(tx.Serialize()))
 
 	// Submit the signed tx
 	return acc.Client.SubmitSTX(ctx, tx.Serialize())
 }
-
-
