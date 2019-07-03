@@ -23,17 +23,26 @@ func ErrInsufficientBalance(expect, have string) error {
 type Account struct {
 	Client *btcclient.Client
 
-	logger logrus.FieldLogger
-	key    *ecdsa.PrivateKey
+	address btctypes.Address
+	logger  logrus.FieldLogger
+	key     *ecdsa.PrivateKey
 }
 
 // NewAccount returns a new Account from the given private key.
-func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) *Account {
-	return &Account{
-		Client: client,
-		logger: logger,
-		key:    key,
+func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) (*Account, error) {
+	if key == nil {
+		panic("cannot create account with nil key")
 	}
+	address, err := btctypes.AddressFromPubKey(&key.PublicKey, client.Network)
+	if err != nil {
+		return &Account{}, err
+	}
+	return &Account{
+		Client:  client,
+		address: address,
+		logger:  logger,
+		key:     key,
+	}, nil
 }
 
 // NewAccountFromWIF returns a new Account from the given WIF
@@ -51,24 +60,19 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 }
 
 // Address returns the Address of the account
-func (acc *Account) Address() (btctypes.Address, error) {
-	return btctypes.AddressFromPubKey(&acc.key.PublicKey, acc.Client.Network)
+func (acc *Account) Address() btctypes.Address {
+	return acc.address
 }
 
 // Transfer transfer certain amount value to the target address.
 func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error {
-	// Get all utxos owned by the acc
-	address, err := acc.Address()
-	if err != nil {
-		return err
-	}
-	utxos, err := acc.Client.UTXOs(ctx, address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
+	utxos, err := acc.Client.UTXOs(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 	if err != nil {
 		return err
 	}
 
 	// Check if we have enough funds
-	balance, err := acc.Client.Balance(ctx, address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
+	balance, err := acc.Client.Balance(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 	if err != nil {
 		return err
 	}
