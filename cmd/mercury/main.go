@@ -6,7 +6,6 @@ import (
 	"github.com/renproject/mercury/api"
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc/btcrpc"
-	"github.com/renproject/mercury/types/btctypes"
 	"github.com/renproject/mercury/types/ethtypes"
 	"github.com/sirupsen/logrus"
 )
@@ -16,16 +15,16 @@ func main() {
 	logger := logrus.StandardLogger()
 
 	// Retrieve data from environment variables.
-	btcHost := os.Getenv("BITCOIN_TESTNET_RPC_URL")
-	btcUser := os.Getenv("BITCOIN_TESTNET_RPC_USER")
-	btcPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
+	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
+	btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USER")
+	btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
 
 	// Initialise Bitcoin API.
-	nodeClient, err := btcrpc.NewNodeClient(btctypes.Testnet, btcHost, btcUser, btcPassword)
+	nodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 	if err != nil {
 		logger.Fatalf("cannot construct node client: %v", err)
 	}
-	btcProxy := proxy.NewBtcProxy(btctypes.Testnet, nodeClient)
+	btcProxy := proxy.NewBtcProxy(nodeClient)
 	btcBackend := api.NewBtcApi(btcProxy, logger)
 
 	// Initialize Ethereum API.

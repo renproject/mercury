@@ -5,20 +5,17 @@ import (
 
 	"github.com/renproject/mercury/rpc/btcrpc"
 	"github.com/renproject/mercury/types"
-	"github.com/renproject/mercury/types/btctypes"
 )
 
 // BtcProxy proxies the request to different Bitcoin clients.
 type BtcProxy struct {
 	Clients []btcrpc.Client
-	Network btctypes.Network
 }
 
 // NewBtcProxy returns a new BtcProxy for a given network.
-func NewBtcProxy(network btctypes.Network, clients ...btcrpc.Client) *BtcProxy {
+func NewBtcProxy(clients ...btcrpc.Client) *BtcProxy {
 	return &BtcProxy{
 		Clients: clients,
-		Network: network,
 	}
 }
 
