@@ -14,7 +14,7 @@ import (
 type Account interface {
 	Address() ethtypes.Address
 	Balance(ctx context.Context) (ethtypes.Amount, error)
-	CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
+	BuildUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
 	PrivateKey() *ecdsa.PrivateKey
 	SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error
 }
@@ -63,7 +63,7 @@ func RandomAccount(client ethclient.Client) (Account, error) {
 	return NewAccountFromPrivateKey(client, privateKey)
 }
 
-func (acc *account) CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
+func (acc *account) BuildUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
 	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
 	fmt.Printf("nonce fetched back from infura: %v", nonce)
 	if err != nil {

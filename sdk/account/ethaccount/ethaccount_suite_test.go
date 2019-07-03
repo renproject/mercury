@@ -18,12 +18,12 @@ func TestEthaccount(t *testing.T) {
 	RunSpecs(t, "Ethaccount Suite")
 }
 
-var Client ethclient.EthClient
+var Client ethclient.Client
 var Account ethaccount.Account
 
 var _ = BeforeSuite(func() {
 	var err error
-	Client, err = ethclient.NewCustomEthClient(fmt.Sprintf("http://localhost:%s", os.Getenv("GANACHE_PORT")))
+	Client, err = ethclient.NewCustomClient(fmt.Sprintf("http://localhost:%s", os.Getenv("GANACHE_PORT")))
 	Expect(err).NotTo(HaveOccurred())
 	key, ownerAddress, err := testutils.NewAccountFromHexPrivateKey(os.Getenv("LOCAL_ETH_TESTNET_PRIVATE_KEY"))
 	Expect(err).NotTo(HaveOccurred())

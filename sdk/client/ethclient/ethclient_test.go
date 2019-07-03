@@ -14,13 +14,13 @@ import (
 )
 
 var _ = Describe("eth client", func() {
-	var client EthClient
+	var client Client
 
 	Context("when fetching balances", func() {
 		It("can fetch a zero balance address", func() {
 			_, addr, err := testutils.NewAccount()
 			Expect(err).NotTo(HaveOccurred())
-			client, err = NewCustomEthClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+			client, err = NewCustomClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
 			balance, err := client.Balance(ctx, addr)
@@ -51,7 +51,8 @@ var _ = Describe("eth client", func() {
 			_, addr, err := testutils.NewAccount()
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			_ = client.CreateUTX(nonce, addr, amount, gasLimit, gasPrice, data)
+			_, err = client.BuildUnsignedTx(ctx, nonce, addr, amount, gasLimit, gasPrice, data)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 	})

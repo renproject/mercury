@@ -33,6 +33,10 @@ type Tx struct {
 	signed  bool
 }
 
+func (tx *Tx) Hash() Hash {
+	return Hash(tx.tx.Hash())
+}
+
 func (tx *Tx) IsSigned() bool {
 	return tx.signed
 }
@@ -67,6 +71,7 @@ func NewUnsignedTx(chainID *big.Int, nonce uint64, to Address, value Amount, gas
 }
 
 type Address common.Address
+type Hash common.Hash
 
 func AddressFromHex(addr string) Address {
 	return Address(common.HexToAddress(addr))

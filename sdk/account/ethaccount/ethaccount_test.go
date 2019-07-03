@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	coretypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/renproject/mercury/sdk/account/ethaccount"
 	"github.com/renproject/mercury/sdk/client/ethclient"
 	"github.com/renproject/mercury/testutils"
@@ -28,7 +27,7 @@ var _ = Describe("eth account", func() {
 			_, addr, err := testutils.NewAccount()
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			_, err = Account.CreateUTX(ctx, addr, amount, gasLimit, gasPrice, data)
+			_, err = Account.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -41,9 +40,9 @@ var _ = Describe("eth account", func() {
 			_, addr, err := testutils.NewAccount()
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			utx, err := Account.CreateUTX(ctx, addr, amount, gasLimit, gasPrice, data)
+			utx, err := Account.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = Account.SignUTX(ctx, utx)
+			err = Account.SignUnsignedTx(ctx, &utx)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -63,13 +62,13 @@ var _ = Describe("eth account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
 			var data []byte
-			utx, err := Account.CreateUTX(ctx, addr, amount, gasLimit, gasPrice, data)
-			fmt.Println((*coretypes.Transaction)(utx).Hash())
+			tx, err := Account.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
+			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
-			stx, err := Account.SignUTX(ctx, utx)
-			fmt.Println((*coretypes.Transaction)(stx).Hash())
+			err = Account.SignUnsignedTx(ctx, &tx)
+			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
-			err = Client.PublishSTX(ctx, stx)
+			err = Client.PublishSignedTx(ctx, tx)
 			Expect(err).NotTo(HaveOccurred())
 			// check new balance
 			newBal, err := Client.Balance(ctx, addr)
@@ -78,7 +77,7 @@ var _ = Describe("eth account", func() {
 		})
 
 		It("can check kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomEthClient("http://139.59.221.34/eth-kovan")
+			kovanClient, err := ethclient.NewCustomClient("http://139.59.221.34/eth-kovan")
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
@@ -91,7 +90,7 @@ var _ = Describe("eth account", func() {
 		})
 
 		It("can send kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomEthClient("http://139.59.221.34/eth-kovan")
+			kovanClient, err := ethclient.NewCustomClient("http://139.59.221.34/eth-kovan")
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
@@ -108,13 +107,13 @@ var _ = Describe("eth account", func() {
 			fmt.Printf("original balance: %v", bal)
 			// Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
 			var data []byte
-			utx, err := acc.CreateUTX(ctx, addr, amount, gasLimit, gasPrice, data)
-			fmt.Println((*coretypes.Transaction)(utx).Hash())
+			tx, err := acc.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
+			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
-			stx, err := acc.SignUTX(ctx, utx)
-			fmt.Println((*coretypes.Transaction)(stx).Hash())
+			err = acc.SignUnsignedTx(ctx, &tx)
+			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
-			err = kovanClient.PublishSTX(ctx, stx)
+			err = kovanClient.PublishSignedTx(ctx, tx)
 			Expect(err).NotTo(HaveOccurred())
 			// check new balance
 			newBal, err := kovanClient.Balance(ctx, addr)
