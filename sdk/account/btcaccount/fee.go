@@ -1,6 +1,7 @@
 package btcaccount
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,9 +22,9 @@ const (
 	Fast
 )
 
-// BitcoinFee retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
+// BitcoinGas retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
-type BitcoinFee struct {
+type BitcoinGas struct {
 	mu            *sync.RWMutex
 	logger        logrus.FieldLogger
 	fees          map[Speed]int64
@@ -31,9 +32,9 @@ type BitcoinFee struct {
 	minUpdateTime time.Duration
 }
 
-// NewBitcoinFee returns a
-func NewBitcoinFee(logger logrus.FieldLogger, minUpdateTime time.Duration) *BitcoinFee {
-	return &BitcoinFee{
+// NewBitcoinGas returns a
+func NewBitcoinGas(logger logrus.FieldLogger, minUpdateTime time.Duration) *BitcoinGas {
+	return &BitcoinGas{
 		mu:            new(sync.RWMutex),
 		logger:        logger,
 		fees:          map[Speed]int64{},
@@ -42,12 +43,12 @@ func NewBitcoinFee(logger logrus.FieldLogger, minUpdateTime time.Duration) *Bitc
 	}
 }
 
-func (btc *BitcoinFee) RecommendedTxFee(speed Speed) int64 {
+func (btc *BitcoinGas) GasRequired(ctx context.Context, speed Speed) int64 {
 	btc.mu.Lock()
 	defer btc.mu.Unlock()
 
 	if time.Now().After(btc.lastUpdate.Add(btc.minUpdateTime)) {
-		if err := btc.updateFee(); err != nil {
+		if err := btc.gasRequired(ctx); err != nil {
 			btc.logger.Errorf("cannot get recommended fee from bitcoinfees.earn.com, err = %v", err)
 		}
 	}
@@ -55,19 +56,20 @@ func (btc *BitcoinFee) RecommendedTxFee(speed Speed) int64 {
 	return btc.fees[speed]
 }
 
-func (btc *BitcoinFee) updateFee() error {
+func (btc *BitcoinGas) gasRequired(ctx context.Context) error {
+	// FIXME: Use context for http request timeout
 	response, err := http.Get("https://bitcoinfees.earn.com/api/v1/fees/recommended")
 	if err != nil {
 		return err
 	}
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("unpected status code %v", response.StatusCode)
+		return fmt.Errorf("unexpected status code %v", response.StatusCode)
 	}
 
 	var fee = struct {
-		Fast     int64 `json:"fastestFee"`
-		Standard int64 `json:"halfHourFee"`
-		Slow     int64 `json:"hourFee"`
+		Fast     int64 `json:"fastestGas"`
+		Standard int64 `json:"halfHourGas"`
+		Slow     int64 `json:"hourGas"`
 	}{}
 	if err := json.NewDecoder(response.Body).Decode(&fee); err != nil {
 		return err
