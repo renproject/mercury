@@ -61,34 +61,16 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 		return nil, err
 	}
 	privKey := (*ecdsa.PrivateKey)(wif.PrivKey)
-	address, err := btctypes.AddressFromPubKey(&privKey.PublicKey, client.Network)
-	if err != nil {
-		return &account{}, err
-	}
-	return &account{
-		Client:  client,
-		address: address,
-		logger:  logger,
-		key:     privKey,
-	}, nil
+	return New(logger, client, privKey)
 }
 
 // RandomAccount returns a new Account using a random private key.
-func RandomAccount(logger logrus.FieldLogger, client *btcclient.Client) (Account, *ecdsa.PrivateKey, error) {
+func RandomAccount(logger logrus.FieldLogger, client *btcclient.Client) (Account, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
-		return &account{}, nil, err
+		return nil, err
 	}
-	address, err := btctypes.AddressFromPubKey(&key.PublicKey, client.Network)
-	if err != nil {
-		return &account{}, nil, err
-	}
-	return &account{
-		Client:  client,
-		address: address,
-		logger:  logger,
-		key:     key,
-	}, key, nil
+	return New(logger, client, key)
 }
 
 // Address returns the Address of the account
