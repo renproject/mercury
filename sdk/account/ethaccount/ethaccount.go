@@ -55,6 +55,14 @@ func NewAccountFromMnemonic(client ethclient.Client, mnemonic, derivationPath st
 	return NewAccountFromPrivateKey(client, key)
 }
 
+func RandomAccount(client ethclient.Client) (Account, error) {
+	privateKey, err := crypto.GenerateKey()
+	if err != nil {
+		return &account{}, err
+	}
+	return NewAccountFromPrivateKey(client, privateKey)
+}
+
 func (acc *account) CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
 	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
 	fmt.Printf("nonce fetched back from infura: %v", nonce)
