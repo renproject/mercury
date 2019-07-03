@@ -24,8 +24,11 @@ func (network Network) String() string {
 
 type Network uint8
 
-type USTX *coretypes.Transaction
-type STX *coretypes.Transaction
+type Tx struct {
+	tx     *coretypes.Transaction
+	signed bool
+}
+
 type Address common.Address
 
 func AddressFromHex(addr string) Address {
