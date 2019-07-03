@@ -3,6 +3,7 @@ package btcclient
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,9 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 )
@@ -127,9 +131,55 @@ func (client *Client) Confirmations(ctx context.Context, hash string) (int64, er
 	return strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64)
 }
 
+func (client *Client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error) {
+	newTx := wire.NewMsgTx(wire.TxVersion)
+
+	// Fill the utxos we want to use as newTx inputs.
+	for _, utxo := range utxos {
+		hash, err := chainhash.NewHashFromStr(utxo.TxHash)
+		if err != nil {
+			return btctypes.Tx{}, err
+		}
+
+		sourceUtxo := wire.NewOutPoint(hash, utxo.Vout)
+		sourceTxIn := wire.NewTxIn(sourceUtxo, nil, nil)
+		newTx.AddTxIn(sourceTxIn)
+	}
+
+	// Fill newTx output with the target address we want to receive the funds.
+	for _, recipient := range recipients {
+		outputPkScript, err := txscript.PayToAddrScript(recipient.Address)
+		if err != nil {
+			return btctypes.Tx{}, err
+		}
+		sourceTxOut := wire.NewTxOut(int64(recipient.Amount), outputPkScript)
+		newTx.AddTxOut(sourceTxOut)
+	}
+
+	// Get the signature hashes we need to sign
+	sigHashes := make([]btctypes.SignatureHash, len(utxos))
+	for i, utxo := range utxos {
+		script, err := hex.DecodeString(utxo.ScriptPubKey)
+		if err != nil {
+			return btctypes.Tx{}, err
+		}
+		sigHashes[i], err = txscript.CalcSignatureHash(script, txscript.SigHashAll, newTx, i)
+		if err != nil {
+			return btctypes.Tx{}, err
+		}
+	}
+
+	return btctypes.NewUnsignedTx(client.Network, newTx, sigHashes), nil
+}
+
 // SubmitSTX submits the signed transactions
-func (client *Client) SubmitSTX(ctx context.Context, stx []byte) error {
-	buf := bytes.NewBuffer(stx)
+func (client *Client) SubmitSTX(ctx context.Context, stx btctypes.Tx) error {
+	// Pre-condition checks
+	if !stx.IsSigned() {
+		panic("pre-condition violation: cannot submit unsigned transaction")
+	}
+
+	buf := bytes.NewBuffer(stx.Serialize())
 	url := fmt.Sprintf("%v/tx", client.url)
 	request, err := http.NewRequest("POST", url, buf)
 	if err != nil {

@@ -1,12 +1,16 @@
 package btctypes
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"fmt"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/types"
@@ -109,4 +113,91 @@ type UTXO struct {
 	Vout         uint32 `json:"vout"`
 }
 
+type Tx struct {
+	network   Network
+	tx        *wire.MsgTx
+	sigHashes []SignatureHash
+	signed    bool
+}
+
+func NewUnsignedTx(network Network, tx *wire.MsgTx, sigHashes []SignatureHash) Tx {
+	return Tx{
+		network:   network,
+		tx:        tx,
+		sigHashes: sigHashes,
+		signed:    false,
+	}
+}
+
+type SignatureHash []byte
+
+type SerializedPubKey []byte
+
 type Signature btcec.Signature
+
+func (tx *Tx) IsSigned() bool {
+	return tx.signed
+}
+
+// InjectSignatures injects the signed signatureHashes into the Tx. You cannot use the USTX anymore.
+func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error {
+	// Pre-condition checks
+	if tx.IsSigned() {
+		panic("pre-condition violation: cannot inject signatures into signed transaction")
+	}
+	if tx.tx == nil {
+		panic("pre-condition violation: cannot inject signatures into nil transaction")
+	}
+	if len(sigs) <= 0 {
+		panic("pre-condition violation: cannot inject empty signatures")
+	}
+	if len(sigs) != len(tx.tx.TxIn) {
+		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), len(tx.tx.TxIn)))
+	}
+	if len(serializedPubKey) <= 0 {
+		panic("pre-condition violation: cannot inject signatures with empty pubkey")
+	}
+
+	for i, sig := range sigs {
+		builder := txscript.NewScriptBuilder()
+		builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
+		builder.AddData(serializedPubKey)
+		sigScript, err := builder.Script()
+		if err != nil {
+			return err
+		}
+		tx.tx.TxIn[i].SignatureScript = sigScript
+	}
+	tx.signed = true
+	return nil
+}
+
+// SignatureHashes returns a list of signature hashes need to be signed.
+func (tx *Tx) SignatureHashes() []SignatureHash {
+	return tx.sigHashes
+}
+
+// Serialize returns the serialized tx in bytes.
+func (tx *Tx) Serialize() []byte {
+	// Pre-condition checks
+	if tx.tx == nil {
+		panic("pre-condition violation: cannot serialize nil transaction")
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+	if err := tx.tx.Serialize(buf); err != nil {
+		return nil
+	}
+	bufBytes := buf.Bytes()
+
+	// Post-condition checks
+	if len(bufBytes) <= 0 {
+		panic(fmt.Errorf("post-condition violation: serialized transaction len=%v is invalid", len(bufBytes)))
+	}
+	return bufBytes
+}
+
+type Recipient struct {
+	Address Address
+	Amount  Amount
+}
