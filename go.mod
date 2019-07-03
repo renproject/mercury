@@ -18,11 +18,11 @@ require (
 	github.com/onsi/gomega v1.5.0
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/renproject/kv v0.0.0-20190523055239-db127735289a // indirect
+	github.com/renproject/kv v0.0.0-20190523055239-db127735289a
 	github.com/renproject/phi v0.0.0-20190702020907-9f1fde8d0581
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.6.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/tyler-smith/go-bip39 v1.0.0
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 )

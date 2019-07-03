@@ -35,7 +35,7 @@ func NewServer(logger logrus.FieldLogger, port string, blockchains ...Blockchain
 // Run starts the server.
 func (server *Server) Run() {
 	// Add handlers for each blockchain.
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 	for _, blockchain := range server.blockchains {
 		blockchain.AddHandler(r)
 	}
