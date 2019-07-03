@@ -19,8 +19,13 @@ func ErrInsufficientBalance(expect, have string) error {
 	return fmt.Errorf("insufficient balance, got = %v, have = %v", expect, have)
 }
 
-// Account is a bitcoin wallet which can transfer funds and building tx.
-type Account struct {
+type Account interface {
+	Address() btctypes.Address
+	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error
+}
+
+// account is a bitcoin wallet which can transfer funds and building tx.
+type account struct {
 	Client *btcclient.Client
 
 	address btctypes.Address
@@ -28,16 +33,16 @@ type Account struct {
 	key     *ecdsa.PrivateKey
 }
 
-// NewAccount returns a new Account from the given private key.
-func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) (*Account, error) {
+// New returns a new Account from the given private key.
+func New(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) (Account, error) {
 	if key == nil {
 		panic("cannot create account with nil key")
 	}
 	address, err := btctypes.AddressFromPubKey(&key.PublicKey, client.Network)
 	if err != nil {
-		return &Account{}, err
+		return &account{}, err
 	}
-	return &Account{
+	return &account{
 		Client:  client,
 		address: address,
 		logger:  logger,
@@ -46,13 +51,13 @@ func NewAccount(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.
 }
 
 // NewAccountFromWIF returns a new Account from the given WIF
-func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifStr string) (*Account, error) {
+func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifStr string) (Account, error) {
 	wif, err := btcutil.DecodeWIF(wifStr)
 	if err != nil {
 		return nil, err
 	}
 	privKey := (*ecdsa.PrivateKey)(wif.PrivKey)
-	return &Account{
+	return &account{
 		Client: client,
 		logger: logger,
 		key:    privKey,
@@ -60,12 +65,12 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 }
 
 // Address returns the Address of the account
-func (acc *Account) Address() btctypes.Address {
+func (acc *account) Address() btctypes.Address {
 	return acc.address
 }
 
 // Transfer transfer certain amount value to the target address.
-func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error {
+func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error {
 	utxos, err := acc.Client.UTXOs(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 	if err != nil {
 		return err
