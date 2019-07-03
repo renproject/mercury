@@ -1,9 +1,11 @@
 package zec
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math"
+	"math/big"
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -37,6 +39,7 @@ type ZCashClient interface {
 	Init() error
 
 	Health() bool
+	GetUTXO(txHash string, vout int64) (UTXO, error)
 	GetUTXOs(address string, limit, confitmations int64) ([]UTXO, error)
 	Confirmations(txHashStr string) (int64, error)
 	ScriptFunded(address string, value int64) (bool, int64, error)
@@ -165,6 +168,33 @@ func (zec *fnClient) GetUTXOs(address string, limit, confitmations int64) ([]UTX
 	return utxos, nil
 }
 
+func (zec *fnClient) GetUTXO(txHash string, vout int64) (UTXO, error) {
+	hash, err := chainhash.NewHashFromStr(txHash)
+	if err != nil {
+		return UTXO{}, err
+	}
+
+	txRaw, err := zec.client.GetRawTransaction(hash)
+	if err != nil {
+		return UTXO{}, err
+	}
+
+	buffer := new(bytes.Buffer)
+	txRaw.MsgTx().Serialize(buffer)
+
+	tx, err := zec.client.DecodeRawTransaction(buffer.Bytes())
+	if err != nil {
+		return UTXO{}, err
+	}
+
+	return UTXO{
+		TxHash:       txHash,
+		Vout:         uint32(vout),
+		Amount:       floatToInt(tx.Vout[vout].Value),
+		ScriptPubKey: tx.Vout[vout].ScriptPubKey.Hex,
+	}, nil
+}
+
 func (zec *fnClient) Confirmations(txHashStr string) (int64, error) {
 	txHash, err := chainhash.NewHashFromStr(txHashStr)
 	if err != nil {
@@ -264,4 +294,9 @@ func reverse(hexStr string) string {
 		hexBytes[left], hexBytes[right] = hexBytes[right], hexBytes[left]
 	}
 	return hex.EncodeToString(hexBytes)
+}
+
+func floatToInt(val float64) int64 {
+	value, _ := new(big.Float).Mul(new(big.Float).SetFloat64(val), big.NewFloat(1e8)).Int64()
+	return value
 }

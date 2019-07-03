@@ -13,6 +13,7 @@ import (
 // Handlers of the zcash blockchain
 func (zec *zcash) AddRoutes(r *mux.Router) {
 	r.HandleFunc(zec.AddRoutePrefix("/utxo/{address}"), zec.getUTXOhandler()).Queries("limit", "{limit}").Queries("confirmations", "{confirmations}").Methods("GET")
+	r.HandleFunc(zec.AddRoutePrefix("/unspent/{txHash}"), zec.getUnspenthandler()).Queries("vout", "{vout}").Methods("GET")
 	r.HandleFunc(zec.AddRoutePrefix("/script/{state}/{address}"), zec.getScriptHandler()).Queries("value", "{value}").Methods("GET")
 	r.HandleFunc(zec.AddRoutePrefix("/script/{state}/{address}"), zec.getScriptHandler()).Queries("spender", "{spender}").Methods("GET")
 	r.HandleFunc(zec.AddRoutePrefix("/confirmations/{txHash}"), zec.getConfirmationsHandler()).Methods("GET")
@@ -120,6 +121,28 @@ func (zec *zcash) getConfirmationsHandler() http.HandlerFunc {
 		}
 		if err := json.NewEncoder(w).Encode(GetConfirmationsResponse(conf)); err != nil {
 			zec.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+	}
+}
+
+func (zec *zcash) getUnspenthandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts := mux.Vars(r)
+		addr := opts["txHash"]
+		vout, err := strconv.ParseInt(r.URL.Query().Get("vout"), 10, 64)
+		if err != nil {
+			zec.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		utxos, err := zec.client.GetUTXO(addr, vout)
+		if err != nil {
+			zec.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(utxos); err != nil {
+			zec.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 	}

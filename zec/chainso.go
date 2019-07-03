@@ -198,6 +198,10 @@ func (client chainSoClient) ScriptSpent(script, spender string) (bool, string, e
 	return false, "", fmt.Errorf("TODO: chain.so api doesnot support omnilayer")
 }
 
+func (client chainSoClient) GetUTXO(txHash string, vout int64) (UTXO, error) {
+	return UTXO{}, fmt.Errorf("TODO: chain.so api doesnot support get utxo")
+}
+
 func (client chainSoClient) ScriptFunded(address string, value int64) (bool, int64, error) {
 	rawAddress, err := client.GetRawAddressInformation(address)
 	if err != nil {

@@ -34,6 +34,10 @@ func (zec *multiClient) GetUTXOs(address string, limit, confitmations int64) ([]
 	return []UTXO{}, fmt.Errorf("no clients provided")
 }
 
+func (zec *multiClient) GetUTXO(txHash string, vout int64) (UTXO, error) {
+	return UTXO{}, fmt.Errorf("no clients provided")
+}
+
 func (zec *multiClient) Confirmations(txHashStr string) (int64, error) {
 	for i, client := range zec.clients {
 		if conf, err := client.Confirmations(txHashStr); err == nil || i+1 == len(zec.clients) {
