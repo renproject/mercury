@@ -3,8 +3,6 @@ package btcrpc
 import (
 	"fmt"
 	"net/http"
-
-	"github.com/renproject/mercury/types/btctypes"
 )
 
 // Client is a RPC client which can send and retrieve information from the Bitcoin blockchain through JSON-RPC.
@@ -17,16 +15,14 @@ type nodeClient struct {
 	host     string
 	username string
 	password string
-	network  btctypes.Network
 }
 
 // NewNodeClient returns a new nodeClient.
-func NewNodeClient(network btctypes.Network, host, username, password string) (Client, error) {
+func NewNodeClient(host, username, password string) (Client, error) {
 	return &nodeClient{
 		host:     host,
 		username: username,
 		password: password,
-		network:  network,
 	}, nil
 }
 
