@@ -58,10 +58,15 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 		return nil, err
 	}
 	privKey := (*ecdsa.PrivateKey)(wif.PrivKey)
+	address, err := btctypes.AddressFromPubKey(&privKey.PublicKey, client.Network)
+	if err != nil {
+		return &account{}, err
+	}
 	return &account{
-		Client: client,
-		logger: logger,
-		key:    privKey,
+		Client:  client,
+		address: address,
+		logger:  logger,
+		key:     privKey,
 	}, nil
 }
 
