@@ -102,7 +102,7 @@ var _ = Describe("eth account", func() {
 			gasLimit := uint64(30000)
 			gasPrice, err := kovanClient.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			addr := ethtypes.HexStringToAddress("0xdF9dEfE40a4E3B2CfF85b51CfcBf87876C7Af902")
+			addr := ethtypes.AddressFromHex("0xdF9dEfE40a4E3B2CfF85b51CfcBf87876C7Af902")
 			bal, err := kovanClient.Balance(ctx, addr)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("original balance: %v", bal)
