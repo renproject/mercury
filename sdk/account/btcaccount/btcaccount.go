@@ -3,12 +3,14 @@ package btcaccount
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"log"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
@@ -69,6 +71,24 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 		logger:  logger,
 		key:     privKey,
 	}, nil
+}
+
+// RandomAccount returns a new Account using a random private key.
+func RandomAccount(logger logrus.FieldLogger, client *btcclient.Client) (Account, *ecdsa.PrivateKey, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		return &account{}, nil, err
+	}
+	address, err := btctypes.AddressFromPubKey(&key.PublicKey, client.Network)
+	if err != nil {
+		return &account{}, nil, err
+	}
+	return &account{
+		Client:  client,
+		address: address,
+		logger:  logger,
+		key:     key,
+	}, key, nil
 }
 
 // Address returns the Address of the account
