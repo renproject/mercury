@@ -89,6 +89,10 @@ func (btc *multiClient) OmniGetBalance(token int64, address string) (OmniGetBala
 	return OmniGetBalanceResponse{}, fmt.Errorf("no clients provided")
 }
 
+func (btc *multiClient) GetUTXO(_ context.Context, txHash string, vout int64) (UTXO, error) {
+	panic("unimplemented")
+}
+
 func (btc *multiClient) Health() bool {
 	var health bool
 	for _, client := range btc.clients {

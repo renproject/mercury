@@ -62,6 +62,10 @@ func (client chainSoClient) Init() error {
 	return nil
 }
 
+func (btc chainSoClient) GetUTXO(_ context.Context, txHash string, vout int64) (UTXO, error) {
+	panic("unimplemented")
+}
+
 func (client chainSoClient) GetUTXOs(ctx context.Context, address string, limit, confitmations int) ([]UTXO, error) {
 	unspent, err := client.GetUnspentOutputs(ctx, address)
 	if err != nil {
@@ -233,4 +237,9 @@ func strToInt(val string) (int64, error) {
 	amt = big.NewFloat(0).Mul(amt, big.NewFloat(10e8))
 	value, _ := amt.Int64()
 	return value, nil
+}
+
+func floatToInt(val float64) int64 {
+	value, _ := new(big.Float).Mul(new(big.Float).SetFloat64(val), big.NewFloat(10e8)).Int64()
+	return value
 }

@@ -15,6 +15,7 @@ import (
 // Handlers of the bitcoin blockchain
 func (btc *bitcoin) AddRoutes(r *mux.Router) {
 	r.HandleFunc(btc.AddRoutePrefix("/utxo/{address}"), btc.getUTXOhandler()).Queries("limit", "{limit}").Queries("confirmations", "{confirmations}").Methods("GET")
+	r.HandleFunc(btc.AddRoutePrefix("/unspent/{txHash}"), btc.getUnspenthandler()).Queries("vout", "{vout}").Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/script/{state}/{address}"), btc.getScriptHandler()).Queries("value", "{value}").Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/script/{state}/{address}"), btc.getScriptHandler()).Queries("spender", "{spender}").Methods("GET")
 	r.HandleFunc(btc.AddRoutePrefix("/confirmations/{txHash}"), btc.getConfirmationsHandler()).Methods("GET")
@@ -50,6 +51,30 @@ func (btc *bitcoin) getUTXOhandler() http.HandlerFunc {
 		defer cancel()
 
 		utxos, err := btc.client.GetUTXOs(ctx, addr, int(limit), int(confirmations))
+		if err != nil {
+			btc.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(utxos); err != nil {
+			btc.writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+	}
+}
+
+func (btc *bitcoin) getUnspenthandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts := mux.Vars(r)
+		addr := opts["txHash"]
+		vout, err := strconv.ParseInt(r.URL.Query().Get("vout"), 10, 64)
+		if err != nil {
+			btc.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		utxos, err := btc.client.GetUTXO(ctx, addr, vout)
 		if err != nil {
 			btc.writeError(w, r, http.StatusBadRequest, err)
 			return

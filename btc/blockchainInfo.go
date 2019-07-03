@@ -155,6 +155,10 @@ func (client *blockchainInfoClient) GetUTXOs(ctx context.Context, address string
 	return utxos, nil
 }
 
+func (btc *blockchainInfoClient) GetUTXO(_ context.Context, txHash string, vout int64) (UTXO, error) {
+	panic("unimplemented")
+}
+
 func (client *blockchainInfoClient) balance(ctx context.Context, address string, confirmations int) (int64, error) {
 	utxos, err := client.GetUTXOs(ctx, address, 999999, confirmations)
 	if err != nil {
