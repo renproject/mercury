@@ -20,19 +20,14 @@ func main() {
 	// Initialise logger.
 	logger := logrus.StandardLogger()
 
-	// Retrieve data from environment variables.
-	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
-	btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USER")
-	btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
-	zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
-	zecTestnetUser := os.Getenv("ZCASH_TESTNET_RPC_USER")
-	zecTestnetPassword := os.Getenv("ZCASH_TESTNET_RPC_PASSWORD")
-	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
-
+	// Initialise store.
 	store := kv.NewJSON(kv.NewMemDB())
 	cache := cache.New(store, logger)
 
 	// Initialise Bitcoin API.
+	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
+	btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USER")
+	btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
 	btcTestnetNodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 	if err != nil {
 		logger.Fatalf("cannot construct btc client: %v", err)
@@ -41,6 +36,9 @@ func main() {
 	btcTestnetAPI := api.NewBtcApi(btctypes.Testnet, btcTestnetProxy, cache, logger)
 
 	// Initialise ZCash API.
+	zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
+	zecTestnetUser := os.Getenv("ZCASH_TESTNET_RPC_USER")
+	zecTestnetPassword := os.Getenv("ZCASH_TESTNET_RPC_PASSWORD")
 	zecTestnetNodeClient, err := zecrpc.NewNodeClient(zecTestnetURL, zecTestnetUser, zecTestnetPassword)
 	if err != nil {
 		logger.Fatalf("cannot construct zec client: %v", err)
@@ -49,14 +47,22 @@ func main() {
 	zecTestnetAPI := api.NewZecApi(zectypes.Testnet, zecTestnetProxy, cache, logger)
 
 	// Initialize Ethereum API.
-	infuraMainnetClient, err := ethrpc.NewInfuraClient(ethtypes.Mainnet, infuraAPIKey)
+	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
+	taggedKeys := map[string]string{
+		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
+		"darknode": os.Getenv("INFURA_KEY_DARKNODE"),
+		"renex":    os.Getenv("INFURA_KEY_RENEX"),
+		"renex-ui": os.Getenv("INFURA_KEY_RENEX_UI"),
+		"dcc":      os.Getenv("INFURA_KEY_DCC"),
+	}
+	infuraMainnetClient, err := ethrpc.NewInfuraClient(ethtypes.Mainnet, infuraAPIKey, taggedKeys)
 	if err != nil {
 		logger.Fatalf("cannot construct infura mainnet client: %v", err)
 	}
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
 	ethMainnetAPI := api.NewEthApi(ethtypes.Mainnet, ethMainnetProxy, cache, logger)
 
-	infuraTestnetClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey)
+	infuraTestnetClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
 	if err != nil {
 		logger.Fatalf("cannot construct infura testnet client: %v", err)
 	}

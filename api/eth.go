@@ -35,6 +35,7 @@ func (eth *EthApi) AddHandler(r *mux.Router) {
 	default:
 		network = eth.network.String()
 	}
+	r.HandleFunc(fmt.Sprintf("/eth/%s", network), eth.jsonRPCHandler()).Queries("tag", "{tag}").Methods("POST")
 	r.HandleFunc(fmt.Sprintf("/eth/%s", network), eth.jsonRPCHandler()).Methods("POST")
 }
 
