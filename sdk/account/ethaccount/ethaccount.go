@@ -15,6 +15,7 @@ type Account interface {
 	CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
 	SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error
 	Address() ethtypes.Address
+	PrivateKey() *ecdsa.PrivateKey
 	Balance(ctx context.Context) (ethtypes.Amount, error)
 }
 
@@ -73,4 +74,8 @@ func (acc *account) SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error 
 
 func (acc *account) Address() ethtypes.Address {
 	return acc.address
+}
+
+func (acc *account) PrivateKey() *ecdsa.PrivateKey {
+	return acc.key
 }
