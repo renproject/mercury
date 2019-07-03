@@ -9,13 +9,17 @@ import (
 )
 
 type Account struct {
-	BtcAccount *btcaccount.Account
+	BtcAccount btcaccount.Account
 	// EthAccount
 	// ZecAccount
 }
 
-func NewAccount(logger logrus.FieldLogger, key *ecdsa.PrivateKey, client client.Client) Account {
-	return Account{
-		BtcAccount: btcaccount.NewAccount(logger, client.BtcClient, key),
+func NewAccount(logger logrus.FieldLogger, key *ecdsa.PrivateKey, client client.Client) (Account, error) {
+	BtcAccount, err := btcaccount.New(logger, client.BtcClient, key)
+	if err != nil {
+		return Account{}, err
 	}
+	return Account{
+		BtcAccount,
+	}, nil
 }
