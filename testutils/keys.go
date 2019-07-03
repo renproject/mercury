@@ -65,7 +65,7 @@ func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) Address(network btctypes.Network, path ...uint32) (btctypes.Addr, error) {
+func (hdkey HdKey) Address(network btctypes.Network, path ...uint32) (btctypes.Address, error) {
 	var key *hdkeychain.ExtendedKey
 	var err error
 	for _, val := range path {
@@ -79,7 +79,7 @@ func (hdkey HdKey) Address(network btctypes.Network, path ...uint32) (btctypes.A
 		return nil, err
 	}
 	addressStr := address.String()
-	return btctypes.AddressFromBase58String(addressStr, network)
+	return btctypes.AddressFromBase58(addressStr, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.

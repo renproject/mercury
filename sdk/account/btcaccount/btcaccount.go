@@ -57,7 +57,6 @@ func (acc *Account) Address() (btctypes.Address, error) {
 
 // Transfer transfer certain amount value to the target address.
 func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error {
-	log.Print(1)
 	// Get all utxos owned by the acc
 	address, err := acc.Address()
 	if err != nil {
@@ -68,7 +67,6 @@ func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btc
 		return err
 	}
 
-	log.Print(2)
 	// Check if we have enough funds
 	balance, err := acc.Client.Balance(ctx, address, btcclient.MaxUTXOLimit, 0)
 	if err != nil {
@@ -77,7 +75,6 @@ func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	if balance < value {
 		return ErrInsufficientBalance(fmt.Sprintf("%v", value), fmt.Sprintf("%v", balance))
 	}
-	log.Print(3)
 
 	// todo : select some utxos from all the utxos we have.
 	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipient{to, value})
@@ -104,8 +101,6 @@ func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btc
 
 	log.Print("stx = ", hex.EncodeToString(tx.Serialize()))
 
-	return nil
-
 	// Submit the signed tx
-	return acc.Client.SubmitSTX(ctx, tx.Serialize())
+	return acc.Client.SubmitSTX(ctx, tx)
 }

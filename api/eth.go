@@ -24,19 +24,14 @@ func NewEthBackend(proxy proxy.EthProxy, logger logrus.FieldLogger) *EthBackend 
 }
 
 func (eth *EthBackend) AddHandler(r *mux.Router) {
-	r.HandleFunc(eth.addNetworkPrefix(""), eth.jsonRPCHandler()).Queries("tag", "{tag}").Methods("POST")
-	r.HandleFunc(eth.addNetworkPrefix(""), eth.jsonRPCHandler()).Methods("POST")
-}
-
-func (eth *EthBackend) addNetworkPrefix(route string) string {
-	var prefix string
+	var network string
 	switch eth.proxy.Network() {
 	case ethtypes.Kovan:
-		prefix = "eth-kovan"
+		network = "testnet"
 	default:
-		prefix = "eth"
+		network = eth.proxy.Network().String()
 	}
-	return fmt.Sprintf("/%s%s", prefix, route)
+	r.HandleFunc(fmt.Sprintf("/eth/%s", network), eth.jsonRPCHandler()).Methods("POST")
 }
 
 func (eth *EthBackend) jsonRPCHandler() http.HandlerFunc {
@@ -58,10 +53,10 @@ func (eth *EthBackend) jsonRPCHandler() http.HandlerFunc {
 
 func (eth *EthBackend) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
 	if statusCode >= 500 {
-		eth.logger.Errorf("failed to call %s with error %v", r.URL.String(), err)
+		eth.logger.Errorf("failed to call %s with error: %v", r.URL.String(), err)
 	}
 	if statusCode >= 400 {
-		eth.logger.Warningf("failed to call %s with error %v", r.URL.String(), err)
+		eth.logger.Warningf("failed to call %s with error: %v", r.URL.String(), err)
 	}
 	http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), statusCode)
 }

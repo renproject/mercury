@@ -8,21 +8,20 @@ import (
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
-// EthProxy proxies the request to different bitcoin clients.
+// EthProxy proxies the request to different Ethereum clients.
 type EthProxy interface {
 	Network() ethtypes.Network
 	HandleRequest(r *http.Request) (*http.Response, error)
 }
 
 type infuraProxy struct {
-	network    ethtypes.Network
-	url        string
-	apiKey     string
-	taggedKeys map[string]string
+	network ethtypes.Network
+	url     string
+	apiKey  string
 }
 
-// NewInfuraProxy returns a new infuraProxy which implements the EthProxy interface
-func NewInfuraProxy(network ethtypes.Network, apiKey string, taggedKeys map[string]string) (EthProxy, error) {
+// NewInfuraProxy returns a new infuraProxy which implements the EthProxy interface.
+func NewInfuraProxy(network ethtypes.Network, apiKey string) (EthProxy, error) {
 	var infuraNetwork string
 	switch network {
 	case ethtypes.Mainnet:
@@ -33,10 +32,9 @@ func NewInfuraProxy(network ethtypes.Network, apiKey string, taggedKeys map[stri
 		return &infuraProxy{}, types.ErrUnknownNetwork
 	}
 	return &infuraProxy{
-		network:    network,
-		url:        fmt.Sprintf("https://%s.infura.io/v3", infuraNetwork),
-		apiKey:     apiKey,
-		taggedKeys: taggedKeys,
+		network: network,
+		url:     fmt.Sprintf("https://%s.infura.io/v3", infuraNetwork),
+		apiKey:  apiKey,
 	}, nil
 }
 
@@ -45,10 +43,5 @@ func (eth *infuraProxy) Network() ethtypes.Network {
 }
 
 func (eth *infuraProxy) HandleRequest(r *http.Request) (*http.Response, error) {
-	tag := r.URL.Query().Get("tag")
-	apiKey := eth.taggedKeys[tag]
-	if apiKey == "" {
-		apiKey = eth.apiKey
-	}
-	return http.Post(fmt.Sprintf("%s/%s", eth.url, apiKey), "application/json", r.Body)
+	return http.Post(fmt.Sprintf("%s/%s", eth.url, eth.apiKey), "application/json", r.Body)
 }

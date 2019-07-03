@@ -12,45 +12,37 @@ import (
 )
 
 func main() {
-	// Set up logger
+	// Initialise logger.
 	logger := logrus.StandardLogger()
 
-	// Getting data from env variables
+	// Retrieve data from environment variables.
 	btcHost := os.Getenv("BITCOIN_TESTNET_RPC_URL")
 	btcUser := os.Getenv("BITCOIN_TESTNET_RPC_USER")
 	btcPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
 
-	// Initialize Bitcoin proxy
+	// Initialise Bitcoin API.
 	nodeClient, err := btcrpc.NewNodeClient(btctypes.Testnet, btcHost, btcUser, btcPassword)
 	if err != nil {
-		panic(err)
+		logger.Fatalf("cannot construct node client: %v", err)
 	}
-	btcProxy := proxy.NewBtcProxy(btctypes.Testnet, nodeClient, btcrpc.NewChainsoClient(btctypes.Testnet))
-	btcBackend := api.NewBtcBackend(btcProxy)
+	btcProxy := proxy.NewBtcProxy(btctypes.Testnet, nodeClient)
+	btcBackend := api.NewBtcApi(btcProxy, logger)
 
-	// Initialize ETH proxy
+	// Initialize Ethereum API.
 	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
-	taggedKeys := map[string]string{
-		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
-		"darknode": os.Getenv("INFURA_KEY_DARKNODE"),
-		"renex":    os.Getenv("INFURA_KEY_RENEX"),
-		"renex-ui": os.Getenv("INFURA_KEY_RENEX_UI"),
-		"dcc":      os.Getenv("INFURA_KEY_DCC"),
-	}
-	// Infura Mainnet
-	ethMainnetProxy, err := proxy.NewInfuraProxy(ethtypes.Mainnet, infuraAPIKey, taggedKeys)
+	ethMainnetProxy, err := proxy.NewInfuraProxy(ethtypes.Mainnet, infuraAPIKey)
 	if err != nil {
-		panic(err)
+		logger.Fatalf("cannot construct infura mainnet proxy: %v", err)
 	}
 	ethMainnetBackend := api.NewEthBackend(ethMainnetProxy, logger)
-	// Infura Kovan
-	ethKovanProxy, err := proxy.NewInfuraProxy(ethtypes.Kovan, infuraAPIKey, taggedKeys)
+
+	ethKovanProxy, err := proxy.NewInfuraProxy(ethtypes.Kovan, infuraAPIKey)
 	if err != nil {
-		panic(err)
+		logger.Fatalf("cannot construct infura testnet proxy: %v", err)
 	}
 	ethKovanBackend := api.NewEthBackend(ethKovanProxy, logger)
 
-	// Set up the server and start running
+	// Set-up and start the server.
 	server := api.NewServer(logger, "5000", btcBackend, ethMainnetBackend, ethKovanBackend)
 	server.Run()
 }

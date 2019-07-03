@@ -2,41 +2,58 @@ package zectypes
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/types"
-	"github.com/renproject/mercury/types/btctypes"
 )
 
-//
-type ZecValue int64
+// Amount represents bitcoin value in Satoshi (1e-8 Bitcoin).
+type Amount int64
 
 const (
-	Zatoshi ZecValue = 1
-	ZEC              = 100000000 * Zatoshi
+	ZAT = Amount(1)
+	ZEC = Amount(1e8 * ZAT)
 )
 
-//
+// Network of Bitcoin blockchain.
 type Network uint8
 
 const (
-	Mainnet Network = 1
-	Testnet Network = 2
+	Mainnet Network = 0
+	Testnet Network = 3
 )
 
-func (network Network) Params() *chaincfg.Params {
+// NewNetwork parse the network from a string.
+func NewNetwork(network string) Network {
+	network = strings.ToLower(strings.TrimSpace(network))
 	switch network {
-	case Mainnet:
-		return btctypes.MainNetParams
-	case Testnet:
-		return btctypes.TestNet3Params
+	case "mainnet":
+		return Mainnet
+	case "testnet", "testnet3":
+		return Testnet
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
 }
 
+// Params returns the params config for the network
+func (network Network) Params() *chaincfg.Params {
+	switch network {
+	case Mainnet:
+		return &chaincfg.MainNetParams
+	case Testnet:
+		return &chaincfg.TestNet3Params
+	default:
+		panic(types.ErrUnknownNetwork)
+	}
+}
+
+// String implements the `Stringer` interface.
 func (network Network) String() string {
 	switch network {
 	case Mainnet:
@@ -48,16 +65,18 @@ func (network Network) String() string {
 	}
 }
 
-//
-type Addr btcutil.Address
+// Addr is an interface type for any type of destination a transaction output may spend to. This includes pay-to-pubkey
+// (P2PK), pay-to-pubkey-hash (P2PKH), and pay-to-script-hash (P2SH). Address is designed to be generic enough that
+// other kinds of addresses may be added in the future without changing the decoding and encoding API.
+type Address btcutil.Address
 
-// AddressFromBase58String decodes the base58 encoding bitcoin address to a `Addr`.
-func AddressFromBase58String(addr string, network Network) (Addr, error) {
+// AddressFromBase58 decodes the base58 encoding bitcoin address to a `Addr`.
+func AddressFromBase58(addr string, network Network) (Address, error) {
 	return btcutil.DecodeAddress(addr, network.Params())
 }
 
 // AddressFromPubKey gets the `Addr` from a public key.
-func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Addr, error) {
+func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Address, error) {
 	return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
 }
 
@@ -73,11 +92,21 @@ func SerializePublicKey(pubKey *ecdsa.PublicKey, network Network) []byte {
 	}
 }
 
-type TxHash string
+// RandomAddress returns a random Addr on given network.
+func RandomAddress(network Network) (Address, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return AddressFromPubKey(&key.PublicKey, network)
+}
 
 type UTXO struct {
 	TxHash       string `json:"txHash"`
-	Amount       int64  `json:"amount"`
+	Amount       Amount `json:"amount"`
 	ScriptPubKey string `json:"scriptPubKey"`
 	Vout         uint32 `json:"vout"`
 }
+
+type Signature btcec.Signature

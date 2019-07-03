@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type BlockchainBackend interface {
+type BlockchainApi interface {
 	AddHandler(r *mux.Router)
 }
 
@@ -18,13 +18,13 @@ type BlockchainBackend interface {
 const DefaultMaxHeaderBytes = 1 << 10 // 1 KB
 
 type Server struct {
-	blockchains []BlockchainBackend
+	blockchains []BlockchainApi
 	port        string
 	logger      logrus.FieldLogger
 }
 
-// NewServer returns a server which supports given blockchains.
-func NewServer(logger logrus.FieldLogger, port string, blockchains ...BlockchainBackend) *Server {
+// NewServer returns a server which supports the given blockchains.
+func NewServer(logger logrus.FieldLogger, port string, blockchains ...BlockchainApi) *Server {
 	return &Server{
 		blockchains: blockchains,
 		port:        port,
@@ -32,7 +32,7 @@ func NewServer(logger logrus.FieldLogger, port string, blockchains ...Blockchain
 	}
 }
 
-// Run starts running the server.
+// Run starts the server.
 func (server *Server) Run() {
 	// Add handlers for each blockchain.
 	r := mux.NewRouter()
@@ -40,7 +40,7 @@ func (server *Server) Run() {
 		blockchain.AddHandler(r)
 	}
 
-	// Have cross-origin support.
+	// Use recovery handler and provide cross-origin support.
 	r.Use(server.recoveryHandler)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -48,7 +48,7 @@ func (server *Server) Run() {
 		AllowedMethods:   []string{"GET", "POST"},
 	}).Handler(r)
 
-	// Set up timeout and request header limit of the server
+	// Set-up request timeout and header size limit for the server.
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf(":%v", server.port),
 		Handler:           handler,
@@ -72,6 +72,7 @@ func (server *Server) recoveryHandler(h http.Handler) http.Handler {
 				http.Error(w, fmt.Sprintf("recovery from: %v", r), http.StatusInternalServerError)
 			}
 		}()
+
 		h.ServeHTTP(w, r)
 	})
 }

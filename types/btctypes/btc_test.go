@@ -20,7 +20,7 @@ var _ = Describe("btc types ", func() {
 		Context(fmt.Sprintf("when generate new btc addresses of %v", network), func() {
 			It("should be able to generate random address of given network", func() {
 				randAddr := func() bool {
-					address, err := RandAddressPubKey(network)
+					address, err := RandomAddress(network)
 					Expect(err).NotTo(HaveOccurred())
 					if network == Mainnet {
 						return strings.HasPrefix(address.EncodeAddress(), "1")
@@ -34,9 +34,9 @@ var _ = Describe("btc types ", func() {
 			})
 
 			It("should be able to decode an address from string", func() {
-				randAddr, err := RandAddressPubKey(network)
+				randAddr, err := RandomAddress(network)
 				Expect(err).NotTo(HaveOccurred())
-				address, err := AddressFromBase58String(randAddr.EncodeAddress(), network)
+				address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(address.EncodeAddress()).Should(Equal(randAddr.EncodeAddress()))
 			})
@@ -60,7 +60,7 @@ var _ = Describe("btc types ", func() {
 
 	Context("bitcoin amount ", func() {
 		It("should be converted correctly", func() {
-			Expect(1e8 * Satoshi).Should(Equal(Bitcoin))
+			Expect(1e8 * SAT).Should(Equal(BTC))
 		})
 	})
 

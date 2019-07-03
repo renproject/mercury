@@ -10,23 +10,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type BtcApi struct {
-	proxy  *proxy.BtcProxy
+type ZecApi struct {
+	proxy  *proxy.ZecProxy
 	logger logrus.FieldLogger
 }
 
-func NewBtcApi(proxy *proxy.BtcProxy, logger logrus.FieldLogger) *BtcApi {
-	return &BtcApi{
+func NewZecApi(proxy *proxy.ZecProxy, logger logrus.FieldLogger) *ZecApi {
+	return &ZecApi{
 		proxy:  proxy,
 		logger: logger,
 	}
 }
 
-func (btc *BtcApi) AddHandler(r *mux.Router) {
+func (btc *ZecApi) AddHandler(r *mux.Router) {
 	r.HandleFunc(fmt.Sprintf("/btc/%s", btc.proxy.Network), btc.jsonRPCHandler()).Methods("POST")
 }
 
-func (btc *BtcApi) jsonRPCHandler() http.HandlerFunc {
+func (btc *ZecApi) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		resp, err := btc.proxy.ProxyRequest(r)
 		if err != nil {
@@ -43,7 +43,7 @@ func (btc *BtcApi) jsonRPCHandler() http.HandlerFunc {
 	}
 }
 
-func (btc *BtcApi) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
+func (btc *ZecApi) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
 	if statusCode >= 500 {
 		btc.logger.Errorf("failed to call %s with error: %v", r.URL.String(), err)
 	}
