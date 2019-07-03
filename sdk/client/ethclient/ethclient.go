@@ -2,11 +2,9 @@ package ethclient
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	coretypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
@@ -19,9 +17,8 @@ type EthClient interface {
 	BlockNumber(context.Context) (*big.Int, error)
 	SuggestGasPrice(context.Context) (ethtypes.Amount, error)
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
-	CreateUTX(uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) ethtypes.UTX
-	SignUTX(context.Context, ethtypes.UTX, *ecdsa.PrivateKey) (ethtypes.STX, error)
-	PublishSTX(context.Context, ethtypes.STX) error
+	CreateUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
+	PublishSTX(context.Context, ethtypes.Tx) error
 	GasLimit(context.Context) (uint64, error)
 }
 
@@ -87,26 +84,21 @@ func (client *ethClient) PendingNonceAt(ctx context.Context, fromAddress ethtype
 	return client.client.PendingNonceAt(ctx, common.Address(fromAddress))
 }
 
-func (client *ethClient) CreateUTX(nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) ethtypes.UTX {
-	return ethtypes.UTX(coretypes.NewTransaction(nonce, common.Address(toAddress), value.ToBig(), gasLimit, gasPrice.ToBig(), data))
-}
-
-func (client *ethClient) SignUTX(ctx context.Context, utx ethtypes.UTX, key *ecdsa.PrivateKey) (ethtypes.STX, error) {
+func (client *ethClient) CreateUnsignedTx(ctx context.Context, nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
 	chainID, err := client.client.NetworkID(ctx)
 	if err != nil {
-		return nil, err
+		return ethtypes.Tx{}, err
 	}
-
-	signedTx, err := coretypes.SignTx((*coretypes.Transaction)(utx), coretypes.NewEIP155Signer(chainID), key)
-	if err != nil {
-		return nil, err
-	}
-	return ethtypes.STX(signedTx), nil
+	return ethtypes.NewUnsignedTx(chainID, nonce, toAddress, value, gasLimit, gasPrice, data), nil
 }
 
 // PublishSTX publishes a signed transaction
-func (client *ethClient) PublishSTX(ctx context.Context, stx ethtypes.STX) error {
-	return client.client.SendTransaction(ctx, (*coretypes.Transaction)(stx))
+func (client *ethClient) PublishSTX(ctx context.Context, tx ethtypes.Tx) error {
+	// Pre-condition checks
+	if !tx.IsSigned() {
+		panic("pre-condition violation: cannot publish unsigned transaction")
+	}
+	return client.client.SendTransaction(ctx, tx.ToTransaction())
 }
 
 // BlockNumber returns the gas limit of the latest block.
