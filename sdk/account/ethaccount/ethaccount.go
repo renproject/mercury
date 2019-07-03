@@ -12,11 +12,11 @@ import (
 )
 
 type Account interface {
-	CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
-	SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error
 	Address() ethtypes.Address
-	PrivateKey() *ecdsa.PrivateKey
 	Balance(ctx context.Context) (ethtypes.Amount, error)
+	CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
+	PrivateKey() *ecdsa.PrivateKey
+	SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error
 }
 
 type account struct {

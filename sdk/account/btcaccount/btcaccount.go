@@ -23,9 +23,9 @@ func ErrInsufficientBalance(expect, have string) error {
 
 type Account interface {
 	Address() btctypes.Address
+	Balance(ctx context.Context) (value btctypes.Amount, err error)
 	PrivateKey() *ecdsa.PrivateKey
 	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) error
-	Balance(ctx context.Context) (value btctypes.Amount, err error)
 	UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error)
 }
 
