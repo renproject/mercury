@@ -13,7 +13,7 @@ func NewAccount() (*ecdsa.PrivateKey, ethtypes.Address, error) {
 		return nil, ethtypes.Address{}, err
 	}
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey).Hex()
-	return privateKey, ethtypes.HexStringToAddress(addr), err
+	return privateKey, ethtypes.AddressFromHex(addr), err
 }
 
 func NewAccountFromHexPrivateKey(hexString string) (*ecdsa.PrivateKey, ethtypes.Address, error) {
@@ -25,7 +25,7 @@ func NewAccountFromHexPrivateKey(hexString string) (*ecdsa.PrivateKey, ethtypes.
 		return nil, ethtypes.Address{}, err
 	}
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey).Hex()
-	return privateKey, ethtypes.HexStringToAddress(addr), err
+	return privateKey, ethtypes.AddressFromHex(addr), err
 }
 
 func hasHexPrefix(str string) bool {
