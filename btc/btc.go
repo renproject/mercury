@@ -188,18 +188,11 @@ func (btc *fullnodeClient) Confirmations(_ context.Context, txHashStr string) (u
 	if err != nil {
 		return 0, err
 	}
-	txRaw, err := btc.client.GetRawTransaction(txHash)
+	tx, err := btc.client.GetRawTransactionVerbose(txHash)
 	if err != nil {
 		return 0, err
 	}
 
-	buffer := new(bytes.Buffer)
-	txRaw.MsgTx().Serialize(buffer)
-
-	tx, err := btc.client.DecodeRawTransaction(buffer.Bytes())
-	if err != nil {
-		return 0, err
-	}
 	return tx.Confirmations, nil
 }
 
