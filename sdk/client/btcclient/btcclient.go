@@ -58,7 +58,7 @@ func NewBtcClient(network btctypes.Network) *Client {
 
 // Balance returns the balance of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded.
-func (client *Client) Balance(ctx context.Context, address btctypes.Addr, confirmations int) (btctypes.Amount, error) {
+func (client *Client) Balance(ctx context.Context, address btctypes.Address, confirmations int) (btctypes.Amount, error) {
 	utxos, err := client.UTXOs(ctx, address, DefaultLimit, confirmations)
 	if err != nil {
 		return btctypes.Amount(0), err
@@ -74,7 +74,7 @@ func (client *Client) Balance(ctx context.Context, address btctypes.Addr, confir
 
 // UTXOs returns the utxos of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded.
-func (client *Client) UTXOs(ctx context.Context, address btctypes.Addr, limit, confirmations int) ([]btctypes.UTXO, error) {
+func (client *Client) UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) ([]btctypes.UTXO, error) {
 	// Construct the http request.
 	url := fmt.Sprintf("%v/utxo/%v?limit=%v&confirmations=%v", client.url, address.EncodeAddress(), limit, confirmations)
 	log.Printf("url = %v", url)
