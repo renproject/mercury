@@ -12,8 +12,8 @@ import (
 )
 
 type Account interface {
-	CreateUTX(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.UTX, error)
-	SignUTX(ctx context.Context, utx ethtypes.UTX) (ethtypes.STX, error)
+	CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
+	SignUnsignedTx(ctx context.Context, utx ethtypes.Tx) error
 	Address() ethtypes.Address
 	Balance(ctx context.Context) (ethtypes.Amount, error)
 }
@@ -54,21 +54,21 @@ func NewAccountFromMnemonic(client ethclient.EthClient, mnemonic, derivationPath
 	return NewAccountFromPrivateKey(client, key)
 }
 
-func (acc *account) CreateUTX(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.UTX, error) {
+func (acc *account) CreateUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
 	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
 	fmt.Printf("nonce fetched back from infura: %v", nonce)
 	if err != nil {
-		return nil, err
+		return ethtypes.Tx{}, err
 	}
-	return acc.client.CreateUTX(nonce, toAddress, value, gasLimit, gasPrice, data), nil
+	return acc.client.CreateUnsignedTx(ctx, nonce, toAddress, value, gasLimit, gasPrice, data)
 }
 
 func (acc *account) Balance(ctx context.Context) (ethtypes.Amount, error) {
 	return acc.client.Balance(ctx, acc.Address())
 }
 
-func (acc *account) SignUTX(ctx context.Context, utx ethtypes.UTX) (ethtypes.STX, error) {
-	return acc.client.SignUTX(ctx, utx, acc.key)
+func (acc *account) SignUnsignedTx(ctx context.Context, utx ethtypes.Tx) error {
+	return utx.Sign(acc.key)
 }
 
 func (acc *account) Address() ethtypes.Address {
