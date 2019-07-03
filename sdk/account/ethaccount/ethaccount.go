@@ -67,7 +67,7 @@ func (acc *account) Balance(ctx context.Context) (ethtypes.Amount, error) {
 	return acc.client.Balance(ctx, acc.Address())
 }
 
-func (acc *account) SignUnsignedTx(ctx context.Context, utx ethtypes.Tx) error {
+func (acc *account) SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error {
 	return utx.Sign(acc.key)
 }
 
