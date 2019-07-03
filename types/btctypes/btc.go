@@ -139,8 +139,22 @@ func (tx *Tx) IsSigned() bool {
 	return tx.signed
 }
 
+func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
+	subScripts := tx.SignatureHashes()
+	sigs := make([]*btcec.Signature, len(subScripts))
+
+	for i, subScript := range subScripts {
+		sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
+		if err != nil {
+			return err
+		}
+	}
+	serializedPK := SerializePublicKey(&key.PublicKey, tx.network)
+	return tx.injectSignatures(sigs, serializedPK)
+}
+
 // InjectSignatures injects the signed signatureHashes into the Tx. You cannot use the USTX anymore.
-func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error {
+func (tx *Tx) injectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error {
 	// Pre-condition checks
 	if tx.IsSigned() {
 		panic("pre-condition violation: cannot inject signatures into signed transaction")

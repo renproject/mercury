@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/sdk/client/btcclient"
@@ -116,17 +115,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 		return err
 	}
 
-	subScripts := tx.SignatureHashes()
-	sigs := make([]*btcec.Signature, len(subScripts))
-
-	for i, subScript := range subScripts {
-		sigs[i], err = (*btcec.PrivateKey)(acc.key).Sign(subScript)
-		if err != nil {
-			return err
-		}
-	}
-	serializedPK := btctypes.SerializePublicKey(&acc.key.PublicKey, acc.Client.Network())
-	if err := tx.InjectSignatures(sigs, serializedPK); err != nil {
+	if err := tx.Sign(acc.key); err != nil {
 		if err != nil {
 			return err
 		}
