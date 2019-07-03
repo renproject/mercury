@@ -32,6 +32,7 @@ const (
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
 // through Mercury server.
+// FIXME: Make Client an interface
 type Client struct {
 	Network btctypes.Network
 
@@ -103,7 +104,7 @@ func (client *Client) UTXOs(ctx context.Context, address btctypes.Address, limit
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
-func (client *Client) Confirmations(ctx context.Context, hash string) (int64, error) {
+func (client *Client) Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error) {
 	url := fmt.Sprintf("%v/confirmations/%v", client.url, hash)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -128,7 +129,12 @@ func (client *Client) Confirmations(ctx context.Context, hash string) (int64, er
 		return 0, err
 	}
 
-	return strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64)
+	confirmations, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return btctypes.Confirmations(confirmations), nil
 }
 
 func (client *Client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error) {

@@ -2,6 +2,7 @@ package btcaccount_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,13 +16,15 @@ import (
 
 var _ = Describe("btc account ", func() {
 	Context("when transferring funds ", func() {
-		PIt("should build the correct transaction and broadcast it", func() {
+		It("should build the correct transaction and broadcast it", func() {
 			client := btcclient.NewBtcClient(btctypes.Testnet)
 			wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE")
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account := NewAccount(logrus.StandardLogger(), client, key)
+			account, err := NewAccount(logrus.StandardLogger(), client, key)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("address: %v\n", account.Address().EncodeAddress())
 
 			to, err := btctypes.AddressFromBase58("mhM9V7ENbJPpRnTGpVhNiHf631pzX2be74", btctypes.Testnet)
 			Expect(err).NotTo(HaveOccurred())
