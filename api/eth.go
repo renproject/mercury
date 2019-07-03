@@ -2,61 +2,67 @@ package api
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/types/ethtypes"
 	"github.com/sirupsen/logrus"
 )
 
-type EthBackend struct {
-	proxy  proxy.EthProxy
-	logger logrus.FieldLogger
+type EthApi struct {
+	network ethtypes.Network
+	proxy   *proxy.Proxy
+	cache   *cache.Cache
+	logger  logrus.FieldLogger
 }
 
-func NewEthBackend(proxy proxy.EthProxy, logger logrus.FieldLogger) *EthBackend {
-	return &EthBackend{
-		proxy:  proxy,
-		logger: logger,
+func NewEthApi(network ethtypes.Network, proxy *proxy.Proxy, cache *cache.Cache, logger logrus.FieldLogger) *EthApi {
+	return &EthApi{
+		network: network,
+		proxy:   proxy,
+		cache:   cache,
+		logger:  logger,
 	}
 }
 
-func (eth *EthBackend) AddHandler(r *mux.Router) {
+func (eth *EthApi) AddHandler(r *mux.Router) {
 	var network string
-	switch eth.proxy.Network() {
+	switch eth.network {
 	case ethtypes.Kovan:
 		network = "testnet"
 	default:
-		network = eth.proxy.Network().String()
+		network = eth.network.String()
 	}
 	r.HandleFunc(fmt.Sprintf("/eth/%s", network), eth.jsonRPCHandler()).Methods("POST")
 }
 
-func (eth *EthBackend) jsonRPCHandler() http.HandlerFunc {
+func (eth *EthApi) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := eth.proxy.HandleRequest(r)
+		hash, err := hashRequest(r)
 		if err != nil {
-			eth.writeError(w, r, resp.StatusCode, err)
+			eth.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		data, err := ioutil.ReadAll(resp.Body)
+
+		// Check if the result has been cached and if not retrieve it (or wait if it is already being retrieved).
+		resp, err := eth.cache.Get(hash, proxyRequest(eth.proxy, r))
 		if err != nil {
-			eth.writeError(w, r, resp.StatusCode, err)
+			eth.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		w.WriteHeader(resp.StatusCode)
-		w.Write(data)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(resp)
 	}
 }
 
-func (eth *EthBackend) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
+func (eth *EthApi) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
 	if statusCode >= 500 {
-		eth.logger.Errorf("failed to call %s with error: %v", r.URL.String(), err)
-	}
-	if statusCode >= 400 {
-		eth.logger.Warningf("failed to call %s with error: %v", r.URL.String(), err)
+		eth.logger.Errorf("failed to call %s: %v", r.URL.String(), err)
+	} else if statusCode >= 400 {
+		eth.logger.Warningf("failed to call %s: %v", r.URL.String(), err)
 	}
 	http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), statusCode)
 }

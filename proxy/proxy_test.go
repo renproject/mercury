@@ -8,14 +8,14 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/proxy"
 
-	"github.com/renproject/mercury/rpc/btcrpc"
+	"github.com/renproject/mercury/rpc"
 )
 
 var _ = Describe("Proxies", func() {
-	Context("when creating a btc proxy", func() {
+	Context("when creating a proxy", func() {
 		It("should receive a response if all clients are working", func() {
 			mockClient := NewMockBtcClient()
-			proxy := NewBtcProxy(mockClient, mockClient)
+			proxy := NewProxy(mockClient, mockClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -28,7 +28,7 @@ var _ = Describe("Proxies", func() {
 		It("should receive a response if the first client is working", func() {
 			mockClient := NewMockBtcClient()
 			errClient := NewMockBtcErrorClient()
-			proxy := NewBtcProxy(mockClient, errClient)
+			proxy := NewProxy(mockClient, errClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -41,7 +41,7 @@ var _ = Describe("Proxies", func() {
 		It("should receive a response if the first client is faulty and second is working", func() {
 			mockClient := NewMockBtcClient()
 			errClient := NewMockBtcErrorClient()
-			proxy := NewBtcProxy(errClient, mockClient)
+			proxy := NewProxy(errClient, mockClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -53,7 +53,7 @@ var _ = Describe("Proxies", func() {
 
 		It("should not receive a response if all clients are faulty", func() {
 			errClient := NewMockBtcErrorClient()
-			proxy := NewBtcProxy(errClient, errClient)
+			proxy := NewProxy(errClient, errClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -68,7 +68,7 @@ var _ = Describe("Proxies", func() {
 type mockBtcClient struct {
 }
 
-func NewMockBtcClient() btcrpc.Client {
+func NewMockBtcClient() rpc.Client {
 	return mockBtcClient{}
 }
 
@@ -81,7 +81,7 @@ func (mockBtcClient) HandleRequest(r *http.Request) (*http.Response, error) {
 type mockBtcErrorClient struct {
 }
 
-func NewMockBtcErrorClient() btcrpc.Client {
+func NewMockBtcErrorClient() rpc.Client {
 	return mockBtcErrorClient{}
 }
 

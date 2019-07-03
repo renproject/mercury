@@ -3,12 +3,9 @@ package btcrpc
 import (
 	"fmt"
 	"net/http"
-)
 
-// Client is a RPC client which can send and retrieve information from the Bitcoin blockchain through JSON-RPC.
-type Client interface {
-	HandleRequest(r *http.Request) (*http.Response, error)
-}
+	"github.com/renproject/mercury/rpc"
+)
 
 // nodeClient implements the Client interface.
 type nodeClient struct {
@@ -18,7 +15,7 @@ type nodeClient struct {
 }
 
 // NewNodeClient returns a new nodeClient.
-func NewNodeClient(host, username, password string) (Client, error) {
+func NewNodeClient(host, username, password string) (rpc.Client, error) {
 	return &nodeClient{
 		host:     host,
 		username: username,

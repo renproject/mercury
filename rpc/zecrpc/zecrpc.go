@@ -4,29 +4,22 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/renproject/mercury/types/zectypes"
+	"github.com/renproject/mercury/rpc"
 )
-
-// Client is a RPC client which can send and retrieve information from the Bitcoin blockchain through JSON-RPC.
-type Client interface {
-	HandleRequest(r *http.Request) (*http.Response, error)
-}
 
 // nodeClient implements the Client interface.
 type nodeClient struct {
 	host     string
 	username string
 	password string
-	network  zectypes.Network
 }
 
 // NewNodeClient returns a new nodeClient.
-func NewNodeClient(network zectypes.Network, host, username, password string) (Client, error) {
+func NewNodeClient(host, username, password string) (rpc.Client, error) {
 	return &nodeClient{
 		host:     host,
 		username: username,
 		password: password,
-		network:  network,
 	}, nil
 }
 

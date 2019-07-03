@@ -2,53 +2,60 @@ package api
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
+	"github.com/renproject/mercury/types/zectypes"
 	"github.com/sirupsen/logrus"
 )
 
 type ZecApi struct {
-	proxy  *proxy.ZecProxy
-	logger logrus.FieldLogger
+	network zectypes.Network
+	proxy   *proxy.Proxy
+	cache   *cache.Cache
+	logger  logrus.FieldLogger
 }
 
-func NewZecApi(proxy *proxy.ZecProxy, logger logrus.FieldLogger) *ZecApi {
+func NewZecApi(network zectypes.Network, proxy *proxy.Proxy, cache *cache.Cache, logger logrus.FieldLogger) *ZecApi {
 	return &ZecApi{
-		proxy:  proxy,
-		logger: logger,
+		network: network,
+		proxy:   proxy,
+		cache:   cache,
+		logger:  logger,
 	}
 }
 
-func (btc *ZecApi) AddHandler(r *mux.Router) {
-	r.HandleFunc(fmt.Sprintf("/btc/%s", btc.proxy.Network), btc.jsonRPCHandler()).Methods("POST")
+func (zec *ZecApi) AddHandler(r *mux.Router) {
+	r.HandleFunc(fmt.Sprintf("/zec/%s", zec.network), zec.jsonRPCHandler()).Methods("POST")
 }
 
-func (btc *ZecApi) jsonRPCHandler() http.HandlerFunc {
+func (zec *ZecApi) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := btc.proxy.ProxyRequest(r)
+		hash, err := hashRequest(r)
 		if err != nil {
-			btc.writeError(w, r, resp.StatusCode, err)
+			zec.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		data, err := ioutil.ReadAll(resp.Body)
+
+		// Check if the result has been cached and if not retrieve it (or wait if it is already being retrieved).
+		resp, err := zec.cache.Get(hash, proxyRequest(zec.proxy, r))
 		if err != nil {
-			btc.writeError(w, r, resp.StatusCode, err)
+			zec.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		w.WriteHeader(resp.StatusCode)
-		w.Write(data)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(resp)
 	}
 }
 
-func (btc *ZecApi) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
+func (zec *ZecApi) writeError(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
 	if statusCode >= 500 {
-		btc.logger.Errorf("failed to call %s with error: %v", r.URL.String(), err)
-	}
-	if statusCode >= 400 {
-		btc.logger.Warningf("failed to call %s with error: %v", r.URL.String(), err)
+		zec.logger.Errorf("failed to call %s: %v", r.URL.String(), err)
+	} else if statusCode >= 400 {
+		zec.logger.Warningf("failed to call %s: %v", r.URL.String(), err)
 	}
 	http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), statusCode)
 }
