@@ -21,7 +21,7 @@ func ErrInsufficientBalance(expect, have string) error {
 
 type Account interface {
 	Address() btctypes.Address
-	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error
+	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) error
 	Balance(ctx context.Context) (value btctypes.Amount, err error)
 	UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error)
 }
@@ -86,7 +86,7 @@ func (acc *account) UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error
 }
 
 // Transfer transfer certain amount value to the target address.
-func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error {
+func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) error {
 	utxos, err := acc.UTXOs(ctx)
 	if err != nil {
 		return err
@@ -97,12 +97,12 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	if err != nil {
 		return err
 	}
-	if balance < value {
+	if balance < value+fee {
 		return ErrInsufficientBalance(fmt.Sprintf("%v", value), fmt.Sprintf("%v", balance))
 	}
 
 	// todo : select some utxos from all the utxos we have.
-	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipient{to, value})
+	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipient{to, value}, btctypes.Recipient{Address: acc.Address(), Amount: balance - value - fee})
 
 	if err != nil {
 		return err
