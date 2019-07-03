@@ -62,13 +62,13 @@ func (acc *Account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	if err != nil {
 		return err
 	}
-	utxos, err := acc.Client.UTXOs(ctx, address, 999999, 0)
+	utxos, err := acc.Client.UTXOs(ctx, address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 	if err != nil {
 		return err
 	}
 
 	// Check if we have enough funds
-	balance, err := acc.Client.Balance(ctx, address, btcclient.MaxUTXOLimit, 0)
+	balance, err := acc.Client.Balance(ctx, address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 	if err != nil {
 		return err
 	}
