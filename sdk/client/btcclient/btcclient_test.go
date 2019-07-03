@@ -49,7 +49,7 @@ var _ = Describe("btc client", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 
-				utxos, err := client.UTXOs(ctx, address, 999999, 0)
+				utxos, err := client.UTXOs(ctx, address, MaxUTXOLimit, MinConfirmations)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(Equal(3))
 				Expect(utxos[0].Amount).Should(Equal(100000 * btctypes.SAT))
