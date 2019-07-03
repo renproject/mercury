@@ -234,12 +234,12 @@ func strToInt(val string) (int64, error) {
 	if !ok {
 		return -1, fmt.Errorf("failed to convert %s to float", val)
 	}
-	amt = big.NewFloat(0).Mul(amt, big.NewFloat(10e8))
+	amt = big.NewFloat(0).Mul(amt, big.NewFloat(1e8))
 	value, _ := amt.Int64()
 	return value, nil
 }
 
 func floatToInt(val float64) int64 {
-	value, _ := new(big.Float).Mul(new(big.Float).SetFloat64(val), big.NewFloat(10e8)).Int64()
+	value, _ := new(big.Float).Mul(new(big.Float).SetFloat64(val), big.NewFloat(1e8)).Int64()
 	return value
 }
