@@ -26,8 +26,8 @@ const (
 	MinConfirmations = 0
 	MaxConfirmations = 99
 
-	MainnetMercuryURL = "https://ren-mercury.herokuapp.com/btc"
-	TestnetMercuryURL = "https://ren-mercury.herokuapp.com/btc-testnet3"
+	MainnetMercuryURL = "http://139.59.221.34/btc"
+	TestnetMercuryURL = "http://139.59.221.34/btc-testnet3"
 )
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
