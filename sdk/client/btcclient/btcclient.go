@@ -30,28 +30,37 @@ const (
 	TestnetMercuryURL = "http://139.59.221.34/btc-testnet3"
 )
 
+type Client interface {
+	Network() btctypes.Network
+	Balance(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.Amount, error)
+	UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) ([]btctypes.UTXO, error)
+	Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error)
+	BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error)
+	SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error
+}
+
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 // FIXME: Make Client an interface
-type Client struct {
-	Network btctypes.Network
+type client struct {
+	network btctypes.Network
 
 	config chaincfg.Params
 	url    string
 }
 
 // NewBtcClient returns a new Client of given bitcoin network.
-func NewBtcClient(network btctypes.Network) *Client {
+func NewBtcClient(network btctypes.Network) Client {
 	switch network {
 	case btctypes.Mainnet:
-		return &Client{
-			Network: network,
+		return &client{
+			network: network,
 			config:  chaincfg.MainNetParams,
 			url:     MainnetMercuryURL,
 		}
 	case btctypes.Testnet:
-		return &Client{
-			Network: network,
+		return &client{
+			network: network,
 			config:  chaincfg.TestNet3Params,
 			url:     TestnetMercuryURL,
 		}
@@ -60,15 +69,19 @@ func NewBtcClient(network btctypes.Network) *Client {
 	}
 }
 
+func (c *client) Network() btctypes.Network {
+	return c.network
+}
+
 // Balance returns the balance of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded. Limit must be greater than MinUTXOLimit and less than MaxUTXOLimit.
 // Confirmations must be greater than MinConfirmationsLimit and less than MaxConfirmationsLimit.
-func (client *Client) Balance(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.Amount, error) {
+func (c *client) Balance(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.Amount, error) {
 	// Pre-condition checks
 	checkConfirmationPreCondition(confirmations)
 	checkUTXOLimitPreCondition(limit)
 
-	utxos, err := client.UTXOs(ctx, address, limit, confirmations)
+	utxos, err := c.UTXOs(ctx, address, limit, confirmations)
 	if err != nil {
 		return btctypes.Amount(0), err
 	}
@@ -84,13 +97,13 @@ func (client *Client) Balance(ctx context.Context, address btctypes.Address, lim
 
 // UTXOs returns the utxos of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded.
-func (client *Client) UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) ([]btctypes.UTXO, error) {
+func (c *client) UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) ([]btctypes.UTXO, error) {
 	// Pre-condition checks
 	checkConfirmationPreCondition(confirmations)
 	checkUTXOLimitPreCondition(limit)
 
 	// Construct the http request.
-	url := fmt.Sprintf("%v/utxo/%v?limit=%v&confirmations=%v", client.url, address.EncodeAddress(), limit, confirmations)
+	url := fmt.Sprintf("%v/utxo/%v?limit=%v&confirmations=%v", c.url, address.EncodeAddress(), limit, confirmations)
 	log.Printf("url = %v", url)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -99,13 +112,13 @@ func (client *Client) UTXOs(ctx context.Context, address btctypes.Address, limit
 	request.WithContext(ctx)
 
 	var utxos []btctypes.UTXO
-	err = client.sendRequest(request, http.StatusOK, &utxos)
+	err = c.sendRequest(request, http.StatusOK, &utxos)
 	return utxos, err
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
-func (client *Client) Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error) {
-	url := fmt.Sprintf("%v/confirmations/%v", client.url, hash)
+func (c *client) Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error) {
+	url := fmt.Sprintf("%v/confirmations/%v", c.url, hash)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return 0, err
@@ -137,7 +150,7 @@ func (client *Client) Confirmations(ctx context.Context, hash btctypes.TxHash) (
 	return btctypes.Confirmations(confirmations), nil
 }
 
-func (client *Client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error) {
+func (c *client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error) {
 	newTx := wire.NewMsgTx(wire.TxVersion)
 
 	// Fill the utxos we want to use as newTx inputs.
@@ -175,7 +188,7 @@ func (client *Client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btcty
 		}
 	}
 
-	return btctypes.NewUnsignedTx(client.Network, newTx, sigHashes), nil
+	return btctypes.NewUnsignedTx(c.network, newTx, sigHashes), nil
 }
 
 type PostTransactionRequest struct {
@@ -183,7 +196,7 @@ type PostTransactionRequest struct {
 }
 
 // SubmitSignedTx submits the signed transactions
-func (client *Client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
+func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
 	// Pre-condition checks
 	if !stx.IsSigned() {
 		panic("pre-condition violation: cannot submit unsigned transaction")
@@ -198,7 +211,7 @@ func (client *Client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error
 
 	fmt.Println(string(reqBytes))
 	buf := bytes.NewBuffer(reqBytes)
-	url := fmt.Sprintf("%v/tx", client.url)
+	url := fmt.Sprintf("%v/tx", c.url)
 	fmt.Printf("sending post request to: %v\n", url)
 	request, err := http.NewRequest("POST", url, buf)
 	if err != nil {
@@ -228,7 +241,7 @@ func (client *Client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error
 	return nil
 }
 
-func (client *Client) sendRequest(request *http.Request, statusCode int, result interface{}) error {
+func (c *client) sendRequest(request *http.Request, statusCode int, result interface{}) error {
 	httpClient := &http.Client{}
 	response, err := httpClient.Do(request)
 	if err != nil {

@@ -31,7 +31,7 @@ type Account interface {
 
 // account is a bitcoin wallet which can transfer funds and building tx.
 type account struct {
-	Client *btcclient.Client
+	Client btcclient.Client
 
 	address btctypes.Address
 	logger  logrus.FieldLogger
@@ -39,11 +39,11 @@ type account struct {
 }
 
 // New returns a new Account from the given private key.
-func New(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.PrivateKey) (Account, error) {
+func New(logger logrus.FieldLogger, client btcclient.Client, key *ecdsa.PrivateKey) (Account, error) {
 	if key == nil {
 		panic("cannot create account with nil key")
 	}
-	address, err := btctypes.AddressFromPubKey(&key.PublicKey, client.Network)
+	address, err := btctypes.AddressFromPubKey(&key.PublicKey, client.Network())
 	if err != nil {
 		return &account{}, err
 	}
@@ -56,7 +56,7 @@ func New(logger logrus.FieldLogger, client *btcclient.Client, key *ecdsa.Private
 }
 
 // NewAccountFromWIF returns a new Account from the given WIF
-func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifStr string) (Account, error) {
+func NewAccountFromWIF(logger logrus.FieldLogger, client btcclient.Client, wifStr string) (Account, error) {
 	wif, err := btcutil.DecodeWIF(wifStr)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func NewAccountFromWIF(logger logrus.FieldLogger, client *btcclient.Client, wifS
 }
 
 // RandomAccount returns a new Account using a random private key.
-func RandomAccount(logger logrus.FieldLogger, client *btcclient.Client) (Account, error) {
+func RandomAccount(logger logrus.FieldLogger, client btcclient.Client) (Account, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 			return err
 		}
 	}
-	serializedPK := btctypes.SerializePublicKey(&acc.key.PublicKey, acc.Client.Network)
+	serializedPK := btctypes.SerializePublicKey(&acc.key.PublicKey, acc.Client.Network())
 	if err := tx.InjectSignatures(sigs, serializedPK); err != nil {
 		if err != nil {
 			return err
