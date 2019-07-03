@@ -16,23 +16,16 @@ import (
 type Amount int64
 
 const (
-	Satoshi Amount = 1
-	Bitcoin        = 1e8 * Satoshi
+	SAT = Amount(1)
+	BTC = Amount(1e8 * SAT)
 )
 
-// Network params for different networks.
-var (
-	TestNet3Params = &chaincfg.TestNet3Params
-
-	MainNetParams = &chaincfg.MainNetParams
-)
-
-// Network of Ethereum blockchain.
+// Network of Bitcoin blockchain.
 type Network uint8
 
 const (
-	Mainnet Network = 1
-	Testnet Network = 2
+	Mainnet Network = 0
+	Testnet Network = 3
 )
 
 // NewNetwork parse the network from a string.
@@ -52,9 +45,9 @@ func NewNetwork(network string) Network {
 func (network Network) Params() *chaincfg.Params {
 	switch network {
 	case Mainnet:
-		return MainNetParams
+		return &chaincfg.MainNetParams
 	case Testnet:
-		return TestNet3Params
+		return &chaincfg.TestNet3Params
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
@@ -75,15 +68,15 @@ func (network Network) String() string {
 // Addr is an interface type for any type of destination a transaction output may spend to. This includes pay-to-pubkey
 // (P2PK), pay-to-pubkey-hash (P2PKH), and pay-to-script-hash (P2SH). Address is designed to be generic enough that
 // other kinds of addresses may be added in the future without changing the decoding and encoding API.
-type Addr btcutil.Address
+type Address btcutil.Address
 
-// AddressFromBase58String decodes the base58 encoding bitcoin address to a `Addr`.
-func AddressFromBase58String(addr string, network Network) (Addr, error) {
+// AddressFromBase58 decodes the base58 encoding bitcoin address to a `Addr`.
+func AddressFromBase58(addr string, network Network) (Address, error) {
 	return btcutil.DecodeAddress(addr, network.Params())
 }
 
 // AddressFromPubKey gets the `Addr` from a public key.
-func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Addr, error) {
+func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Address, error) {
 	return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
 }
 
@@ -99,14 +92,14 @@ func SerializePublicKey(pubKey *ecdsa.PublicKey, network Network) []byte {
 	}
 }
 
-// RandAddressPubKey returns a random Addr on given network.
-func RandAddressPubKey(network Network) (Addr, error) {
+// RandomAddress returns a random Addr on given network.
+func RandomAddress(network Network) (Address, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	return AddressFromPubKey(&key.PublicKey,network)
+	return AddressFromPubKey(&key.PublicKey, network)
 }
 
 type UTXO struct {
@@ -115,6 +108,5 @@ type UTXO struct {
 	ScriptPubKey string `json:"scriptPubKey"`
 	Vout         uint32 `json:"vout"`
 }
-
 
 type Signature btcec.Signature

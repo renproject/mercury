@@ -16,12 +16,14 @@ import (
 	"github.com/renproject/mercury/types/btctypes"
 )
 
-var (
-	// DefaultLimit is the default limit when querying utxos and balances.
-	DefaultLimit = 999999
+const (
+	MinUTXOLimit     = 1
+	MaxUTXOLimit     = 99
+	MinConfirmations = 0
+	MaxConfirmations = 99
 
-	// DefaultConfirmations is the default confirmations when querying utxos and balances.
-	DefaultConfirmations = 0
+	MainnetMercuryURL = "https://ren-mercury.herokuapp.com/btc"
+	TestnetMercuryURL = "https://ren-mercury.herokuapp.com/btc-testnet3"
 )
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
@@ -40,13 +42,13 @@ func NewBtcClient(network btctypes.Network) *Client {
 		return &Client{
 			Network: network,
 			config:  chaincfg.MainNetParams,
-			url:     "https://ren-mercury.herokuapp.com/btc",
+			url:     MainnetMercuryURL,
 		}
 	case btctypes.Testnet:
 		return &Client{
 			Network: network,
 			config:  chaincfg.TestNet3Params,
-			url:     "https://ren-mercury.herokuapp.com/btc-testnet3",
+			url:     TestnetMercuryURL,
 		}
 	default:
 		panic("unknown bitcoin network")
@@ -54,24 +56,34 @@ func NewBtcClient(network btctypes.Network) *Client {
 }
 
 // Balance returns the balance of the given bitcoin address. It filters the utxos which have less confirmations than
-// required. It times out if the context exceeded.
-func (client *Client) Balance(ctx context.Context, address btctypes.Addr, confirmations int) (btctypes.Amount, error) {
-	utxos, err := client.UTXOs(ctx, address, DefaultLimit, confirmations)
+// required. It times out if the context exceeded. Limit must be greater than MinUTXOLimit and less than MaxUTXOLimit.
+// Confirmations must be greater than MinConfirmationsLimit and less than MaxConfirmationsLimit.
+func (client *Client) Balance(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.Amount, error) {
+	// Pre-condition checks
+	checkConfirmationPreCondition(confirmations)
+	checkUTXOLimitPreCondition(limit)
+
+	utxos, err := client.UTXOs(ctx, address, limit, confirmations)
 	if err != nil {
 		return btctypes.Amount(0), err
 	}
-
-	// Add the amounts of each utxo to get the address balance.
 	balance := btctypes.Amount(0)
 	for _, utxo := range utxos {
 		balance += btctypes.Amount(utxo.Amount)
 	}
+
+	// Post-condition checks
+	checkBalancePostCondition(balance)
 	return balance, nil
 }
 
 // UTXOs returns the utxos of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded.
-func (client *Client) UTXOs(ctx context.Context, address btctypes.Addr, limit, confirmations int) ([]btctypes.UTXO, error) {
+func (client *Client) UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) ([]btctypes.UTXO, error) {
+	// Pre-condition checks
+	checkConfirmationPreCondition(confirmations)
+	checkUTXOLimitPreCondition(limit)
+
 	// Construct the http request.
 	url := fmt.Sprintf("%v/utxo/%v?limit=%v&confirmations=%v", client.url, address.EncodeAddress(), limit, confirmations)
 	log.Printf("url = %v", url)
@@ -153,4 +165,30 @@ func (client *Client) sendRequest(request *http.Request, statusCode int, result 
 		return types.UnexpectedStatusCode(statusCode, response.StatusCode)
 	}
 	return json.NewDecoder(response.Body).Decode(&result)
+}
+
+func checkUTXOLimitPreCondition(limit int) {
+	// Pre-condition checks
+	if limit < MinUTXOLimit {
+		panic(fmt.Errorf("pre-condition violation: limit=%v is too low", limit))
+	}
+	if limit > MaxUTXOLimit {
+		panic(fmt.Errorf("pre-condition violation: limit=%v is too high", limit))
+	}
+}
+
+func checkConfirmationPreCondition(confirmations int) {
+	if confirmations < MinConfirmations {
+		panic(fmt.Errorf("pre-condition violation: confirmations=%v is to low", confirmations))
+	}
+	if confirmations > MaxConfirmations {
+		panic(fmt.Errorf("pre-condition violation: confirmations=%v is too high", confirmations))
+	}
+}
+
+func checkBalancePostCondition(balance btctypes.Amount) {
+	// Post-condition checks
+	if balance < btctypes.Amount(0) {
+		panic(fmt.Errorf("post-condition violation: balance=%v is too low", balance))
+	}
 }

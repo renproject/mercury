@@ -24,11 +24,11 @@ func (network Network) String() string {
 
 type Network uint8
 
-type UTX *coretypes.Transaction
+type USTX *coretypes.Transaction
 type STX *coretypes.Transaction
 type Address common.Address
 
-func HexStringToAddress(addr string) Address {
+func AddressFromHex(addr string) Address {
 	return Address(common.HexToAddress(addr))
 }
 
