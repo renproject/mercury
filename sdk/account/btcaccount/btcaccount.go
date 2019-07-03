@@ -23,6 +23,7 @@ type Account interface {
 	Address() btctypes.Address
 	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error
 	Balance(ctx context.Context) (value btctypes.Amount, err error)
+	UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error)
 }
 
 // account is a bitcoin wallet which can transfer funds and building tx.
@@ -80,9 +81,13 @@ func (acc *account) Balance(ctx context.Context) (value btctypes.Amount, err err
 	return acc.Client.Balance(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 }
 
+func (acc *account) UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error) {
+	return acc.Client.UTXOs(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
+}
+
 // Transfer transfer certain amount value to the target address.
 func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee int64) error {
-	utxos, err := acc.Client.UTXOs(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
+	utxos, err := acc.UTXOs(ctx)
 	if err != nil {
 		return err
 	}
