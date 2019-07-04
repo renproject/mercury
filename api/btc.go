@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -38,13 +39,13 @@ func (btc *BtcApi) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			btc.writeError(w, r, http.StatusBadRequest, err)
+			btc.writeError(w, r, http.StatusBadRequest, fmt.Errorf("cannot read data: %v", err))
 			return
 		}
 
 		hash, err := HashData(data)
 		if err != nil {
-			btc.writeError(w, r, http.StatusInternalServerError, err)
+			btc.writeError(w, r, http.StatusInternalServerError, fmt.Errorf("cannot hash data: %v", err))
 			return
 		}
 
@@ -55,9 +56,15 @@ func (btc *BtcApi) jsonRPCHandler() http.HandlerFunc {
 			return
 		}
 
+		var result Result
+		if err := json.Unmarshal(resp, &result); err != nil {
+			btc.writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(resp)
+		w.WriteHeader(result.StatusCode)
+		w.Write(result.Data)
 	}
 }
 

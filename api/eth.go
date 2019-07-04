@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -63,9 +64,15 @@ func (eth *EthApi) jsonRPCHandler() http.HandlerFunc {
 			return
 		}
 
+		var result Result
+		if err := json.Unmarshal(resp, &result); err != nil {
+			eth.writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(resp)
+		w.WriteHeader(result.StatusCode)
+		w.Write(result.Data)
 	}
 }
 
