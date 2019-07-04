@@ -14,78 +14,78 @@ import (
 var _ = Describe("Proxies", func() {
 	Context("when creating a proxy", func() {
 		It("should receive a response if all clients are working", func() {
-			mockClient := NewMockBtcClient()
+			mockClient := NewMockClient()
 			proxy := NewProxy(mockClient, mockClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req)
+			resp, err := proxy.ProxyRequest(req, nil)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should receive a response if the first client is working", func() {
-			mockClient := NewMockBtcClient()
-			errClient := NewMockBtcErrorClient()
+			mockClient := NewMockClient()
+			errClient := NewMockErrorClient()
 			proxy := NewProxy(mockClient, errClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req)
+			resp, err := proxy.ProxyRequest(req, nil)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should receive a response if the first client is faulty and second is working", func() {
-			mockClient := NewMockBtcClient()
-			errClient := NewMockBtcErrorClient()
+			mockClient := NewMockClient()
+			errClient := NewMockErrorClient()
 			proxy := NewProxy(errClient, mockClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req)
+			resp, err := proxy.ProxyRequest(req, nil)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should not receive a response if all clients are faulty", func() {
-			errClient := NewMockBtcErrorClient()
+			errClient := NewMockErrorClient()
 			proxy := NewProxy(errClient, errClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req)
+			resp, err := proxy.ProxyRequest(req, nil)
 			Expect(resp).To(BeNil())
 			Expect(err).To(HaveOccurred())
 		})
 	})
 })
 
-type mockBtcClient struct {
+type mockClient struct {
 }
 
-func NewMockBtcClient() rpc.Client {
-	return mockBtcClient{}
+func NewMockClient() rpc.Client {
+	return mockClient{}
 }
 
-func (mockBtcClient) HandleRequest(r *http.Request) (*http.Response, error) {
+func (mockClient) HandleRequest(r *http.Request, data []byte) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: http.StatusOK,
 	}, nil
 }
 
-type mockBtcErrorClient struct {
+type mockErrorClient struct {
 }
 
-func NewMockBtcErrorClient() rpc.Client {
-	return mockBtcErrorClient{}
+func NewMockErrorClient() rpc.Client {
+	return mockErrorClient{}
 }
 
-func (mockBtcErrorClient) HandleRequest(r *http.Request) (*http.Response, error) {
+func (mockErrorClient) HandleRequest(r *http.Request, data []byte) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: http.StatusInternalServerError,
 	}, errors.New("error")
