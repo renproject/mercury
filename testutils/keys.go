@@ -23,8 +23,6 @@ var ErrInvalidMnemonic = errors.New("invalid mnemonic")
 // HdKey is a hierarchical deterministic extended key.
 type HdKey struct {
 	ExtendedKey *hdkeychain.ExtendedKey
-	mnemonic    string
-	passphrase  string
 	network     btctypes.Network
 }
 
@@ -45,8 +43,6 @@ func LoadHdWallet(mnemonic, passphrase string, network btctypes.Network) (HdKey,
 	}
 	return HdKey{
 		ExtendedKey: key,
-		mnemonic:    mnemonic,
-		passphrase:  passphrase,
 		network:     network,
 	}, err
 }
@@ -58,7 +54,7 @@ func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
 func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
-	key, err := hdutil.DerivePrivKey(hdkey.ExtendedKey, path...)
+	key, err := hdkey.EcdsaKey(path...)
 	if err != nil {
 		return nil, err
 	}
