@@ -25,11 +25,11 @@ func proxyRequest(proxy *proxy.Proxy, r *http.Request, data []byte) func() ([]by
 		}
 
 		// Read the response and insert it into the store.
-		data, err := ioutil.ReadAll(resp.Body)
+		respData, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
 
-		return data, nil
+		return respData, nil
 	}
 }
