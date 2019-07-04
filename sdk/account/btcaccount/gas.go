@@ -22,9 +22,9 @@ const (
 	Fast
 )
 
-// BitcoinGas retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
+// BtcGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
-type BitcoinGas struct {
+type BtcGasStation struct {
 	mu            *sync.RWMutex
 	logger        logrus.FieldLogger
 	fees          map[Speed]int64
@@ -32,9 +32,9 @@ type BitcoinGas struct {
 	minUpdateTime time.Duration
 }
 
-// NewBitcoinGas returns a
-func NewBitcoinGas(logger logrus.FieldLogger, minUpdateTime time.Duration) *BitcoinGas {
-	return &BitcoinGas{
+// NewBtcGasStation returns a
+func NewBtcGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) *BtcGasStation {
+	return &BtcGasStation{
 		mu:            new(sync.RWMutex),
 		logger:        logger,
 		fees:          map[Speed]int64{},
@@ -43,7 +43,7 @@ func NewBitcoinGas(logger logrus.FieldLogger, minUpdateTime time.Duration) *Bitc
 	}
 }
 
-func (btc *BitcoinGas) GasRequired(ctx context.Context, speed Speed) int64 {
+func (btc *BtcGasStation) GasRequired(ctx context.Context, speed Speed) int64 {
 	btc.mu.Lock()
 	defer btc.mu.Unlock()
 
@@ -56,7 +56,7 @@ func (btc *BitcoinGas) GasRequired(ctx context.Context, speed Speed) int64 {
 	return btc.fees[speed]
 }
 
-func (btc *BitcoinGas) gasRequired(ctx context.Context) error {
+func (btc *BtcGasStation) gasRequired(ctx context.Context) error {
 	// FIXME: Use context for http request timeout
 	response, err := http.Get("https://bitcoinfees.earn.com/api/v1/fees/recommended")
 	if err != nil {

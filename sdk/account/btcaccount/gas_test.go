@@ -15,7 +15,7 @@ var _ = Describe("bitcoin tx gas", func() {
 	Context("when getting tx gas of different speed tier", func() {
 		It("should return the live data", func() {
 			logger := logrus.StandardLogger()
-			gas := NewBitcoinGas(logger, 5*time.Second)
+			gas := NewBtcGasStation(logger, 5*time.Second)
 
 			ctx := context.Background()
 			fastGas := gas.GasRequired(ctx, Fast)
