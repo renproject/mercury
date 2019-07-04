@@ -50,14 +50,14 @@ func (eth *EthApi) jsonRPCHandler() http.HandlerFunc {
 			return
 		}
 
-		hash, err := hashData(data)
+		hash, err := HashData(data)
 		if err != nil {
 			eth.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
 		// Check if the result has been cached and if not retrieve it (or wait if it is already being retrieved).
-		resp, err := eth.cache.Get(hash, proxyRequest(eth.proxy, r, data))
+		resp, err := eth.cache.Get(hash, FetchResponse(eth.proxy, r, data))
 		if err != nil {
 			eth.writeError(w, r, http.StatusInternalServerError, err)
 			return

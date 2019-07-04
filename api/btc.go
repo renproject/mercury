@@ -42,14 +42,14 @@ func (btc *BtcApi) jsonRPCHandler() http.HandlerFunc {
 			return
 		}
 
-		hash, err := hashData(data)
+		hash, err := HashData(data)
 		if err != nil {
 			btc.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
 		// Check if the result has been cached and if not retrieve it (or wait if it is already being retrieved).
-		resp, err := btc.cache.Get(hash, proxyRequest(btc.proxy, r, data))
+		resp, err := btc.cache.Get(hash, FetchResponse(btc.proxy, r, data))
 		if err != nil {
 			btc.writeError(w, r, http.StatusInternalServerError, err)
 			return
