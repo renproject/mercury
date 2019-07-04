@@ -13,8 +13,8 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/pkg/errors"
+	"github.com/renproject/mercury/hdutil"
 	"github.com/renproject/mercury/types/btctypes"
-	"github.com/tyler-smith/go-bip39"
 )
 
 // ErrInvalidMnemonic is returned when the mnemonic is invalid.
@@ -22,64 +22,47 @@ var ErrInvalidMnemonic = errors.New("invalid mnemonic")
 
 // HdKey is a hierarchical deterministic extended key.
 type HdKey struct {
-	*hdkeychain.ExtendedKey
+	ExtendedKey *hdkeychain.ExtendedKey
+	mnemonic    string
+	passphrase  string
+	network     btctypes.Network
 }
 
 // LoadHdWalletFromEnv loads the mnemonic and passphrase from environment variables and generate a HdKey from that.
-func LoadHdWalletFromEnv(mnemonicEnv, passphraseEnv string) (HdKey, error) {
+func LoadHdWalletFromEnv(mnemonicEnv, passphraseEnv string, network btctypes.Network) (HdKey, error) {
 	mnemonic, passphrase := os.Getenv(mnemonicEnv), os.Getenv(passphraseEnv)
 	if mnemonic == "" {
 		return HdKey{}, ErrInvalidMnemonic
 	}
-	seed := bip39.NewSeed(mnemonic, passphrase)
-	key, err := hdkeychain.NewMaster(seed, &chaincfg.TestNet3Params)
-	return HdKey{
-		ExtendedKey: key,
-	}, err
+	return LoadHdWallet(mnemonic, passphrase, network)
 }
 
 // LoadHdWallet generates a HdKey from the given mnemonic and passphrase.
-func LoadHdWallet(mnemonic, passphrase string) (HdKey, error) {
-	seed := bip39.NewSeed(mnemonic, passphrase)
-	key, err := hdkeychain.NewMaster(seed, &chaincfg.TestNet3Params)
+func LoadHdWallet(mnemonic, passphrase string, network btctypes.Network) (HdKey, error) {
+	key, err := hdutil.DeriveExtendedPrivKey(mnemonic, passphrase, network)
+	if err != nil {
+		return HdKey{}, err
+	}
 	return HdKey{
 		ExtendedKey: key,
+		mnemonic:    mnemonic,
+		passphrase:  passphrase,
+		network:     network,
 	}, err
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
 func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
-	var key *hdkeychain.ExtendedKey
-	var err error
-	for _, val := range path {
-		key, err = hdkey.Child(val)
-		if err != nil {
-			return nil, err
-		}
-	}
-	privKey, err := key.ECPrivKey()
-	if err != nil {
-		return nil, err
-	}
-	return privKey.ToECDSA(), nil
+	return hdutil.DerivePrivKey(hdkey.ExtendedKey, path...)
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) Address(network btctypes.Network, path ...uint32) (btctypes.Address, error) {
-	var key *hdkeychain.ExtendedKey
-	var err error
-	for _, val := range path {
-		key, err = hdkey.Child(val)
-		if err != nil {
-			return nil, err
-		}
-	}
-	address, err := key.Address(network.Params())
+func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
+	key, err := hdutil.DerivePrivKey(hdkey.ExtendedKey, path...)
 	if err != nil {
 		return nil, err
 	}
-	addressStr := address.String()
-	return btctypes.AddressFromBase58(addressStr, network)
+	return btctypes.AddressFromPubKey(&key.PublicKey, hdkey.network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.
