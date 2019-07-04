@@ -18,17 +18,17 @@ type BlockchainApi interface {
 const DefaultMaxHeaderBytes = 1 << 10 // 1 KB
 
 type Server struct {
-	blockchains []BlockchainApi
-	port        string
-	logger      logrus.FieldLogger
+	apis   []BlockchainApi
+	port   string
+	logger logrus.FieldLogger
 }
 
-// NewServer returns a server which supports the given blockchains.
-func NewServer(logger logrus.FieldLogger, port string, blockchains ...BlockchainApi) *Server {
+// NewServer returns a server which supports the given blockchain APIs.
+func NewServer(logger logrus.FieldLogger, port string, apis ...BlockchainApi) *Server {
 	return &Server{
-		blockchains: blockchains,
-		port:        port,
-		logger:      logger,
+		apis:   apis,
+		port:   port,
+		logger: logger,
 	}
 }
 
@@ -36,8 +36,8 @@ func NewServer(logger logrus.FieldLogger, port string, blockchains ...Blockchain
 func (server *Server) Run() {
 	// Add handlers for each blockchain.
 	r := mux.NewRouter().StrictSlash(true)
-	for _, blockchain := range server.blockchains {
-		blockchain.AddHandler(r)
+	for _, api := range server.apis {
+		api.AddHandler(r)
 	}
 
 	// Use recovery handler and provide cross-origin support.
