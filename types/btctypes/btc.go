@@ -113,6 +113,14 @@ type UTXO struct {
 	Vout         uint32 `json:"vout"`
 }
 
+type UTXOs []UTXO
+
+type SignatureHash []byte
+
+type SerializedPubKey []byte
+
+type Signature btcec.Signature
+
 type Tx struct {
 	network   Network
 	tx        *wire.MsgTx
@@ -129,12 +137,6 @@ func NewUnsignedTx(network Network, tx *wire.MsgTx, sigHashes []SignatureHash) T
 	}
 }
 
-type SignatureHash []byte
-
-type SerializedPubKey []byte
-
-type Signature btcec.Signature
-
 func (tx *Tx) IsSigned() bool {
 	return tx.signed
 }
@@ -142,7 +144,6 @@ func (tx *Tx) IsSigned() bool {
 func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
 	subScripts := tx.SignatureHashes()
 	sigs := make([]*btcec.Signature, len(subScripts))
-
 	for i, subScript := range subScripts {
 		sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
 		if err != nil {
@@ -150,11 +151,11 @@ func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
 		}
 	}
 	serializedPK := SerializePublicKey(&key.PublicKey, tx.network)
-	return tx.injectSignatures(sigs, serializedPK)
+	return tx.InjectSignatures(sigs, serializedPK)
 }
 
 // InjectSignatures injects the signed signatureHashes into the Tx. You cannot use the USTX anymore.
-func (tx *Tx) injectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error {
+func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error {
 	// Pre-condition checks
 	if tx.IsSigned() {
 		panic("pre-condition violation: cannot inject signatures into signed transaction")
@@ -215,6 +216,8 @@ type Recipient struct {
 	Address Address
 	Amount  Amount
 }
+
+type Recipients []Recipient
 
 type TxHash string
 
