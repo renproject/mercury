@@ -1,3 +1,5 @@
+// Package proxy proxies requests to given clients. If a client returns an error for a given request, the next client is
+// used. If all clients return errors, it returns each of the errors concatenated.
 package proxy
 
 import (

@@ -26,7 +26,7 @@ func main() {
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
-	btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USER")
+	btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USERNAME")
 	btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
 	btcTestnetNodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 	if err != nil {
@@ -37,7 +37,7 @@ func main() {
 
 	// Initialise ZCash API.
 	zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
-	zecTestnetUser := os.Getenv("ZCASH_TESTNET_RPC_USER")
+	zecTestnetUser := os.Getenv("ZCASH_TESTNET_RPC_USERNAME")
 	zecTestnetPassword := os.Getenv("ZCASH_TESTNET_RPC_PASSWORD")
 	zecTestnetNodeClient, err := zecrpc.NewNodeClient(zecTestnetURL, zecTestnetUser, zecTestnetPassword)
 	if err != nil {

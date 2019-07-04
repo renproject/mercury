@@ -14,7 +14,7 @@ import (
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
-var _ = Describe("APIs", func() {
+var _ = Describe("Infura RPC client", func() {
 	Context("when interacting with the infura client", func() {
 		It("should return the correct response", func() {
 			infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")

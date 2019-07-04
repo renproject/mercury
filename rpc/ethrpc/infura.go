@@ -3,7 +3,6 @@ package ethrpc
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/renproject/mercury/rpc"
@@ -45,6 +44,10 @@ func (infura *infuraClient) HandleRequest(r *http.Request, data []byte) (*http.R
 	if apiKey == "" {
 		apiKey = infura.apiKey
 	}
-	log.Println(fmt.Sprintf("accessing %s/%s", infura.url, apiKey))
-	return http.Post(fmt.Sprintf("%s/%s", infura.url, apiKey), "application/json", bytes.NewBuffer(data))
+	client := http.Client{}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s", infura.url, apiKey), bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("cannot construct post request for infura: %v", err)
+	}
+	return client.Do(req)
 }

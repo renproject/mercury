@@ -26,6 +26,11 @@ func NewNodeClient(host, username, password string) (rpc.Client, error) {
 
 // HandleRequest implements the `Client` interface.
 func (node *nodeClient) HandleRequest(r *http.Request, data []byte) (*http.Response, error) {
-	r.SetBasicAuth(node.username, node.password)
-	return http.Post(fmt.Sprintf("%s", node.host), "application/json", bytes.NewBuffer(data))
+	client := http.Client{}
+	req, err := http.NewRequest("POST", node.host, bytes.NewBuffer(data))
+	req.SetBasicAuth(node.username, node.password)
+	if err != nil {
+		return nil, fmt.Errorf("cannot construct post request for zcash node: %v", err)
+	}
+	return client.Do(req)
 }
