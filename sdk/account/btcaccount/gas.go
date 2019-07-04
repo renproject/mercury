@@ -67,9 +67,9 @@ func (btc *BtcGasStation) gasRequired(ctx context.Context) error {
 	}
 
 	var fee = struct {
-		Fast     int64 `json:"fastestGas"`
-		Standard int64 `json:"halfHourGas"`
-		Slow     int64 `json:"hourGas"`
+		Fast     int64 `json:"fastestFee"`
+		Standard int64 `json:"halfHourFee"`
+		Slow     int64 `json:"hourFee"`
 	}{}
 	if err := json.NewDecoder(response.Body).Decode(&fee); err != nil {
 		return err
