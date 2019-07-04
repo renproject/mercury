@@ -22,7 +22,7 @@ var _ = Describe("btc account ", func() {
 			Expect(err).NotTo(HaveOccurred())
 			balance, err := account.Balance(context.Background())
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("address: %v has balance: %v\n", account.Address().EncodeAddress(), balance)
+			// fmt.Printf("address: %v has balance: %v\n", account.Address().EncodeAddress(), balance)
 			Expect(balance).Should(Equal(btctypes.Amount(0)))
 		})
 	})

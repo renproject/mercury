@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"log"
 
 	"github.com/btcsuite/btcutil"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
@@ -120,8 +118,6 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 			return err
 		}
 	}
-
-	log.Print("stx = ", hex.EncodeToString(tx.Serialize()))
 
 	// Submit the signed tx
 	return acc.Client.SubmitSignedTx(ctx, tx)

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -110,7 +109,7 @@ func (c *client) UTXOs(ctx context.Context, address btctypes.Address, limit, con
 
 	// Construct the http request.
 	url := fmt.Sprintf("%v/utxo/%v?limit=%v&confirmations=%v", c.url, address.EncodeAddress(), limit, confirmations)
-	log.Printf("url = %v", url)
+	// log.Printf("url = %v", url)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
