@@ -2,7 +2,6 @@ package zecrpc
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 
 	"github.com/renproject/mercury/rpc"
@@ -27,5 +26,5 @@ func NewNodeClient(host, username, password string) (rpc.Client, error) {
 // HandleRequest implements the `Client` interface.
 func (node *nodeClient) HandleRequest(r *http.Request, data []byte) (*http.Response, error) {
 	r.SetBasicAuth(node.username, node.password)
-	return http.Post(fmt.Sprintf("%s", node.host), "application/json", bytes.NewBuffer(data))
+	return http.Post(node.host, "application/json", bytes.NewBuffer(data))
 }
