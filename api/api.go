@@ -9,22 +9,17 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func hashRequest(r *http.Request) (string, error) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return "", err
-	}
+func hashData(data []byte) (string, error) {
 	h := sha3.New256()
-	h.Write(body)
+	h.Write(data)
 	hash := hex.EncodeToString(h.Sum(nil))
-
 	return hash, nil
 }
 
-func proxyRequest(proxy *proxy.Proxy, r *http.Request) func() ([]byte, error) {
+func proxyRequest(proxy *proxy.Proxy, r *http.Request, data []byte) func() ([]byte, error) {
 	return func() ([]byte, error) {
 		// Fetch the response from the API.
-		resp, err := proxy.ProxyRequest(r)
+		resp, err := proxy.ProxyRequest(r, data)
 		if err != nil {
 			return nil, err
 		}

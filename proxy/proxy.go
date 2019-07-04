@@ -12,17 +12,17 @@ type Proxy struct {
 	Clients []rpc.Client
 }
 
-// NewProxy returns a new Proxy for a given network.
+// NewProxy returns a new Proxy.
 func NewProxy(clients ...rpc.Client) *Proxy {
 	return &Proxy{
 		Clients: clients,
 	}
 }
 
-func (proxy *Proxy) ProxyRequest(r *http.Request) (*http.Response, error) {
+func (proxy *Proxy) ProxyRequest(r *http.Request, data []byte) (*http.Response, error) {
 	errs := types.NewErrList(len(proxy.Clients))
 	for i, client := range proxy.Clients {
-		response, err := client.HandleRequest(r)
+		response, err := client.HandleRequest(r, data)
 		if err != nil {
 			errs[i] = err
 			continue

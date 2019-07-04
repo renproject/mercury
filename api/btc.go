@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -18,6 +19,7 @@ type BtcApi struct {
 	logger  logrus.FieldLogger
 }
 
+// NewBtcApi returns a new BtcApi.
 func NewBtcApi(network btctypes.Network, proxy *proxy.Proxy, cache *cache.Cache, logger logrus.FieldLogger) *BtcApi {
 	return &BtcApi{
 		network: network,
@@ -27,20 +29,27 @@ func NewBtcApi(network btctypes.Network, proxy *proxy.Proxy, cache *cache.Cache,
 	}
 }
 
+// AddHandler implements the `BlockchainApi` interface.
 func (btc *BtcApi) AddHandler(r *mux.Router) {
 	r.HandleFunc(fmt.Sprintf("/btc/%s", btc.network), btc.jsonRPCHandler()).Methods("POST")
 }
 
 func (btc *BtcApi) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		hash, err := hashRequest(r)
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			btc.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		hash, err := hashData(data)
 		if err != nil {
 			btc.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
 		// Check if the result has been cached and if not retrieve it (or wait if it is already being retrieved).
-		resp, err := btc.cache.Get(hash, proxyRequest(btc.proxy, r))
+		resp, err := btc.cache.Get(hash, proxyRequest(btc.proxy, r, data))
 		if err != nil {
 			btc.writeError(w, r, http.StatusInternalServerError, err)
 			return

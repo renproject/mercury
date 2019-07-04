@@ -1,7 +1,9 @@
 package ethrpc
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/renproject/mercury/rpc"
@@ -9,7 +11,7 @@ import (
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
-// infuraClient implements the Client interface.
+// infuraClient implements the `Client` interface.
 type infuraClient struct {
 	network    ethtypes.Network
 	url        string
@@ -17,7 +19,7 @@ type infuraClient struct {
 	taggedKeys map[string]string
 }
 
-// NewNodeClient returns a new infuraClient.
+// NewInfuraClient returns a new infuraClient.
 func NewInfuraClient(network ethtypes.Network, apiKey string, taggedKeys map[string]string) (rpc.Client, error) {
 	var infuraNetwork string
 	switch network {
@@ -36,12 +38,13 @@ func NewInfuraClient(network ethtypes.Network, apiKey string, taggedKeys map[str
 	}, nil
 }
 
-// BlockInfo implements the `Client` interface.
-func (infura *infuraClient) HandleRequest(r *http.Request) (*http.Response, error) {
+// HandleRequest implements the `Client` interface.
+func (infura *infuraClient) HandleRequest(r *http.Request, data []byte) (*http.Response, error) {
 	tag := r.URL.Query().Get("tag")
 	apiKey := infura.taggedKeys[tag]
 	if apiKey == "" {
 		apiKey = infura.apiKey
 	}
-	return http.Post(fmt.Sprintf("%s/%s", infura.url, apiKey), "application/json", r.Body)
+	log.Println(fmt.Sprintf("accessing %s/%s", infura.url, apiKey))
+	return http.Post(fmt.Sprintf("%s/%s", infura.url, apiKey), "application/json", bytes.NewBuffer(data))
 }

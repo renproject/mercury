@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -18,6 +19,7 @@ type ZecApi struct {
 	logger  logrus.FieldLogger
 }
 
+// NewZecApi returns a new ZecApi.
 func NewZecApi(network zectypes.Network, proxy *proxy.Proxy, cache *cache.Cache, logger logrus.FieldLogger) *ZecApi {
 	return &ZecApi{
 		network: network,
@@ -27,20 +29,27 @@ func NewZecApi(network zectypes.Network, proxy *proxy.Proxy, cache *cache.Cache,
 	}
 }
 
+// AddHandler implements the `BlockchainApi` interface.
 func (zec *ZecApi) AddHandler(r *mux.Router) {
 	r.HandleFunc(fmt.Sprintf("/zec/%s", zec.network), zec.jsonRPCHandler()).Methods("POST")
 }
 
 func (zec *ZecApi) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		hash, err := hashRequest(r)
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			zec.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		hash, err := hashData(data)
 		if err != nil {
 			zec.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
 		// Check if the result has been cached and if not retrieve it (or wait if it is already being retrieved).
-		resp, err := zec.cache.Get(hash, proxyRequest(zec.proxy, r))
+		resp, err := zec.cache.Get(hash, proxyRequest(zec.proxy, r, data))
 		if err != nil {
 			zec.writeError(w, r, http.StatusInternalServerError, err)
 			return

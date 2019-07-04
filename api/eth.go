@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -18,6 +19,7 @@ type EthApi struct {
 	logger  logrus.FieldLogger
 }
 
+// NewEthApi returns a new EthApi.
 func NewEthApi(network ethtypes.Network, proxy *proxy.Proxy, cache *cache.Cache, logger logrus.FieldLogger) *EthApi {
 	return &EthApi{
 		network: network,
@@ -27,6 +29,7 @@ func NewEthApi(network ethtypes.Network, proxy *proxy.Proxy, cache *cache.Cache,
 	}
 }
 
+// AddHandler implements the `BlockchainApi` interface.
 func (eth *EthApi) AddHandler(r *mux.Router) {
 	var network string
 	switch eth.network {
@@ -41,14 +44,20 @@ func (eth *EthApi) AddHandler(r *mux.Router) {
 
 func (eth *EthApi) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		hash, err := hashRequest(r)
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			eth.writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		hash, err := hashData(data)
 		if err != nil {
 			eth.writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
 		// Check if the result has been cached and if not retrieve it (or wait if it is already being retrieved).
-		resp, err := eth.cache.Get(hash, proxyRequest(eth.proxy, r))
+		resp, err := eth.cache.Get(hash, proxyRequest(eth.proxy, r, data))
 		if err != nil {
 			eth.writeError(w, r, http.StatusInternalServerError, err)
 			return
