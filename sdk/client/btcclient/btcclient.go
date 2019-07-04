@@ -38,7 +38,6 @@ type Client interface {
 	Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error)
 	BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error)
 	SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error
-	Config() *chaincfg.Params
 }
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
@@ -68,10 +67,6 @@ func NewBtcClient(network btctypes.Network) Client {
 	default:
 		panic("unknown bitcoin network")
 	}
-}
-
-func (c *client) Config() *chaincfg.Params {
-	return &c.config
 }
 
 func (c *client) Network() btctypes.Network {
