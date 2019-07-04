@@ -15,6 +15,7 @@ type Cache struct {
 	logger logrus.FieldLogger
 }
 
+// New returns a new Cache.
 func New(store kv.Store, logger logrus.FieldLogger) *Cache {
 	return &Cache{
 		locks:  sync.Map{},
@@ -49,7 +50,7 @@ func (cache *Cache) Get(hash string, f func() ([]byte, error)) ([]byte, error) {
 			return nil, err
 		}
 
-		if err := cache.store.Insert(hash, data); err != nil {
+		if err := cache.store.Insert(hash, data); err != nil { // TODO: Insert error as well?
 			cache.logger.Errorf("cannot store response data: %v", err)
 		}
 

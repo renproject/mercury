@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -18,6 +19,8 @@ import (
 )
 
 var _ = Describe("Cache", func() {
+	rand.Seed(0)
+
 	Context("when sending multiple identical requests", func() {
 		It("should only forward a single request", func() {
 			store := kv.NewJSON(kv.NewMemDB())
@@ -32,27 +35,35 @@ var _ = Describe("Cache", func() {
 
 			numRequests := 0
 			phi.ParBegin(func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -74,34 +85,42 @@ var _ = Describe("Cache", func() {
 
 			numRequests := 0
 			phi.ParBegin(func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
+				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
