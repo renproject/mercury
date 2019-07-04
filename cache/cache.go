@@ -2,11 +2,16 @@
 package cache
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 
 	"github.com/renproject/kv"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	// ErrNoResponse is returned when one task is waiting for another to retrieve a response, but the first one fails.
+	ErrNoResponse = errors.New("cannot get response, please try again later")
 )
 
 type Cache struct {
@@ -50,7 +55,7 @@ func (cache *Cache) Get(hash string, f func() ([]byte, error)) ([]byte, error) {
 			return nil, err
 		}
 
-		if err := cache.store.Insert(hash, data); err != nil { // TODO: Insert error as well?
+		if err := cache.store.Insert(hash, data); err != nil {
 			cache.logger.Errorf("cannot store response data: %v", err)
 		}
 
@@ -62,7 +67,7 @@ func (cache *Cache) Get(hash string, f func() ([]byte, error)) ([]byte, error) {
 	mu.RLock()
 	if err := cache.store.Get(hash, &data); err != nil {
 		mu.RUnlock()
-		return nil, fmt.Errorf("cannot get response: %v", err)
+		return nil, ErrNoResponse
 	}
 	mu.RUnlock()
 
