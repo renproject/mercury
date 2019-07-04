@@ -1,4 +1,7 @@
-// TODO: Note assumptions (same request will always return the same response)
+// Package cache allows clients to fetch result from a store without having to execute intensive code numerous times. An
+// incoming request first checks to see if the result already exists in the store, if not it executes a function that
+// returns the result. Any additional incoming requests wait until this function has finished executing before
+// attempting to retrieve data from the store.
 package cache
 
 import (
