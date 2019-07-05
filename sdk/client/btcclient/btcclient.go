@@ -138,19 +138,17 @@ func (c *client) BuildUnsignedTx(refundTo btctypes.Address, recipients btctypes.
 
 	wireTx := wire.NewMsgTx(wire.TxVersion)
 
-	// Add the UTXOs to the wire transactions and sum the total amount in the
-	// UTXOs
-	amountFromUTXOs := btctypes.Amount(0)
+	// Add the UTXOs to the wire transactions
 	for _, utxo := range utxos {
 		hash, err := chainhash.NewHashFromStr(utxo.TxHash)
 		if err != nil {
 			return btctypes.Tx{}, err
 		}
-		amountFromUTXOs += utxo.Amount
 		sourceUTXO := wire.NewOutPoint(hash, utxo.Vout)
 		sourceTxIn := wire.NewTxIn(sourceUTXO, nil, nil)
 		wireTx.AddTxIn(sourceTxIn)
 	}
+	amountFromUTXOs := utxos.Sum()
 	if amountFromUTXOs < Dust {
 		// FIXME: Return an error.
 		panic("newLessThanDustError()")
