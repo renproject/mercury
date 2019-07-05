@@ -259,7 +259,7 @@ func (c *client) sendRequest(request *http.Request, statusCode int, result inter
 	httpClient := &http.Client{}
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return err
+		return fmt.Errorf("error sending http request: %v", err)
 	}
 
 	// Check the response code and decode the response.
