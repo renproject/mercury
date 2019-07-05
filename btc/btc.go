@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"log"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -167,7 +166,6 @@ func (btc *fullnodeClient) GetUTXO(_ context.Context, txHash string, vout int64)
 	if err != nil {
 		return UTXO{}, err
 	}
-	log.Printf("tx = %+v", tx)
 	amount, err := floatToInt(tx.Vout[vout].Value)
 	if err != nil {
 		return UTXO{}, err
