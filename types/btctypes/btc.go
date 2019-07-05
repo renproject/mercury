@@ -204,6 +204,14 @@ func (tx *Tx) AppendSignatureHash(script []byte, mode txscript.SigHashType) erro
 	return nil
 }
 
+func (tx *Tx) ReplaceSignatureHash(script []byte, mode txscript.SigHashType, i int) (err error) {
+	if i < 0 || i >= len(tx.sigHashes) {
+		panic(fmt.Errorf("pre-condition violation: signature hash index=%v is out of range", i))
+	}
+	tx.sigHashes[i], err = txscript.CalcSignatureHash(script, mode, tx.tx, i)
+	return
+}
+
 // SignatureHashes returns a list of signature hashes need to be signed.
 func (tx *Tx) SignatureHashes() []SignatureHash {
 	return tx.sigHashes
