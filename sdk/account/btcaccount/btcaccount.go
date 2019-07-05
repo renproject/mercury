@@ -106,9 +106,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	}
 
 	if err := tx.Sign(acc.key); err != nil {
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	// Submit the signed tx
