@@ -33,9 +33,9 @@ func New(network ethtypes.Network) (Client, error) {
 	switch network {
 
 	case ethtypes.Mainnet:
-		url = "https://ren-mercury.herokuapp.com/eth"
+		url = "http://206.189.83.88:5000/eth/mainnet"
 	case ethtypes.Kovan:
-		url = "https://ren-mercury.herokuapp.com/eth-kovan"
+		url = "http://206.189.83.88:5000/eth/testnet"
 	default:
 		return &client{}, types.ErrUnknownNetwork
 	}
