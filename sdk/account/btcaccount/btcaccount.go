@@ -20,10 +20,9 @@ func ErrInsufficientBalance(expect, have string) error {
 
 type Account interface {
 	Address() btctypes.Address
-	Balance(ctx context.Context) (value btctypes.Amount, err error)
 	PrivateKey() *ecdsa.PrivateKey
 	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) error
-	UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error)
+	UTXOs(ctx context.Context, limit, confirmations int) (utxos btctypes.UTXOs, err error)
 }
 
 // account is a bitcoin wallet which can transfer funds and building tx.
@@ -81,27 +80,19 @@ func (acc *account) PrivateKey() *ecdsa.PrivateKey {
 	return acc.key
 }
 
-// Transfer transfer certain amount value to the target address.
-func (acc *account) Balance(ctx context.Context) (value btctypes.Amount, err error) {
-	return acc.Client.Balance(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
-}
-
-func (acc *account) UTXOs(ctx context.Context) (utxos []btctypes.UTXO, err error) {
-	return acc.Client.UTXOs(ctx, acc.address, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
+func (acc *account) UTXOs(ctx context.Context, limit, confirmations int) (utxos btctypes.UTXOs, err error) {
+	return acc.Client.UTXOs(ctx, acc.address, limit, confirmations)
 }
 
 // Transfer transfer certain amount value to the target address.
 func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) error {
-	utxos, err := acc.UTXOs(ctx)
+	utxos, err := acc.UTXOs(ctx, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
 	if err != nil {
 		return err
 	}
 
 	// Check if we have enough funds
-	balance, err := acc.Balance(ctx)
-	if err != nil {
-		return err
-	}
+	balance := utxos.Sum()
 	if balance < value+fee {
 		return ErrInsufficientBalance(fmt.Sprintf("%v", value), fmt.Sprintf("%v", balance))
 	}

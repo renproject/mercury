@@ -115,6 +115,14 @@ type UTXO struct {
 
 type UTXOs []UTXO
 
+func (utxos *UTXOs) Sum() Amount {
+	total := Amount(0)
+	for _, utxo := range *utxos {
+		total += Amount(utxo.Amount)
+	}
+	return total
+}
+
 type SignatureHash []byte
 
 type SerializedPubKey []byte
