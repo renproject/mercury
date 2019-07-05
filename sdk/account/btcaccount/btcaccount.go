@@ -81,7 +81,7 @@ func (acc *account) PrivateKey() *ecdsa.PrivateKey {
 }
 
 func (acc *account) UTXOs(ctx context.Context, limit, confirmations int) (utxos btctypes.UTXOs, err error) {
-	return acc.Client.UTXOs(ctx, acc.address, limit, confirmations)
+	return acc.Client.UTXOs(acc.address)
 }
 
 // Transfer transfer certain amount value to the target address.
@@ -99,7 +99,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 
 	// todo : select some utxos from all the utxos we have.
 	recipient := btctypes.Recipient{Address: to, Amount: value}
-	tx, err := acc.Client.BuildUnsignedTx(acc.Address(), btctypes.Recipients{recipient}, utxos, fee)
+	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipients{recipient}, acc.Address(), fee)
 
 	if err != nil {
 		return err
@@ -112,5 +112,5 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	}
 
 	// Submit the signed tx
-	return acc.Client.SubmitSignedTx(ctx, tx)
+	return acc.Client.SubmitSignedTx(tx)
 }
