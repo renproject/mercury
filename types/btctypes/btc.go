@@ -136,11 +136,11 @@ type Tx struct {
 	signed    bool
 }
 
-func NewUnsignedTx(network Network, tx *wire.MsgTx, sigHashes []SignatureHash) Tx {
+func NewUnsignedTx(network Network, tx *wire.MsgTx) Tx {
 	return Tx{
 		network:   network,
 		tx:        tx,
-		sigHashes: sigHashes,
+		sigHashes: []SignatureHash{},
 		signed:    false,
 	}
 }
@@ -192,6 +192,15 @@ func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey Seriali
 		tx.tx.TxIn[i].SignatureScript = sigScript
 	}
 	tx.signed = true
+	return nil
+}
+
+func (tx *Tx) AppendSignatureHash(script []byte, mode txscript.SigHashType) error {
+	sigHash, err := txscript.CalcSignatureHash(script, mode, tx.tx, len(tx.sigHashes))
+	if err != nil {
+		return err
+	}
+	tx.sigHashes = append(tx.sigHashes, sigHash)
 	return nil
 }
 

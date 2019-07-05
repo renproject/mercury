@@ -35,7 +35,7 @@ type Client interface {
 	Network() btctypes.Network
 	UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.UTXOs, error)
 	Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error)
-	BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error)
+	BuildUnsignedTx(refundTo btctypes.Address, recipients btctypes.Recipients, utxos btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error)
 	SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error
 }
 
@@ -130,45 +130,79 @@ func (c *client) Confirmations(ctx context.Context, hash btctypes.TxHash) (btcty
 	return btctypes.Confirmations(confirmations), nil
 }
 
-func (c *client) BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error) {
-	newTx := wire.NewMsgTx(wire.TxVersion)
+func (c *client) BuildUnsignedTx(refundTo btctypes.Address, recipients btctypes.Recipients, utxos btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error) {
+	// Pre-condition checks
+	if gas < Dust {
+		panic(fmt.Errorf("pre-condition violation: gas=%v is too low", gas))
+	}
 
-	// Fill the utxos we want to use as newTx inputs.
+	wireTx := wire.NewMsgTx(wire.TxVersion)
+
+	// Add the UTXOs to the wire transactions and sum the total amount in the
+	// UTXOs
+	amountFromUTXOs := btctypes.Amount(0)
 	for _, utxo := range utxos {
 		hash, err := chainhash.NewHashFromStr(utxo.TxHash)
 		if err != nil {
 			return btctypes.Tx{}, err
 		}
-
-		sourceUtxo := wire.NewOutPoint(hash, utxo.Vout)
-		sourceTxIn := wire.NewTxIn(sourceUtxo, nil, nil)
-		newTx.AddTxIn(sourceTxIn)
+		amountFromUTXOs += utxo.Amount
+		sourceUTXO := wire.NewOutPoint(hash, utxo.Vout)
+		sourceTxIn := wire.NewTxIn(sourceUTXO, nil, nil)
+		wireTx.AddTxIn(sourceTxIn)
+	}
+	if amountFromUTXOs < Dust {
+		// FIXME: Return an error.
+		panic("newLessThanDustError()")
 	}
 
-	// Fill newTx output with the target address we want to receive the funds.
+	// Add an output for each recipient and sum the total amount that is being
+	// transferred to recipients
+	amountToRecipients := btctypes.Amount(0)
 	for _, recipient := range recipients {
-		outputPkScript, err := txscript.PayToAddrScript(recipient.Address)
+		payToAddrScript, err := txscript.PayToAddrScript(recipient.Address)
 		if err != nil {
 			return btctypes.Tx{}, err
 		}
-		sourceTxOut := wire.NewTxOut(int64(recipient.Amount), outputPkScript)
-		newTx.AddTxOut(sourceTxOut)
+		amountToRecipients += recipient.Amount
+		sourceTxOut := wire.NewTxOut(int64(recipient.Amount), payToAddrScript)
+		wireTx.AddTxOut(sourceTxOut)
 	}
+	if amountToRecipients < Dust {
+		// FIXME: Return an error.
+		panic("newLessThanDustError()")
+	}
+
+	// Check that we are not transferring more to recipients than available in
+	// the UTXOs (accounting for gas)
+	amountToRefund := amountFromUTXOs - amountToRecipients - gas
+	if amountToRefund < 0 {
+		// FIXME: Return an error.
+		panic("newInsufficientAmountError")
+	}
+	// Add an output to refund the difference between what we are transferring
+	// to recipients and what we are spending from the UTXOs (accounting for
+	// gas)
+	payToAddrScript, err := txscript.PayToAddrScript(refundTo)
+	if err != nil {
+		return btctypes.Tx{}, err
+	}
+	sourceTxOut := wire.NewTxOut(int64(amountToRefund), payToAddrScript)
+	wireTx.AddTxOut(sourceTxOut)
 
 	// Get the signature hashes we need to sign
-	sigHashes := make([]btctypes.SignatureHash, len(utxos))
-	for i, utxo := range utxos {
-		script, err := hex.DecodeString(utxo.ScriptPubKey)
+	unsignedTx := btctypes.NewUnsignedTx(c.network, wireTx)
+	fmt.Printf("before sig hashes: %v", unsignedTx.SignatureHashes())
+	for _, utxo := range utxos {
+		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
 		if err != nil {
 			return btctypes.Tx{}, err
 		}
-		sigHashes[i], err = txscript.CalcSignatureHash(script, txscript.SigHashAll, newTx, i)
-		if err != nil {
+		if err := unsignedTx.AppendSignatureHash(scriptPubKey, txscript.SigHashAll); err != nil {
 			return btctypes.Tx{}, err
 		}
 	}
-
-	return btctypes.NewUnsignedTx(c.network, newTx, sigHashes), nil
+	return unsignedTx, nil
 }
 
 type PostTransactionRequest struct {

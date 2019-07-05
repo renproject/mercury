@@ -98,7 +98,8 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	}
 
 	// todo : select some utxos from all the utxos we have.
-	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipient{to, value}, btctypes.Recipient{Address: acc.Address(), Amount: balance - value - fee})
+	recipient := btctypes.Recipient{Address: to, Amount: value}
+	tx, err := acc.Client.BuildUnsignedTx(acc.Address(), btctypes.Recipients{recipient}, utxos, fee)
 
 	if err != nil {
 		return err
