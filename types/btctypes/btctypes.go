@@ -130,23 +130,23 @@ type SerializedPubKey []byte
 type Signature btcec.Signature
 
 type Tx struct {
-	network   Network
-	tx        *wire.MsgTx
-	sigHashes []SignatureHash
-	signed    bool
+	Network   Network
+	Tx        *wire.MsgTx
+	SigHashes []SignatureHash
+	Signed    bool
 }
 
 func NewUnsignedTx(network Network, tx *wire.MsgTx) Tx {
 	return Tx{
-		network:   network,
-		tx:        tx,
-		sigHashes: []SignatureHash{},
-		signed:    false,
+		Network:   network,
+		Tx:        tx,
+		SigHashes: []SignatureHash{},
+		Signed:    false,
 	}
 }
 
 func (tx *Tx) IsSigned() bool {
-	return tx.signed
+	return tx.Signed
 }
 
 func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
@@ -158,7 +158,7 @@ func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
 			return err
 		}
 	}
-	serializedPK := SerializePublicKey(&key.PublicKey, tx.network)
+	serializedPK := SerializePublicKey(&key.PublicKey, tx.Network)
 	return tx.InjectSignatures(sigs, serializedPK)
 }
 
@@ -168,14 +168,14 @@ func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey Seriali
 	if tx.IsSigned() {
 		panic("pre-condition violation: cannot inject signatures into signed transaction")
 	}
-	if tx.tx == nil {
+	if tx.Tx == nil {
 		panic("pre-condition violation: cannot inject signatures into nil transaction")
 	}
 	if len(sigs) <= 0 {
 		panic("pre-condition violation: cannot inject empty signatures")
 	}
-	if len(sigs) != len(tx.tx.TxIn) {
-		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), len(tx.tx.TxIn)))
+	if len(sigs) != len(tx.Tx.TxIn) {
+		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), len(tx.Tx.TxIn)))
 	}
 	if len(serializedPubKey) <= 0 {
 		panic("pre-condition violation: cannot inject signatures with empty pubkey")
@@ -189,43 +189,43 @@ func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey Seriali
 		if err != nil {
 			return err
 		}
-		tx.tx.TxIn[i].SignatureScript = sigScript
+		tx.Tx.TxIn[i].SignatureScript = sigScript
 	}
-	tx.signed = true
+	tx.Signed = true
 	return nil
 }
 
 func (tx *Tx) AppendSignatureHash(script []byte, mode txscript.SigHashType) error {
-	sigHash, err := txscript.CalcSignatureHash(script, mode, tx.tx, len(tx.sigHashes))
+	sigHash, err := txscript.CalcSignatureHash(script, mode, tx.Tx, len(tx.SigHashes))
 	if err != nil {
 		return err
 	}
-	tx.sigHashes = append(tx.sigHashes, sigHash)
+	tx.SigHashes = append(tx.SigHashes, sigHash)
 	return nil
 }
 
 func (tx *Tx) ReplaceSignatureHash(script []byte, mode txscript.SigHashType, i int) (err error) {
-	if i < 0 || i >= len(tx.sigHashes) {
+	if i < 0 || i >= len(tx.SigHashes) {
 		panic(fmt.Errorf("pre-condition violation: signature hash index=%v is out of range", i))
 	}
-	tx.sigHashes[i], err = txscript.CalcSignatureHash(script, mode, tx.tx, i)
+	tx.SigHashes[i], err = txscript.CalcSignatureHash(script, mode, tx.Tx, i)
 	return
 }
 
 // SignatureHashes returns a list of signature hashes need to be signed.
 func (tx *Tx) SignatureHashes() []SignatureHash {
-	return tx.sigHashes
+	return tx.SigHashes
 }
 
 // Serialize returns the serialized tx in bytes.
 func (tx *Tx) Serialize() []byte {
 	// Pre-condition checks
-	if tx.tx == nil {
+	if tx.Tx == nil {
 		panic("pre-condition violation: cannot serialize nil transaction")
 	}
 
 	buf := bytes.NewBuffer([]byte{})
-	if err := tx.tx.Serialize(buf); err != nil {
+	if err := tx.Tx.Serialize(buf); err != nil {
 		return nil
 	}
 	bufBytes := buf.Bytes()

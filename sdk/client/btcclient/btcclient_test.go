@@ -1,9 +1,7 @@
 package btcclient_test
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,24 +26,23 @@ var _ = Describe("btc client", func() {
 		network := network
 		Context(fmt.Sprintf("when fetching UTXOs on %s", network), func() {
 			It("should return a non-zero number of UTXOs from the funded address", func() {
-				client := NewBtcClient(network)
+				client, err := NewBtcClient(network)
+				Expect(err).NotTo(HaveOccurred())
 				address, err := loadTestAccounts(network).Address(44, 1, 0, 0, 1)
 				Expect(err).NotTo(HaveOccurred())
 
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-				defer cancel()
-				utxos, err := client.UTXOs(ctx, address, MaxUTXOLimit, MinConfirmations)
+				utxos, err := client.UTXOs(address)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(BeNumerically(">", 0))
 			})
 
 			It("should return zero UTXOs from a randomly generated address", func() {
-				client := NewBtcClient(network)
+				client, err := NewBtcClient(network)
+				Expect(err).NotTo(HaveOccurred())
 				address, err := testutils.RandomAddress(network)
 				Expect(err).NotTo(HaveOccurred())
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-				defer cancel()
-				utxos, err := client.UTXOs(ctx, address, MaxUTXOLimit, MinConfirmations)
+
+				utxos, err := client.UTXOs(address)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(Equal(0))
 			})
