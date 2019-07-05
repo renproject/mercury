@@ -3,6 +3,7 @@ package testutils
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"os"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -12,6 +13,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/pkg/errors"
 	"github.com/renproject/mercury/hdutil"
 	"github.com/renproject/mercury/types/btctypes"
@@ -59,6 +61,14 @@ func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
 		return nil, err
 	}
 	return btctypes.AddressFromPubKey(&key.PublicKey, hdkey.network)
+}
+
+func RandomAddress(network btctypes.Network) (btctypes.Address, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return btctypes.AddressFromPubKey(&key.PublicKey, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.

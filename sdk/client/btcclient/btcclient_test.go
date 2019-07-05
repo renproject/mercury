@@ -2,9 +2,7 @@ package btcclient_test
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
-	"log"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -19,83 +17,53 @@ var _ = Describe("btc client", func() {
 
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
-	loadTestAccounts := func() testutils.HdKey {
-		key, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE")
+	loadTestAccounts := func(network btctypes.Network) testutils.HdKey {
+		wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
 		Expect(err).NotTo(HaveOccurred())
-		return key
+		return wallet
 	}
 
 	// Fixme : currently not testing mainnet.
 	for _, network := range []btctypes.Network{ /*types.Mainnet,*/ btctypes.Testnet} {
 		network := network
-		Context(fmt.Sprintf("when querying info of bitcoin %s", network), func() {
-			It("should return the right balance", func() {
+		Context(fmt.Sprintf("when fetching UTXOs on %s", network), func() {
+			It("should return a non-zero number of UTXOs from the funded address", func() {
 				client := NewBtcClient(network)
-				address, err := loadTestAccounts().Address(network, 44, 1, 0, 0, 1)
+				address, err := loadTestAccounts(network).Address(44, 1, 0, 0, 1)
 				Expect(err).NotTo(HaveOccurred())
 
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-				balance, err := client.Balance(ctx, address, MaxUTXOLimit, 0)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(balance).Should(Equal(2100000 * btctypes.SAT))
-			})
-
-			It("should return the utxos of the given address", func() {
-				client := NewBtcClient(network)
-				address, err := loadTestAccounts().Address(network, 44, 1, 0, 0, 1)
-				Expect(err).NotTo(HaveOccurred())
-
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-				defer cancel()
-
 				utxos, err := client.UTXOs(ctx, address, MaxUTXOLimit, MinConfirmations)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(len(utxos)).Should(Equal(3))
-				Expect(utxos[0].Amount).Should(Equal(100000 * btctypes.SAT))
-				Expect(utxos[0].TxHash).Should(Equal("5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7"))
-				Expect(utxos[1].Amount).Should(Equal(1000000 * btctypes.SAT))
-				Expect(utxos[1].TxHash).Should(Equal("801046d60d631b908fdcd8ab81ae1b7275bbb5a06aae57f1f1925de72483e1d4"))
-				Expect(utxos[2].Amount).Should(Equal(1000000 * btctypes.SAT))
-				Expect(utxos[2].TxHash).Should(Equal("375190ced26f4437bb5ef6766081f18cb730f6d0454612cb34d100db1a3626fb"))
-
+				Expect(len(utxos)).Should(BeNumerically(">", 0))
 			})
 
-			It("should return the confirmations of a tx", func() {
+			It("should return zero UTXOs from a randomly generated address", func() {
 				client := NewBtcClient(network)
+				address, err := testutils.RandomAddress(network)
+				Expect(err).NotTo(HaveOccurred())
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-
-				hash := btctypes.TxHash("5b37954895af2afc310ae1cbdd1233056072945fff449186a278a4f4fd42f7a7")
-				confirmations, err := client.Confirmations(ctx, hash)
+				utxos, err := client.UTXOs(ctx, address, MaxUTXOLimit, MinConfirmations)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(confirmations).Should(BeNumerically(">", 0))
+				Expect(len(utxos)).Should(Equal(0))
+			})
+		})
+
+		Context(fmt.Sprintf("when building a utx on %s", network), func() {
+			PIt("should have the correct inputs", func() {
+				// TODO: write the test
+			})
+
+			PIt("should have the correct outputs", func() {
+				// TODO: write the test
 			})
 		})
 
 		Context(fmt.Sprintf("when submitting stx to bitcoin %s", network), func() {
-			PIt("should be able to send a stx", func() {
-				client := NewBtcClient(network)
-				key, err := loadTestAccounts().EcdsaKey(44, 1, 0, 0, 2)
-				Expect(err).NotTo(HaveOccurred())
-				address, err := loadTestAccounts().Address(network, 44, 1, 0, 0, 2)
-				Expect(err).NotTo(HaveOccurred())
-
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancel()
-
-				utxos, err := client.UTXOs(ctx, address, MaxUTXOLimit, MinConfirmations)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(len(utxos)).Should(BeNumerically(">=", 1))
-
-				tx, err := client.BuildUnsignedTx(utxos, btctypes.Recipient{Address: address, Amount: utxos[0].Amount})
-				Expect(err).NotTo(HaveOccurred())
-
-				err = tx.Sign(key)
-				Expect(err).NotTo(HaveOccurred())
-
-				log.Println("successfully sign the tx,", hex.EncodeToString(tx.Serialize()))
-				Expect(client.SubmitSignedTx(ctx, tx)).Should(Succeed())
+			PIt("should be able to submit a stx", func() {
+				// TODO: write the test
 			})
 		})
 	}

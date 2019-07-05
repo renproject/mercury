@@ -33,8 +33,7 @@ const (
 
 type Client interface {
 	Network() btctypes.Network
-	Balance(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.Amount, error)
-	UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) ([]btctypes.UTXO, error)
+	UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.UTXOs, error)
 	Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error)
 	BuildUnsignedTx(utxos []btctypes.UTXO, recipients ...btctypes.Recipient) (btctypes.Tx, error)
 	SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error
@@ -73,31 +72,9 @@ func (c *client) Network() btctypes.Network {
 	return c.network
 }
 
-// Balance returns the balance of the given bitcoin address. It filters the utxos which have less confirmations than
-// required. It times out if the context exceeded. Limit must be greater than MinUTXOLimit and less than MaxUTXOLimit.
-// Confirmations must be greater than MinConfirmationsLimit and less than MaxConfirmationsLimit.
-func (c *client) Balance(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.Amount, error) {
-	// Pre-condition checks
-	checkConfirmationPreCondition(confirmations)
-	checkUTXOLimitPreCondition(limit)
-
-	utxos, err := c.UTXOs(ctx, address, limit, confirmations)
-	if err != nil {
-		return btctypes.Amount(0), err
-	}
-	balance := btctypes.Amount(0)
-	for _, utxo := range utxos {
-		balance += btctypes.Amount(utxo.Amount)
-	}
-
-	// Post-condition checks
-	checkBalancePostCondition(balance)
-	return balance, nil
-}
-
 // UTXOs returns the utxos of the given bitcoin address. It filters the utxos which have less confirmations than
 // required. It times out if the context exceeded.
-func (c *client) UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) ([]btctypes.UTXO, error) {
+func (c *client) UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.UTXOs, error) {
 	// Pre-condition checks
 	checkConfirmationPreCondition(confirmations)
 	checkUTXOLimitPreCondition(limit)
@@ -107,13 +84,16 @@ func (c *client) UTXOs(ctx context.Context, address btctypes.Address, limit, con
 	// log.Printf("url = %v", url)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating fetch utxo request for address=%v, %v", address.EncodeAddress(), err)
 	}
 	request.WithContext(ctx)
 
-	var utxos []btctypes.UTXO
+	var utxos btctypes.UTXOs
 	err = c.sendRequest(request, http.StatusOK, &utxos)
-	return utxos, err
+	if err != nil {
+		return nil, fmt.Errorf("error submitting fetch utxo request for address=%v, %v", address.EncodeAddress(), err)
+	}
+	return utxos, nil
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
