@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"log"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -162,15 +163,12 @@ func (btc *fullnodeClient) GetUTXO(_ context.Context, txHash string, vout int64)
 		return UTXO{}, err
 	}
 
-	txRaw, err := btc.client.GetRawTransaction(hash)
+	tx, err := btc.client.GetRawTransactionVerbose(hash)
 	if err != nil {
 		return UTXO{}, err
 	}
-
-	buffer := new(bytes.Buffer)
-	txRaw.MsgTx().Serialize(buffer)
-
-	tx, err := btc.client.DecodeRawTransaction(buffer.Bytes())
+	log.Printf("tx = %+v", tx)
+	amount, err := floatToInt(tx.Vout[vout].Value)
 	if err != nil {
 		return UTXO{}, err
 	}
@@ -178,7 +176,7 @@ func (btc *fullnodeClient) GetUTXO(_ context.Context, txHash string, vout int64)
 	return UTXO{
 		TxHash:       txHash,
 		Vout:         uint32(vout),
-		Amount:       floatToInt(tx.Vout[vout].Value),
+		Amount:       amount,
 		ScriptPubKey: tx.Vout[vout].ScriptPubKey.Hex,
 	}, nil
 }

@@ -173,7 +173,7 @@ func (zec *fnClient) GetUTXO(txHash string, vout int64) (UTXO, error) {
 		return UTXO{}, err
 	}
 
-	tx,err := zec.client.GetRawTransactionVerbose(hash)
+	tx, err := zec.client.GetRawTransactionVerbose(hash)
 	if err != nil {
 		return UTXO{}, err
 	}

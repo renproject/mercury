@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -239,7 +240,8 @@ func strToInt(val string) (int64, error) {
 	return value, nil
 }
 
-func floatToInt(val float64) int64 {
-	value, _ := new(big.Float).Mul(new(big.Float).SetFloat64(val), big.NewFloat(1e8)).Int64()
-	return value
+func floatToInt(val float64) (int64, error) {
+	value := new(big.Float).Mul(new(big.Float).SetFloat64(val), big.NewFloat(1e8))
+	v, err := strconv.Atoi(value.String())
+	return int64(v), err
 }
