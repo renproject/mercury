@@ -125,3 +125,18 @@ func (tx *Tx) Serialize() []byte {
 	}
 	return bufBytes
 }
+
+func (tx *Tx) Verify() error {
+	for i, txout := range tx.tx.TxOut {
+		engine, err := txscript.NewEngine(txout.PkScript, tx.tx, i,
+			txscript.StandardVerifyFlags, txscript.NewSigCache(10),
+			txscript.NewTxSigHashes(tx.tx), txout.Value)
+		if err != nil {
+			return err
+		}
+		if err := engine.Execute(); err != nil {
+			return err
+		}
+	}
+	return nil
+}

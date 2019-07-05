@@ -213,6 +213,9 @@ func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
 	if !stx.IsSigned() {
 		panic("pre-condition violation: cannot submit unsigned transaction")
 	}
+	if err := stx.Verify(); err != nil {
+		panic(fmt.Errorf("pre-condition violation: transaction failed verification: %v", err))
+	}
 
 	req := PostTransactionRequest{
 		SignedTransaction: hex.EncodeToString(stx.Serialize()),
