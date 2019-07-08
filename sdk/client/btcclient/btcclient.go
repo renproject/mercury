@@ -14,13 +14,7 @@ import (
 )
 
 const (
-	Dust = btctypes.Amount(600)
-
-	MinUTXOLimit     = 1
-	MaxUTXOLimit     = 99
-	MinConfirmations = 0
-	MaxConfirmations = 99
-
+	Dust               = btctypes.Amount(600)
 	MainnetMercuryURL  = "206.189.83.88:5000/btc/mainnet"
 	TestnetMercuryURL  = "206.189.83.88:5000/btc/testnet"
 	LocalnetMercuryURL = "0.0.0.0:5000/btc/testnet"
