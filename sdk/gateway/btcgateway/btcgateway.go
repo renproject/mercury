@@ -64,12 +64,7 @@ func (gw *gateway) BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes
 	amount := gwUTXOs.Sum()
 	tx, err := gw.client.BuildUnsignedTx(
 		gw.spenderAddr,
-		btctypes.Recipients{
-			btctypes.Recipient{
-				Address: gw.spenderAddr,
-				Amount:  amount,
-			},
-		},
+		btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}},
 		append(spenderUTXOs, gwUTXOs...),
 		gas,
 	)
