@@ -1,10 +1,17 @@
 package btcaccount_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/account/btcaccount"
 
+	"github.com/renproject/kv"
+	"github.com/renproject/mercury/api"
+	"github.com/renproject/mercury/cache"
+	"github.com/renproject/mercury/proxy"
+	"github.com/renproject/mercury/rpc/btcrpc"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/testutils"
 	"github.com/renproject/mercury/types/btctypes"
@@ -12,6 +19,23 @@ import (
 )
 
 var _ = Describe("btc account ", func() {
+	BeforeSuite(func() {
+		logger := logrus.StandardLogger()
+		store := kv.NewJSON(kv.NewMemDB())
+		cache := cache.New(store, logger)
+
+		btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
+		btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USERNAME")
+		btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
+		btcTestnetNodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
+		Expect(err).ToNot(HaveOccurred())
+
+		btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
+		btcTestnetAPI := api.NewBtcApi(btctypes.Testnet, btcTestnetProxy, cache, logger)
+		server := api.NewServer(logger, "5000", btcTestnetAPI)
+		go server.Run()
+	})
+
 	Context("when fetching utxos", func() {
 		It("should fetch at least one utxo from the funded account", func() {
 			// Get the account with actual balance
