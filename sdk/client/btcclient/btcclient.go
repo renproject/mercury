@@ -22,15 +22,15 @@ const (
 	MaxConfirmations = 99
 
 	MainnetMercuryURL = "http://139.59.221.34/btc"
-	TestnetMercuryURL = "http://206.189.83.88:5000/btc/testnet"
+	TestnetMercuryURL = "206.189.83.88:5000/btc/testnet"
 )
 
 type Client interface {
 	Network() btctypes.Network
-	UTXOs(address btctypes.Address) (btctypes.UTXOs, error)
-	Confirmations(hash btctypes.TxHash) (btctypes.Confirmations, error)
+	UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error)
+	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
 	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
-	SubmitSignedTx(stx btctypes.Tx) error
+	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
 }
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
@@ -84,40 +84,55 @@ func (c *client) Network() btctypes.Network {
 	return c.network
 }
 
-// UTXOs returns the utxos of the given bitcoin address. It filters the utxos which have less confirmations than
-// required. It times out if the context exceeded.
-func (c *client) UTXOs(address btctypes.Address) (btctypes.UTXOs, error) {
-	outputs, err := c.client.ListUnspent()
+// UTXOs returns the UTXOs for the given transaction hash.
+func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
+	txHashBytes, err := chainhash.NewHashFromStr(string(txHash))
 	if err != nil {
-		return nil, fmt.Errorf("cannot retrieve utxos from btc client: %v", err)
+		return nil, fmt.Errorf("cannot parse hash: %v", err)
+	}
+	tx, err := c.client.GetTransaction(txHashBytes)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
 
-	utxos := make(btctypes.UTXOs, len(outputs))
+	outputs := tx.Details
+	var utxos btctypes.UTXOs
 	for i, output := range outputs {
+		txOut, err := c.client.GetTxOut(txHashBytes, uint32(i), true)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get tx output from btc client: %v", err)
+		}
+
+		// If the transaction output has been spent, continue.
+		if txOut == nil {
+			continue
+		}
+
 		amount, err := btcutil.NewAmount(output.Amount)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 		}
-		utxos[i] = btctypes.UTXO{
-			TxHash:       output.TxID,
+		utxo := btctypes.UTXO{
+			TxHash:       tx.TxID,
 			Amount:       btctypes.Amount(amount),
-			ScriptPubKey: output.ScriptPubKey,
+			ScriptPubKey: txOut.ScriptPubKey.Hex,
 			Vout:         output.Vout,
 		}
+		utxos = append(utxos, utxo)
 	}
 
 	return utxos, nil
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
-func (c *client) Confirmations(hash btctypes.TxHash) (btctypes.Confirmations, error) {
-	hashBytes, err := chainhash.NewHashFromStr(string(hash))
+func (c *client) Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error) {
+	txHashBytes, err := chainhash.NewHashFromStr(string(txHash))
 	if err != nil {
 		return 0, fmt.Errorf("cannot parse hash: %v", err)
 	}
-	tx, err := c.client.GetTransaction(hashBytes)
+	tx, err := c.client.GetTransaction(txHashBytes)
 	if err != nil {
-		return 0, fmt.Errorf("cannot get tx from hash %s: %v", hash, err)
+		return 0, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
 
 	return btctypes.Confirmations(tx.Confirmations), nil
@@ -186,16 +201,15 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	return unsignedTx, nil
 }
 
-type PostTransactionRequest struct {
-	SignedTransaction string `json:"stx"`
-}
-
 // SubmitSignedTx submits the signed transactions
-func (c *client) SubmitSignedTx(stx btctypes.Tx) error {
+func (c *client) SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error) {
 	if !stx.IsSigned() {
 		panic("pre-condition violation: cannot submit unsigned transaction")
 	}
 
-	_, err := c.client.SendRawTransaction(stx.Tx, false)
-	return err
+	txHash, err := c.client.SendRawTransaction(stx.Tx, false)
+	if err != nil {
+		return "", fmt.Errorf("cannot send raw transaction using btc client: %v", err)
+	}
+	return btctypes.TxHash(txHash.String()), nil
 }
