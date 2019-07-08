@@ -28,6 +28,7 @@ const (
 type Client interface {
 	Network() btctypes.Network
 	UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error)
+	UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error)
 	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
 	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
 	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
@@ -119,6 +120,31 @@ func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
 			Vout:         output.Vout,
 		}
 		utxos = append(utxos, utxo)
+	}
+
+	return utxos, nil
+}
+
+// UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
+// addresses that have not been imported into the Bitcoin node.
+func (c *client) UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error) {
+	outputs, err := c.client.ListUnspentMinMaxAddresses(0, 999999, []btcutil.Address{address})
+	if err != nil {
+		return nil, fmt.Errorf("cannot retrieve utxos from btc client: %v", err)
+	}
+
+	utxos := make(btctypes.UTXOs, len(outputs))
+	for i, output := range outputs {
+		amount, err := btcutil.NewAmount(output.Amount)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
+		}
+		utxos[i] = btctypes.UTXO{
+			TxHash:       output.TxID,
+			Amount:       btctypes.Amount(amount),
+			ScriptPubKey: output.ScriptPubKey,
+			Vout:         output.Vout,
+		}
 	}
 
 	return utxos, nil
