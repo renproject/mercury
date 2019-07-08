@@ -34,6 +34,10 @@ func NewUnsignedTx(network Network, tx *wire.MsgTx) Tx {
 	}
 }
 
+func (tx *Tx) Hash() TxHash {
+	return TxHash(tx.tx.TxHash().String())
+}
+
 func (tx *Tx) IsSigned() bool {
 	return tx.signed
 }

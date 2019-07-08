@@ -208,7 +208,8 @@ type PostTransactionRequest struct {
 }
 
 // SubmitSignedTx submits the signed transactions
-func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
+// returns the transaction hash as in hex
+func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) (btctypes.TxHash, error) {
 	// Pre-condition checks
 	if !stx.IsSigned() {
 		panic("pre-condition violation: cannot submit unsigned transaction")
@@ -230,7 +231,7 @@ func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
 	fmt.Printf("sending post request to: %v\n", url)
 	request, err := http.NewRequest("POST", url, buf)
 	if err != nil {
-		return fmt.Errorf("error building 'submit signed transaction' http request: %v", err)
+		return "", fmt.Errorf("error building 'submit signed transaction' http request: %v", err)
 	}
 	request.WithContext(ctx)
 
@@ -238,7 +239,7 @@ func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
 	httpClient := &http.Client{}
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return fmt.Errorf("error executing 'submit signed transaction' http request: %v", err)
+		return "", fmt.Errorf("error executing 'submit signed transaction' http request: %v", err)
 	}
 	defer response.Body.Close()
 
@@ -248,12 +249,12 @@ func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error {
 		body, err := ioutil.ReadAll(response.Body)
 		fmt.Printf("body: %v", string(body))
 		if err != nil {
-			return fmt.Errorf("error reading http response body: %v", err)
+			return "", fmt.Errorf("error reading http response body: %v", err)
 		}
-		return types.NewErrHTTPResponse(expectedStatusCode, response.StatusCode, body)
+		return "", types.NewErrHTTPResponse(expectedStatusCode, response.StatusCode, body)
 	}
 
-	return nil
+	return stx.Hash(), nil
 }
 
 func (c *client) sendRequest(request *http.Request, statusCode int, result interface{}) error {
