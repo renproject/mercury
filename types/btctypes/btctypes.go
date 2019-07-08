@@ -28,8 +28,9 @@ const (
 type Network uint8
 
 const (
-	Mainnet Network = 0
-	Testnet Network = 3
+	Localnet Network = 0
+	Mainnet  Network = 1
+	Testnet  Network = 2
 )
 
 // NewNetwork parse the network from a string.
@@ -40,6 +41,8 @@ func NewNetwork(network string) Network {
 		return Mainnet
 	case "testnet", "testnet3":
 		return Testnet
+	case "localnet", "localhost":
+		return Localnet
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
@@ -50,7 +53,7 @@ func (network Network) Params() *chaincfg.Params {
 	switch network {
 	case Mainnet:
 		return &chaincfg.MainNetParams
-	case Testnet:
+	case Testnet, Localnet:
 		return &chaincfg.TestNet3Params
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -64,6 +67,8 @@ func (network Network) String() string {
 		return "mainnet"
 	case Testnet:
 		return "testnet"
+	case Localnet:
+		return "localnet"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
@@ -81,16 +86,21 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 
 // AddressFromPubKey gets the `Addr` from a public key.
 func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Address, error) {
-	return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
+	addr, err := btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
+	if err != nil {
+		return nil, fmt.Errorf("cannot decode address from public key: %v", err)
+	}
+
+	return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
 }
 
 // SerializePublicKey serializes the public key to bytes.
-func SerializePublicKey(pubKey *ecdsa.PublicKey, network Network) []byte {
+func SerializePublicKey(pubkey *ecdsa.PublicKey, network Network) []byte {
 	switch network {
 	case Mainnet:
-		return (*btcec.PublicKey)(pubKey).SerializeCompressed()
-	case Testnet:
-		return (*btcec.PublicKey)(pubKey).SerializeUncompressed()
+		return (*btcec.PublicKey)(pubkey).SerializeCompressed()
+	case Testnet, Localnet:
+		return (*btcec.PublicKey)(pubkey).SerializeUncompressed()
 	default:
 		panic(types.ErrUnknownNetwork)
 	}

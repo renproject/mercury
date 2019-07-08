@@ -21,8 +21,9 @@ const (
 	MinConfirmations = 0
 	MaxConfirmations = 99
 
-	MainnetMercuryURL = "http://139.59.221.34/btc"
-	TestnetMercuryURL = "206.189.83.88:5000/btc/testnet"
+	MainnetMercuryURL  = "206.189.83.88:5000/btc/mainnet"
+	TestnetMercuryURL  = "206.189.83.88:5000/btc/testnet"
+	LocalnetMercuryURL = "0.0.0.0:5000/btc/testnet"
 )
 
 type Client interface {
@@ -61,7 +62,7 @@ func NewBtcClient(network btctypes.Network) (Client, error) {
 		return &client{
 			network: network,
 			client:  c,
-			config:  chaincfg.MainNetParams,
+			config:  *network.Params(),
 			url:     MainnetMercuryURL,
 		}, nil
 	case btctypes.Testnet:
@@ -73,8 +74,20 @@ func NewBtcClient(network btctypes.Network) (Client, error) {
 		return &client{
 			network: network,
 			client:  c,
-			config:  chaincfg.TestNet3Params,
+			config:  *network.Params(),
 			url:     TestnetMercuryURL,
+		}, nil
+	case btctypes.Localnet:
+		config.Host = LocalnetMercuryURL
+		c, err := rpcclient.New(config, nil)
+		if err != nil {
+			return &client{}, err
+		}
+		return &client{
+			network: network,
+			client:  c,
+			config:  *network.Params(),
+			url:     LocalnetMercuryURL,
 		}, nil
 	default:
 		panic("unknown bitcoin network")
@@ -204,7 +217,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	// Add an output to refund the difference between what we are transferring
 	// to recipients and what we are spending from the UTXOs (accounting for
 	// gas)
-	amounts[refundTo] = btcutil.Amount(amountToRefund)
+	amounts[refundTo] += btcutil.Amount(amountToRefund)
 
 	var lockTime int64
 	tx, err := c.client.CreateRawTransaction(inputs, amounts, &lockTime)
