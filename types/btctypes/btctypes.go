@@ -114,7 +114,7 @@ func RandomAddress(network Network) (Address, error) {
 }
 
 type UTXO struct {
-	TxHash       string `json:"txHash"`
+	TxHash       TxHash `json:"txHash"`
 	Amount       Amount `json:"amount"`
 	ScriptPubKey string `json:"scriptPubKey"`
 	Vout         uint32 `json:"vout"`
