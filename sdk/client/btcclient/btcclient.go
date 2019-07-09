@@ -189,7 +189,7 @@ func (c *client) BuildUnsignedTx(refundTo btctypes.Address, recipients btctypes.
 	wireTx.AddTxOut(sourceTxOut)
 
 	// Get the signature hashes we need to sign
-	unsignedTx := btctypes.NewUnsignedTx(c.network, wireTx)
+	unsignedTx := btctypes.NewUnsignedTx(c.network, utxos, wireTx)
 	fmt.Printf("before sig hashes: %v", unsignedTx.SignatureHashes())
 	for _, utxo := range utxos {
 		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)

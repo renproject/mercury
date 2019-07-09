@@ -3,6 +3,7 @@ package btctypes
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -22,14 +23,16 @@ type Tx struct {
 	network   Network
 	tx        *wire.MsgTx
 	sigHashes []SignatureHash
+	utxos     UTXOs
 	signed    bool
 }
 
-func NewUnsignedTx(network Network, tx *wire.MsgTx) Tx {
+func NewUnsignedTx(network Network, utxos UTXOs, tx *wire.MsgTx) Tx {
 	return Tx{
 		network:   network,
 		tx:        tx,
 		sigHashes: []SignatureHash{},
+		utxos:     utxos,
 		signed:    false,
 	}
 }
@@ -131,10 +134,14 @@ func (tx *Tx) Serialize() []byte {
 }
 
 func (tx *Tx) Verify() error {
-	for i, txout := range tx.tx.TxOut {
-		engine, err := txscript.NewEngine(txout.PkScript, tx.tx, i,
+	for i, utxo := range tx.utxos {
+		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
+		if err != nil {
+			return err
+		}
+		engine, err := txscript.NewEngine(scriptPubKey, tx.tx, i,
 			txscript.StandardVerifyFlags, txscript.NewSigCache(10),
-			txscript.NewTxSigHashes(tx.tx), txout.Value)
+			txscript.NewTxSigHashes(tx.tx), int64(utxo.Amount))
 		if err != nil {
 			return err
 		}
