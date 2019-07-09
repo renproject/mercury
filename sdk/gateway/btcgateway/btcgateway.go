@@ -61,12 +61,16 @@ func (gw *gateway) UTXOs() (btctypes.UTXOs, error) {
 
 func (gw *gateway) BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error) {
 	amount := gwUTXOs.Sum()
+	recipients := btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}}
 	tx, err := gw.client.BuildUnsignedTx(
 		append(spenderUTXOs, gwUTXOs...),
-		btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}},
+		recipients,
 		gw.spenderAddr,
 		gas,
 	)
+	tx.EstimateSize = func() int {
+		return 146*len(spenderUTXOs) + (113+gw.ScriptLen())*len(gwUTXOs) + (len(recipients)+1)*33 + 10
+	}
 	if err != nil {
 		// FIXME: Return an error.
 		panic("newGatewayTxError()")
