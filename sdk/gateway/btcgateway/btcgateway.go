@@ -1,7 +1,6 @@
 package btcgateway
 
 import (
-	"context"
 	"crypto/ecdsa"
 
 	"github.com/btcsuite/btcd/txscript"
@@ -12,7 +11,7 @@ import (
 
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
-	UTXOs(ctx context.Context, limit, confirmations int) (btctypes.UTXOs, error)
+	UTXOs() (btctypes.UTXOs, error)
 	BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error)
 	Address() btctypes.Address
 }
@@ -56,16 +55,16 @@ func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) 
 	}
 }
 
-func (gw *gateway) UTXOs(ctx context.Context, limit, confirmations int) (btctypes.UTXOs, error) {
-	return gw.client.UTXOs(ctx, gw.Address(), limit, confirmations)
+func (gw *gateway) UTXOs() (btctypes.UTXOs, error) {
+	return gw.client.UTXOsFromAddress(gw.Address())
 }
 
 func (gw *gateway) BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error) {
 	amount := gwUTXOs.Sum()
 	tx, err := gw.client.BuildUnsignedTx(
-		gw.spenderAddr,
-		btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}},
 		append(spenderUTXOs, gwUTXOs...),
+		btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}},
+		gw.spenderAddr,
 		gas,
 	)
 	if err != nil {
