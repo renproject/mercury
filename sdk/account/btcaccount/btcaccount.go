@@ -1,7 +1,6 @@
 package btcaccount
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
@@ -21,8 +20,8 @@ func ErrInsufficientBalance(expect, have string) error {
 type Account interface {
 	Address() btctypes.Address
 	PrivateKey() *ecdsa.PrivateKey
-	Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) (btctypes.TxHash, error)
-	UTXOs(ctx context.Context, limit, confirmations int) (utxos btctypes.UTXOs, err error)
+	Transfer(to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) (btctypes.TxHash, error)
+	UTXOs() (utxos btctypes.UTXOs, err error)
 }
 
 // account is a bitcoin wallet which can transfer funds and building tx.
@@ -80,13 +79,15 @@ func (acc *account) PrivateKey() *ecdsa.PrivateKey {
 	return acc.key
 }
 
-func (acc *account) UTXOs(ctx context.Context, limit, confirmations int) (utxos btctypes.UTXOs, err error) {
-	return acc.Client.UTXOs(ctx, acc.address, limit, confirmations)
+// UTXOs returns the UTXOs for an imported account.
+func (acc *account) UTXOs() (utxos btctypes.UTXOs, err error) {
+	return acc.Client.UTXOsFromAddress(acc.address)
 }
 
-// Transfer transfer certain amount value to the target address.
-func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) (btctypes.TxHash, error) {
-	utxos, err := acc.UTXOs(ctx, btcclient.MaxUTXOLimit, btcclient.MinConfirmations)
+// Transfer transfer certain amount value to the target address. Important: this only works for accounts that have been
+// imported into the Bitcoin node.
+func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) (btctypes.TxHash, error) {
+	utxos, err := acc.UTXOs()
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +99,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	}
 
 	// todo : select some utxos from all the utxos we have.
-	tx, err := acc.Client.BuildUnsignedTx(acc.Address(), btctypes.Recipients{{Address: to, Amount: value}}, utxos, fee)
+	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipients{{Address: to, Amount: value}}, acc.Address(), fee)
 
 	if err != nil {
 		return "", err
@@ -109,5 +110,5 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	}
 
 	// Submit the signed tx
-	return acc.Client.SubmitSignedTx(ctx, tx)
+	return acc.Client.SubmitSignedTx(tx)
 }

@@ -37,6 +37,10 @@ func NewUnsignedTx(network Network, utxos UTXOs, tx *wire.MsgTx) Tx {
 	}
 }
 
+func (tx *Tx) Tx() *wire.MsgTx {
+	return tx.tx
+}
+
 func (tx *Tx) Hash() TxHash {
 	return TxHash(tx.tx.TxHash().String())
 }
