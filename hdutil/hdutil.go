@@ -24,6 +24,14 @@ func DerivePrivKey(key *hdkeychain.ExtendedKey, path ...uint32) (*ecdsa.PrivateK
 }
 
 func DeriveExtendedPrivKey(mnemonic, passphrase string, network btctypes.Network) (*hdkeychain.ExtendedKey, error) {
-	seed := bip39.NewSeed(mnemonic, passphrase)
-	return hdkeychain.NewMaster(seed, network.Params())
+	seed := DeriveSeed(mnemonic, passphrase)
+	key, err := hdkeychain.NewMaster(seed, network.Params())
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
+}
+
+func DeriveSeed(mnemonic, passphrase string) []byte {
+	return bip39.NewSeed(mnemonic, passphrase)
 }
