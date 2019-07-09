@@ -36,7 +36,7 @@ type Client interface {
 	UTXOs(ctx context.Context, address btctypes.Address, limit, confirmations int) (btctypes.UTXOs, error)
 	Confirmations(ctx context.Context, hash btctypes.TxHash) (btctypes.Confirmations, error)
 	BuildUnsignedTx(refundTo btctypes.Address, recipients btctypes.Recipients, utxos btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error)
-	SubmitSignedTx(ctx context.Context, stx btctypes.Tx) error
+	SubmitSignedTx(ctx context.Context, stx btctypes.Tx) (btctypes.TxHash, error)
 }
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
