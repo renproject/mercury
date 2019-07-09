@@ -121,7 +121,7 @@ func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
 			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 		}
 		utxo := btctypes.UTXO{
-			TxHash:       tx.TxID,
+			TxHash:       btctypes.TxHash(tx.TxID),
 			Amount:       btctypes.Amount(amount),
 			ScriptPubKey: txOut.ScriptPubKey.Hex,
 			Vout:         output.Vout,
@@ -147,7 +147,7 @@ func (c *client) UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, err
 			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 		}
 		utxos[i] = btctypes.UTXO{
-			TxHash:       output.TxID,
+			TxHash:       btctypes.TxHash(output.TxID),
 			Amount:       btctypes.Amount(amount),
 			ScriptPubKey: output.ScriptPubKey,
 			Vout:         output.Vout,
@@ -180,7 +180,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	inputs := make([]btcjson.TransactionInput, len(utxos))
 	for i, utxo := range utxos {
 		inputs[i] = btcjson.TransactionInput{
-			Txid: utxo.TxHash,
+			Txid: string(utxo.TxHash),
 			Vout: utxo.Vout,
 		}
 	}
