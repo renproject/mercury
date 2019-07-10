@@ -1,10 +1,7 @@
 package btcaccount_test
 
 import (
-	"context"
-	"fmt"
 	"os"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -89,21 +86,8 @@ var _ = Describe("btc account ", func() {
 			Expect(err).NotTo(HaveOccurred())
 			amount := 20000 * btctypes.SAT
 
-			gasStation := NewBtcGasStation(logger, 5*time.Second)
-			txSizeInBytes := client.EstimateTxSize(len(utxos), 2)
-			fee := gasStation.CalculateGasAmount(context.Background(), types.Standard, txSizeInBytes)
-			fmt.Printf("fee=%v\n", fee)
-
-			balance := utxos.Sum()
-			_, err = account.Transfer(toAddress, amount, fee)
+			_, err = account.Transfer(toAddress, amount, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
-
-			newUTXOs, err := account.UTXOs()
-			Expect(err).NotTo(HaveOccurred())
-
-			// Our original account should have less balance
-			sourceBalance := newUTXOs.Sum()
-			Expect(sourceBalance).Should(Equal(balance - fee))
 		})
 	})
 })
