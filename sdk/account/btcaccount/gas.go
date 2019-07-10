@@ -27,6 +27,7 @@ const (
 // rate limiting of the API. It's safe for using concurrently.
 type BtcGasStation interface {
 	GasRequired(ctx context.Context, speed Speed) int64
+	CalculateGasAmount(ctx context.Context, speed Speed, txSizeInBytes int) btctypes.Amount
 }
 
 type btcGasStation struct {
