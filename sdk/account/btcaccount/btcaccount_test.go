@@ -1,7 +1,10 @@
 package btcaccount_test
 
 import (
+	"context"
+	"fmt"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,8 +22,9 @@ import (
 )
 
 var _ = Describe("btc account ", func() {
+	logger := logrus.StandardLogger()
+
 	BeforeSuite(func() {
-		logger := logrus.StandardLogger()
 		store := kv.NewJSON(kv.NewMemDB())
 		cache := cache.New(store, logger)
 
@@ -83,7 +87,12 @@ var _ = Describe("btc account ", func() {
 			toAddress := account.Address()
 			Expect(err).NotTo(HaveOccurred())
 			amount := 20000 * btctypes.SAT
-			fee := 10000 * btctypes.SAT
+
+			gasStation := NewBtcGasStation(logger, 5*time.Second)
+			txSizeInBytes := client.EstimateTxSize(len(utxos), 2)
+			fee := gasStation.CalculateGasAmount(context.Background(), Standard, txSizeInBytes)
+			fmt.Printf("fee=%v\n", fee)
+
 			balance := utxos.Sum()
 			_, err = account.Transfer(toAddress, amount, fee)
 			Expect(err).NotTo(HaveOccurred())
