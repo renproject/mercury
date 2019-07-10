@@ -2,6 +2,7 @@ package btcclient
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcjson"
@@ -157,7 +158,7 @@ func (c *client) Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, 
 func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error) {
 	// Pre-condition checks
 	if gas < Dust {
-		return btctypes.Tx{}, fmt.Errorf("gas = %v is too low", gas)
+		return btctypes.Tx{}, fmt.Errorf("pre-condition violation: gas = %v is too low", gas)
 	}
 
 	inputs := make([]btcjson.TransactionInput, len(utxos))
@@ -214,15 +215,14 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	return unsignedTx, nil
 }
 
-// SubmitSignedTx submits the signed transactions
-// returns the transaction hash as in hex
+// SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.
 func (c *client) SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error) {
 	// Pre-condition checks
 	if !stx.IsSigned() {
-		panic("pre-condition violation: cannot submit unsigned transaction")
+		return "", errors.New("pre-condition violation: cannot submit unsigned transaction")
 	}
 	if err := stx.Verify(); err != nil {
-		panic(fmt.Errorf("pre-condition violation: transaction failed verification: %v", err))
+		return "", fmt.Errorf("pre-condition violation: transaction failed verification: %v", err)
 	}
 
 	txHash, err := c.client.SendRawTransaction(stx.Tx(), false)
