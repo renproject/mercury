@@ -44,7 +44,7 @@ var _ = Describe("btc account ", func() {
 	Context("when fetching utxos", func() {
 		It("should fetch at least one utxo from the funded account", func() {
 			// Get the account with actual balance
-			client, err := btcclient.NewBtcClient(btctypes.Localnet)
+			client, err := btcclient.New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
 			Expect(err).NotTo(HaveOccurred())
@@ -58,7 +58,7 @@ var _ = Describe("btc account ", func() {
 		})
 
 		It("should fetch zero utxos from a random account", func() {
-			client, err := btcclient.NewBtcClient(btctypes.Localnet)
+			client, err := btcclient.New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			account, err := RandomAccount(logrus.StandardLogger(), client)
 			Expect(err).NotTo(HaveOccurred())
@@ -72,7 +72,7 @@ var _ = Describe("btc account ", func() {
 	Context("when transferring funds ", func() {
 		It("should be able to transfer funds to itself", func() {
 			// Get the account with actual balance
-			client, err := btcclient.NewBtcClient(btctypes.Localnet)
+			client, err := btcclient.New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
 			Expect(err).NotTo(HaveOccurred())

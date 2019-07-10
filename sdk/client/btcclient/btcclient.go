@@ -30,7 +30,7 @@ type Client interface {
 	EstimateTxSize(numUTXOs, numRecipients int) int
 }
 
-// Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
+// Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 type client struct {
 	network btctypes.Network
@@ -40,8 +40,8 @@ type client struct {
 	url    string
 }
 
-// NewBtcClient returns a new Client of given bitcoin network.
-func NewBtcClient(network btctypes.Network) (Client, error) {
+// New returns a new Client of given Bitcoin network.
+func New(network btctypes.Network) (Client, error) {
 	config := &rpcclient.ConnConfig{
 		HTTPPostMode: true,
 		DisableTLS:   true,
