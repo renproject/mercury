@@ -14,6 +14,7 @@ type Gateway interface {
 	UTXOs() (btctypes.UTXOs, error)
 	BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error)
 	Address() btctypes.Address
+	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
 }
 
 type gateway struct {
@@ -61,9 +62,10 @@ func (gw *gateway) UTXOs() (btctypes.UTXOs, error) {
 
 func (gw *gateway) BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error) {
 	amount := gwUTXOs.Sum()
+	recipients := btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}}
 	tx, err := gw.client.BuildUnsignedTx(
 		append(spenderUTXOs, gwUTXOs...),
-		btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}},
+		recipients,
 		gw.spenderAddr,
 		gas,
 	)
@@ -91,4 +93,8 @@ func (gw *gateway) Script() []byte {
 
 func (gw *gateway) ScriptLen() int {
 	return len(gw.script)
+}
+
+func (gw *gateway) EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int {
+	return (113+gw.ScriptLen())*numGatewayUTXOs + gw.client.EstimateTxSize(numSpenderUTXOs, numRecipients)
 }

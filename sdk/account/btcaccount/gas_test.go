@@ -20,15 +20,15 @@ var _ = Describe("bitcoin tx gas", func() {
 			ctx := context.Background()
 			fastGas := gas.GasRequired(ctx, Fast)
 			Expect(fastGas).Should(BeNumerically(">", 1))
-			// logger.Infof("fast gas = %v sat/byte", fastGas)
+			logger.Infof("fast gas = %v sat/byte", fastGas)
 
 			standardGas := gas.GasRequired(ctx, Standard)
 			Expect(standardGas).Should(BeNumerically(">", 1))
-			// logger.Infof("standard gas = %v sat/byte", standardGas)
+			logger.Infof("standard gas = %v sat/byte", standardGas)
 
 			slowGas := gas.GasRequired(ctx, Slow)
 			Expect(slowGas).Should(BeNumerically(">", 1))
-			// logger.Infof("slow gas = %v sat/byte", slowGas)
+			logger.Infof("slow gas = %v sat/byte", slowGas)
 
 			Expect(fastGas >= standardGas).Should(BeTrue())
 			Expect(standardGas >= slowGas).Should(BeTrue())

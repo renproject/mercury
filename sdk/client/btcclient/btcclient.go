@@ -27,6 +27,7 @@ type Client interface {
 	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
 	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
 	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
+	EstimateTxSize(numUTXOs, numRecipients int) int
 }
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
@@ -250,4 +251,8 @@ func (c *client) SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error) {
 		return "", fmt.Errorf("cannot send raw transaction using btc client: %v", err)
 	}
 	return btctypes.TxHash(txHash.String()), nil
+}
+
+func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
+	return 146*numUTXOs + 33*numRecipients + 10
 }

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,6 +27,7 @@ const (
 // rate limiting of the API. It's safe for using concurrently.
 type BtcGasStation interface {
 	GasRequired(ctx context.Context, speed Speed) int64
+	CalculateGasAmount(ctx context.Context, speed Speed, txSizeInBytes int) btctypes.Amount
 }
 
 type btcGasStation struct {
@@ -58,6 +60,12 @@ func (btc btcGasStation) GasRequired(ctx context.Context, speed Speed) int64 {
 	}
 
 	return btc.fees[speed]
+}
+
+func (btc btcGasStation) CalculateGasAmount(ctx context.Context, speed Speed, txSizeInBytes int) btctypes.Amount {
+	gasRequired := btc.GasRequired(ctx, speed) // in sats/byte
+	gasInSats := gasRequired * int64(txSizeInBytes)
+	return btctypes.Amount(gasInSats)
 }
 
 func (btc *btcGasStation) gasRequired(ctx context.Context) error {
