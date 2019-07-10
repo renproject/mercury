@@ -50,43 +50,25 @@ func New(network btctypes.Network) (Client, error) {
 	switch network {
 	case btctypes.Mainnet:
 		config.Host = MainnetMercuryURL
-		c, err := rpcclient.New(config, nil)
-		if err != nil {
-			return &client{}, err
-		}
-		return &client{
-			network: network,
-			client:  c,
-			config:  *network.Params(),
-			url:     MainnetMercuryURL,
-		}, nil
 	case btctypes.Testnet:
 		config.Host = TestnetMercuryURL
-		c, err := rpcclient.New(config, nil)
-		if err != nil {
-			return &client{}, err
-		}
-		return &client{
-			network: network,
-			client:  c,
-			config:  *network.Params(),
-			url:     TestnetMercuryURL,
-		}, nil
 	case btctypes.Localnet:
 		config.Host = LocalnetMercuryURL
-		c, err := rpcclient.New(config, nil)
-		if err != nil {
-			return &client{}, err
-		}
-		return &client{
-			network: network,
-			client:  c,
-			config:  *network.Params(),
-			url:     LocalnetMercuryURL,
-		}, nil
 	default:
 		panic("unknown bitcoin network")
 	}
+
+	c, err := rpcclient.New(config, nil)
+	if err != nil {
+		return &client{}, err
+	}
+
+	return &client{
+		network: network,
+		client:  c,
+		config:  *network.Params(),
+		url:     config.Host,
+	}, nil
 }
 
 func (c *client) Network() btctypes.Network {
@@ -106,8 +88,8 @@ func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
 
 	outputs := tx.Details
 	var utxos btctypes.UTXOs
-	for i, output := range outputs {
-		txOut, err := c.client.GetTxOut(txHashBytes, uint32(i), true)
+	for _, output := range outputs {
+		txOut, err := c.client.GetTxOut(txHashBytes, output.Vout, true)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get tx output from btc client: %v", err)
 		}
