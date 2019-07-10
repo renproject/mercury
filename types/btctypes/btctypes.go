@@ -71,9 +71,9 @@ func (network Network) String() string {
 	}
 }
 
-// Addr is an interface type for any type of destination a transaction output may spend to. This includes pay-to-pubkey
-// (P2PK), pay-to-pubkey-hash (P2PKH), and pay-to-script-hash (P2SH). Address is designed to be generic enough that
-// other kinds of addresses may be added in the future without changing the decoding and encoding API.
+// Address is an interface type for any type of destination a transaction output may spend to. This includes pay-to-
+// pubkey (P2PK), pay-to-pubkey-hash (P2PKH), and pay-to-script-hash (P2SH). Address is designed to be generic enough
+// that other kinds of addresses may be added in the future without changing the decoding and encoding API.
 type Address btcutil.Address
 
 // AddressFromBase58 decodes the base58 encoding bitcoin address to a `Addr`.
