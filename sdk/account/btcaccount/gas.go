@@ -8,32 +8,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
-)
-
-// Speed indicates the tier of speed that the transaction falls under while writing to the blockchain.
-type Speed uint8
-
-// TxExecutionSpeed values.
-const (
-	Nil = Speed(iota)
-	Slow
-	Standard
-	Fast
 )
 
 // BtcGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
 type BtcGasStation interface {
-	GasRequired(ctx context.Context, speed Speed) int64
-	CalculateGasAmount(ctx context.Context, speed Speed, txSizeInBytes int) btctypes.Amount
+	GasRequired(ctx context.Context, speed types.TxSpeed) int64
+	CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount
 }
 
 type btcGasStation struct {
 	mu            *sync.RWMutex
 	logger        logrus.FieldLogger
-	fees          map[Speed]int64
+	fees          map[types.TxSpeed]int64
 	lastUpdate    time.Time
 	minUpdateTime time.Duration
 }
@@ -43,13 +33,13 @@ func NewBtcGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) Bt
 	return &btcGasStation{
 		mu:            new(sync.RWMutex),
 		logger:        logger,
-		fees:          map[Speed]int64{},
+		fees:          map[types.TxSpeed]int64{},
 		lastUpdate:    time.Time{},
 		minUpdateTime: minUpdateTime,
 	}
 }
 
-func (btc btcGasStation) GasRequired(ctx context.Context, speed Speed) int64 {
+func (btc btcGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) int64 {
 	btc.mu.Lock()
 	defer btc.mu.Unlock()
 
@@ -62,7 +52,7 @@ func (btc btcGasStation) GasRequired(ctx context.Context, speed Speed) int64 {
 	return btc.fees[speed]
 }
 
-func (btc btcGasStation) CalculateGasAmount(ctx context.Context, speed Speed, txSizeInBytes int) btctypes.Amount {
+func (btc btcGasStation) CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount {
 	gasRequired := btc.GasRequired(ctx, speed) // in sats/byte
 	gasInSats := gasRequired * int64(txSizeInBytes)
 	return btctypes.Amount(gasInSats)
@@ -86,9 +76,9 @@ func (btc *btcGasStation) gasRequired(ctx context.Context) error {
 	if err := json.NewDecoder(response.Body).Decode(&fee); err != nil {
 		return err
 	}
-	btc.fees[Fast] = fee.Fast
-	btc.fees[Standard] = fee.Standard
-	btc.fees[Slow] = fee.Slow
+	btc.fees[types.Fast] = fee.Fast
+	btc.fees[types.Standard] = fee.Standard
+	btc.fees[types.Slow] = fee.Slow
 	btc.lastUpdate = time.Now()
 	return nil
 }
