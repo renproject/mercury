@@ -17,8 +17,8 @@ import (
 	"github.com/renproject/mercury/rpc/btcrpc"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/testutils"
-	"github.com/renproject/mercury/types/btctypes"
 	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
 
