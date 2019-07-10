@@ -18,6 +18,7 @@ import (
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/testutils"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -90,7 +91,7 @@ var _ = Describe("btc account ", func() {
 
 			gasStation := NewBtcGasStation(logger, 5*time.Second)
 			txSizeInBytes := client.EstimateTxSize(len(utxos), 2)
-			fee := gasStation.CalculateGasAmount(context.Background(), Standard, txSizeInBytes)
+			fee := gasStation.CalculateGasAmount(context.Background(), types.Standard, txSizeInBytes)
 			fmt.Printf("fee=%v\n", fee)
 
 			balance := utxos.Sum()
