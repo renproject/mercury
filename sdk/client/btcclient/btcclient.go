@@ -219,12 +219,8 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 		return btctypes.Tx{}, fmt.Errorf("cannot construct raw transaction: %v", err)
 	}
 
-	estimateSize := func() int {
-		return 146*len(utxos) + 33*(len(recipients)+1) + 10
-	}
-
 	// Get the signature hashes we need to sign
-	unsignedTx := btctypes.NewUnsignedTx(c.network, utxos, wireTx, estimateSize)
+	unsignedTx := btctypes.NewUnsignedTx(c.network, utxos, wireTx)
 	fmt.Printf("before sig hashes: %v", unsignedTx.SignatureHashes())
 	for _, utxo := range utxos {
 		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
@@ -254,4 +250,8 @@ func (c *client) SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error) {
 		return "", fmt.Errorf("cannot send raw transaction using btc client: %v", err)
 	}
 	return btctypes.TxHash(txHash.String()), nil
+}
+
+func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
+	return 146*numUTXOs + 33*(numRecipients+1) + 10
 }

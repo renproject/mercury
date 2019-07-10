@@ -20,8 +20,6 @@ type Signature btcec.Signature
 type TxHash string
 
 type Tx struct {
-	EstimateSize func() int
-
 	network   Network
 	tx        *wire.MsgTx
 	sigHashes []SignatureHash
@@ -29,14 +27,13 @@ type Tx struct {
 	signed    bool
 }
 
-func NewUnsignedTx(network Network, utxos UTXOs, tx *wire.MsgTx, estimateSize func() int) Tx {
+func NewUnsignedTx(network Network, utxos UTXOs, tx *wire.MsgTx) Tx {
 	return Tx{
-		EstimateSize: estimateSize,
-		network:      network,
-		tx:           tx,
-		sigHashes:    []SignatureHash{},
-		utxos:        utxos,
-		signed:       false,
+		network:   network,
+		tx:        tx,
+		sigHashes: []SignatureHash{},
+		utxos:     utxos,
+		signed:    false,
 	}
 }
 

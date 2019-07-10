@@ -68,9 +68,6 @@ func (gw *gateway) BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes
 		gw.spenderAddr,
 		gas,
 	)
-	tx.EstimateSize = func() int {
-		return 146*len(spenderUTXOs) + (113+gw.ScriptLen())*len(gwUTXOs) + (len(recipients)+1)*33 + 10
-	}
 	if err != nil {
 		// FIXME: Return an error.
 		panic("newGatewayTxError()")
@@ -95,4 +92,8 @@ func (gw *gateway) Script() []byte {
 
 func (gw *gateway) ScriptLen() int {
 	return len(gw.script)
+}
+
+func (gw *gateway) EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int {
+	return 146*numSpenderUTXOs + (113+gw.ScriptLen())*numGatewayUTXOs + (numRecipients+1)*33 + 10
 }
