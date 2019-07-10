@@ -171,7 +171,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 
 	amountFromUTXOs := utxos.Sum()
 	if amountFromUTXOs < Dust {
-		return btctypes.Tx{}, fmt.Errorf("available balance = %v is too low", amountFromUTXOs)
+		return btctypes.Tx{}, fmt.Errorf("pre-condition violation: amount=%v from utxos is less than dust=%v", amountFromUTXOs, Dust)
 	}
 
 	// Add an output for each recipient and sum the total amount that is being
