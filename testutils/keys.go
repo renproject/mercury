@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/renproject/mercury/hdutil"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types/zectypes"
 )
 
 // ErrInvalidMnemonic is returned when the mnemonic is invalid.
@@ -55,7 +56,7 @@ func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
+func (hdkey HdKey) BTCAddress(path ...uint32) (btctypes.Address, error) {
 	key, err := hdkey.EcdsaKey(path...)
 	if err != nil {
 		return nil, err
@@ -63,12 +64,29 @@ func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
 	return btctypes.AddressFromPubKey(&key.PublicKey, hdkey.network)
 }
 
-func RandomAddress(network btctypes.Network) (btctypes.Address, error) {
+// EcdsaKey return the ECDSA key on the given path of the HD key.
+func (hdkey HdKey) ZECAddress(path ...uint32) (zectypes.Address, error) {
+	key, err := hdkey.EcdsaKey(path...)
+	if err != nil {
+		return nil, err
+	}
+	return zectypes.AddressFromPubKey(&key.PublicKey, hdkey.network)
+}
+
+func RandomBTCAddress(network btctypes.Network) (btctypes.Address, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 	return btctypes.AddressFromPubKey(&key.PublicKey, network)
+}
+
+func RandomZECAddress(network btctypes.Network) (btctypes.Address, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return zectypes.AddressFromPubKey(&key.PublicKey, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.

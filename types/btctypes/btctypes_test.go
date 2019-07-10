@@ -12,6 +12,7 @@ import (
 	. "github.com/renproject/mercury/types/btctypes"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/renproject/mercury/testutils"
 )
 
 var _ = Describe("btc types ", func() {
@@ -20,7 +21,7 @@ var _ = Describe("btc types ", func() {
 		Context(fmt.Sprintf("when generate new btc addresses of %v", network), func() {
 			It("should be able to generate random address of given network", func() {
 				randAddr := func() bool {
-					address, err := RandomAddress(network)
+					address, err := testutils.RandomBTCAddress(network)
 					Expect(err).NotTo(HaveOccurred())
 					if network == Mainnet {
 						return strings.HasPrefix(address.EncodeAddress(), "1")
@@ -34,7 +35,7 @@ var _ = Describe("btc types ", func() {
 			})
 
 			It("should be able to decode an address from string", func() {
-				randAddr, err := RandomAddress(network)
+				randAddr, err := testutils.RandomBTCAddress(network)
 				Expect(err).NotTo(HaveOccurred())
 				address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
 				Expect(err).NotTo(HaveOccurred())

@@ -2,14 +2,12 @@ package btctypes
 
 import (
 	"crypto/ecdsa"
-	"crypto/rand"
 	"fmt"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/types"
 )
 
@@ -76,12 +74,12 @@ func (network Network) String() string {
 // that other kinds of addresses may be added in the future without changing the decoding and encoding API.
 type Address btcutil.Address
 
-// AddressFromBase58 decodes the base58 encoding bitcoin address to a `Addr`.
+// AddressFromBase58 decodes the base58 encoding bitcoin address to a `Address`.
 func AddressFromBase58(addr string, network Network) (Address, error) {
 	return btcutil.DecodeAddress(addr, network.Params())
 }
 
-// AddressFromPubKey gets the `Addr` from a public key.
+// AddressFromPubKey gets the `Address` from a public key.
 func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Address, error) {
 	addr, err := btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
 	if err != nil {
@@ -101,16 +99,6 @@ func SerializePublicKey(pubkey *ecdsa.PublicKey, network Network) []byte {
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
-}
-
-// RandomAddress returns a random Addr on given network.
-func RandomAddress(network Network) (Address, error) {
-	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-
-	return AddressFromPubKey(&key.PublicKey, network)
 }
 
 type UTXO struct {
