@@ -180,7 +180,8 @@ func (btc *bitcoin) postTransaction() http.HandlerFunc {
 			return
 		}
 		if err := btc.client.PublishTransaction(ctx, stx); err != nil {
-			btc.writeError(w, r, http.StatusBadRequest, err)
+			btc.logger.Errorf("cannot publish bitcoin tx, err = %v, rawTx := %v", err, req.SignedTransaction)
+			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)

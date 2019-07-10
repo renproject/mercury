@@ -161,7 +161,8 @@ func (zec *zcash) postTransaction() http.HandlerFunc {
 			return
 		}
 		if err := zec.client.PublishTransaction(stx); err != nil {
-			zec.writeError(w, r, http.StatusInternalServerError, err)
+			zec.logger.Errorf("cannot publish zcash tx, err = %v, rawTx := %v", err, req.SignedTransaction)
+			http.Error(w, fmt.Sprintf("{ \"error\": \"%s\" }", err), http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
