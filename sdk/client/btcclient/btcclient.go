@@ -99,7 +99,7 @@ func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
 			continue
 		}
 
-		amount, err := btcutil.NewAmount(output.Amount)
+		amount, err := btcutil.NewAmount(txOut.Value)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 		}
