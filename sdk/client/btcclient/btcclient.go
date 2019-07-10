@@ -82,15 +82,15 @@ func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse hash: %v", err)
 	}
-	tx, err := c.client.GetTransaction(txHashBytes)
+	tx, err := c.client.GetRawTransactionVerbose(txHashBytes)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
 
-	outputs := tx.Details
+	outputs := tx.Vout
 	var utxos btctypes.UTXOs
 	for _, output := range outputs {
-		txOut, err := c.client.GetTxOut(txHashBytes, output.Vout, true)
+		txOut, err := c.client.GetTxOut(txHashBytes, output.N, true)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get tx output from btc client: %v", err)
 		}
@@ -105,10 +105,10 @@ func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
 			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 		}
 		utxo := btctypes.UTXO{
-			TxHash:       btctypes.TxHash(tx.TxID),
+			TxHash:       btctypes.TxHash(tx.Txid),
 			Amount:       btctypes.Amount(amount),
 			ScriptPubKey: txOut.ScriptPubKey.Hex,
-			Vout:         output.Vout,
+			Vout:         output.N,
 		}
 		utxos = append(utxos, utxo)
 	}
@@ -177,10 +177,10 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	// Add an output for each recipient and sum the total amount that is being
 	// transferred to recipients
 	amountToRecipients := btctypes.Amount(0)
-	amounts := make(map[btcutil.Address]btcutil.Amount, len(recipients))
+	outputs := make(map[btcutil.Address]btcutil.Amount, len(recipients))
 	for _, recipient := range recipients {
 		amountToRecipients += recipient.Amount
-		amounts[recipient.Address] = btcutil.Amount(recipient.Amount)
+		outputs[recipient.Address] = btcutil.Amount(recipient.Amount)
 	}
 
 	// Check that we are not transferring more to recipients than available in
@@ -193,10 +193,10 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	// Add an output to refund the difference between what we are transferring
 	// to recipients and what we are spending from the UTXOs (accounting for
 	// gas)
-	amounts[refundTo] += btcutil.Amount(amountToRefund)
+	outputs[refundTo] += btcutil.Amount(amountToRefund)
 
 	var lockTime int64
-	wireTx, err := c.client.CreateRawTransaction(inputs, amounts, &lockTime)
+	wireTx, err := c.client.CreateRawTransaction(inputs, outputs, &lockTime)
 	if err != nil {
 		return btctypes.Tx{}, fmt.Errorf("cannot construct raw transaction: %v", err)
 	}

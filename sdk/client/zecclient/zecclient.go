@@ -1,11 +1,15 @@
 package zecclient
 
 import (
+	"encoding/hex"
 	"fmt"
+	"log"
 
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/types/zectypes"
 )
@@ -31,7 +35,9 @@ type Client interface {
 // through Mercury server.
 type client struct {
 	network zectypes.Network
-	client  *rpcclient.Client // FIXME: Remove this
+	// FIXME: We do not want to rely on the Bitcoin RPC client in this package as there may be
+	// subtle differences.
+	client *rpcclient.Client
 
 	config chaincfg.Params
 	url    string
@@ -78,15 +84,15 @@ func (c *client) UTXOs(txHash zectypes.TxHash) (zectypes.UTXOs, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse hash: %v", err)
 	}
-	tx, err := c.client.GetTransaction(txHashBytes)
+	tx, err := c.client.GetRawTransactionVerbose(txHashBytes)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
 
-	outputs := tx.Details
+	outputs := tx.Vout
 	var utxos zectypes.UTXOs
 	for _, output := range outputs {
-		txOut, err := c.client.GetTxOut(txHashBytes, output.Vout, true)
+		txOut, err := c.client.GetTxOut(txHashBytes, output.N, true)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get tx output from zec client: %v", err)
 		}
@@ -101,10 +107,10 @@ func (c *client) UTXOs(txHash zectypes.TxHash) (zectypes.UTXOs, error) {
 			return nil, fmt.Errorf("cannot parse amount received from zec client: %v", err)
 		}
 		utxo := zectypes.UTXO{
-			TxHash:       zectypes.TxHash(tx.TxID),
+			TxHash:       zectypes.TxHash(tx.Txid),
 			Amount:       zectypes.Amount(amount),
 			ScriptPubKey: txOut.ScriptPubKey.Hex,
-			Vout:         output.Vout,
+			Vout:         output.N,
 		}
 		utxos = append(utxos, utxo)
 	}
@@ -155,8 +161,7 @@ func (c *client) BuildUnsignedTx(utxos zectypes.UTXOs, recipients zectypes.Recip
 	panic("unimplemented")
 }
 
-// SubmitSignedTx submits the signed transactions
-// returns the transaction hash as in hex
+// SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.
 func (c *client) SubmitSignedTx(stx zectypes.Tx) (zectypes.TxHash, error) {
 	panic("unimplemented")
 }
