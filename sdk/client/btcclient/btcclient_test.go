@@ -45,7 +45,7 @@ var _ = Describe("btc client", func() {
 
 	Context("when fetching UTXOs", func() {
 		It("should return a non-zero number of UTXOs for a transaction with unspent outputs", func() {
-			client, err := NewBtcClient(btctypes.Localnet)
+			client, err := New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			utxos, err := client.UTXOs("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c")
@@ -54,7 +54,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return zero UTXOs for a transaction with spent outputs", func() {
-			client, err := NewBtcClient(btctypes.Localnet)
+			client, err := New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			utxos, err := client.UTXOs("7e65d34373491653934d32cc992211b14b9e0e80d4bb9380e97aaa05fa872df5")
@@ -63,7 +63,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for an invalid transaction hash", func() {
-			client, err := NewBtcClient(btctypes.Localnet)
+			client, err := New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			utxos, err := client.UTXOs("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1")
@@ -72,7 +72,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return a non-zero number of UTXOs for a funded address that has been imported", func() {
-			client, err := NewBtcClient(btctypes.Localnet)
+			client, err := New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			address, err := loadTestAccounts(btctypes.Localnet).Address(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
@@ -83,7 +83,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return zero UTXOs for a randomly generated address", func() {
-			client, err := NewBtcClient(btctypes.Localnet)
+			client, err := New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			address, err := testutils.RandomAddress(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
