@@ -70,8 +70,7 @@ func (gw *gateway) BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes
 		gas,
 	)
 	if err != nil {
-		// FIXME: Return an error.
-		panic("newGatewayTxError()")
+		return btctypes.Tx{}, fmt.Errorf("error generating new gateway: %v", err)
 	}
 	for i := len(spenderUTXOs); i < len(spenderUTXOs)+len(gwUTXOs); i++ {
 		if err := tx.ReplaceSignatureHash(gw.script, txscript.SigHashAll, i); err != nil {
