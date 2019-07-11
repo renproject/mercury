@@ -1,10 +1,9 @@
 package zecclient
 
 import (
-	"encoding/hex"
+	"errors"
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -25,10 +24,16 @@ const (
 	LocalnetMercuryURL = "0.0.0.0:5000/zec/testnet"
 )
 
+var (
+	ErrInvalidTxHash  = errors.New("invalid tx hash")
+	ErrTxHashNotFound = errors.New("tx hash not found")
+	ErrUTXOSpent      = errors.New("utxo spent or invalid index")
+)
+
 // TODO: This should use a common interface to Bitcoin (types should be generic)
 type Client interface {
 	Network() zectypes.Network
-	UTXOs(txHash zectypes.TxHash) (zectypes.UTXOs, error)
+	UTXO(txHash zectypes.TxHash, index uint32) (zectypes.UTXO, error)
 	UTXOsFromAddress(address zectypes.Address) (zectypes.UTXOs, error)
 	Confirmations(txHash zectypes.TxHash) (zectypes.Confirmations, error)
 	BuildUnsignedTx(utxos zectypes.UTXOs, recipients zectypes.Recipients, refundTo zectypes.Address, gas zectypes.Amount) (zectypes.Tx, error)
@@ -82,44 +87,37 @@ func (c *client) Network() zectypes.Network {
 	return c.network
 }
 
-// UTXOs returns the UTXOs for the given transaction hash.
-func (c *client) UTXOs(txHash zectypes.TxHash) (zectypes.UTXOs, error) {
+// UTXO returns the UTXO for the given transaction hash and index.
+func (c *client) UTXO(txHash zectypes.TxHash, index uint32) (zectypes.UTXO, error) {
 	txHashBytes, err := chainhash.NewHashFromStr(string(txHash))
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse hash: %v", err)
+		return zectypes.UTXO{}, ErrInvalidTxHash
 	}
 	tx, err := c.client.GetRawTransactionVerbose(txHashBytes)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
+		return zectypes.UTXO{}, ErrTxHashNotFound
 	}
 
-	outputs := tx.Vout
-	var utxos zectypes.UTXOs
-	for _, output := range outputs {
-		txOut, err := c.client.GetTxOut(txHashBytes, output.N, true)
-		if err != nil {
-			return nil, fmt.Errorf("cannot get tx output from zec client: %v", err)
-		}
-
-		// If the transaction output has been spent, continue.
-		if txOut == nil {
-			continue
-		}
-
-		amount, err := btcutil.NewAmount(txOut.Value)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse amount received from zec client: %v", err)
-		}
-		utxo := zectypes.UTXO{
-			TxHash:       zectypes.TxHash(tx.Txid),
-			Amount:       zectypes.Amount(amount),
-			ScriptPubKey: txOut.ScriptPubKey.Hex,
-			Vout:         output.N,
-		}
-		utxos = append(utxos, utxo)
+	txOut, err := c.client.GetTxOut(txHashBytes, index, true)
+	if err != nil {
+		return zectypes.UTXO{}, fmt.Errorf("cannot get tx output from zec client: %v", err)
 	}
 
-	return utxos, nil
+	// Check if UTXO has been spent.
+	if txOut == nil {
+		return zectypes.UTXO{}, ErrUTXOSpent
+	}
+
+	amount, err := btcutil.NewAmount(txOut.Value)
+	if err != nil {
+		return zectypes.UTXO{}, fmt.Errorf("cannot parse amount received from zec client: %v", err)
+	}
+	return zectypes.UTXO{
+		TxHash:       zectypes.TxHash(tx.Txid),
+		Amount:       zectypes.Amount(amount),
+		ScriptPubKey: txOut.ScriptPubKey.Hex,
+		Vout:         index,
+	}, nil
 }
 
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for

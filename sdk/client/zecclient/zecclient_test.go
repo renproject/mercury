@@ -1,7 +1,6 @@
 package zecclient_test
 
 import (
-	"log"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -45,38 +44,50 @@ var _ = Describe("zec client", func() {
 	})
 
 	Context("when fetching UTXOs", func() {
-		It("should return a non-zero number of UTXOs for a transaction with unspent outputs", func() {
+		It("should return the UTXO for a transaction with unspent outputs", func() {
 			client, err := New(zectypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
-			utxos, err := client.UTXOs("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65")
+			txHash := zectypes.TxHash("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65")
+			index := uint32(0)
+			utxo, err := client.UTXO(txHash, index)
 			Expect(err).NotTo(HaveOccurred())
-			log.Println(utxos)
-			Expect(len(utxos)).Should(BeNumerically(">", 0))
+			Expect(utxo.TxHash).To(Equal(txHash))
+			Expect(utxo.Amount).To(Equal(zectypes.Amount(30000000)))
+			Expect(utxo.ScriptPubKey).To(Equal("76a914d125189e1002f3f1c948e2e123dc2926db2efb5188ac"))
+			Expect(utxo.Vout).To(Equal(index))
 		})
 
-		It("should return zero UTXOs for a transaction with spent outputs", func() {
+		It("should return an error for an invalid UTXO index", func() {
 			client, err := New(zectypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
-			address, err := loadTestAccounts(zectypes.Localnet).ZECAddress(44, 1, 0, 0, 1)
+			_, err = client.UTXO("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65", 3)
+			Expect(err).To(Equal(ErrUTXOSpent))
+		})
+
+		It("should return an error for a UTXO that has been spent", func() {
+			client, err := New(zectypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
-			log.Println(address)
-
-			utxos, err := client.UTXOs("d16e32d5e7b5442c8aaffe687ed0db7c2b4a7221a8607620902c06b214f8c4b1")
-			log.Println(utxos)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(utxos)).Should(Equal(0))
+			_, err = client.UTXO("d16e32d5e7b5442c8aaffe687ed0db7c2b4a7221a8607620902c06b214f8c4b1", 0)
+			Expect(err).To(Equal(ErrUTXOSpent))
 		})
 
 		It("should return an error for an invalid transaction hash", func() {
 			client, err := New(zectypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
-			utxos, err := client.UTXOs("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1")
-			Expect(err).To(HaveOccurred())
-			Expect(len(utxos)).Should(Equal(0))
+			_, err = client.UTXO("abcdefg", 0)
+			Expect(err).To(Equal(ErrInvalidTxHash))
+		})
+
+		It("should return an error for a non-existent transaction hash", func() {
+			client, err := New(zectypes.Localnet)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = client.UTXO("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0)
+			Expect(err).To(Equal(ErrTxHashNotFound))
 		})
 
 		It("should return a non-zero number of UTXOs for a funded address that has been imported", func() {
