@@ -23,6 +23,7 @@ const (
 
 type Client interface {
 	Network() btctypes.Network
+	UTXO(txHash btctypes.TxHash, vout int) (btctypes.UTXO, error)
 	UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error)
 	UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error)
 	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
@@ -74,6 +75,17 @@ func New(network btctypes.Network) (Client, error) {
 
 func (c *client) Network() btctypes.Network {
 	return c.network
+}
+
+func (c *client) UTXO(txHash btctypes.TxHash, vout int) (btctypes.UTXO, error) {
+	utxos, err := c.UTXOs(txHash)
+	if err != nil {
+		return btctypes.UTXO{}, err
+	}
+	if vout >= len(utxos) {
+		return btctypes.UTXO{}, fmt.Errorf("vout=%v not in range (len=%v)", vout, len(utxos))
+	}
+	return utxos[vout], nil
 }
 
 // UTXOs returns the UTXOs for the given transaction hash.
