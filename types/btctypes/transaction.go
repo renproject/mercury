@@ -15,6 +15,8 @@ type SignatureHash []byte
 
 type SerializedPubKey []byte
 
+type ScriptData []byte
+
 type Signature btcec.Signature
 
 type TxHash string
@@ -59,11 +61,13 @@ func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
 		}
 	}
 	serializedPK := SerializePublicKey(&key.PublicKey, tx.network)
-	return tx.InjectSignatures(sigs, serializedPK)
+	scriptData := make([]ScriptData, len(sigs))
+	return tx.InjectSignaturesWithData(sigs, serializedPK, scriptData)
 }
 
-// InjectSignatures injects the signed signatureHashes into the Tx. You cannot use the USTX anymore.
-func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error {
+// InjectSignaturesWithData injects the signed signatureHashes into the Tx. You cannot use the USTX anymore.
+// scriptData is additional data to be appended to the signature script, it can be nil or an empty byte array.
+func (tx *Tx) InjectSignaturesWithData(sigs []*btcec.Signature, serializedPubKey SerializedPubKey, scriptData []ScriptData) error {
 	// Pre-condition checks
 	if tx.IsSigned() {
 		panic("pre-condition violation: cannot inject signatures into signed transaction")
@@ -77,6 +81,9 @@ func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey Seriali
 	if len(sigs) != len(tx.tx.TxIn) {
 		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), len(tx.tx.TxIn)))
 	}
+	if len(sigs) != len(scriptData) {
+		panic(fmt.Errorf("pre-condition violation: expected scriptData len=%v to equal signature len=%v", len(scriptData), len(sigs)))
+	}
 	if len(serializedPubKey) <= 0 {
 		panic("pre-condition violation: cannot inject signatures with empty pubkey")
 	}
@@ -85,6 +92,9 @@ func (tx *Tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey Seriali
 		builder := txscript.NewScriptBuilder()
 		builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
 		builder.AddData(serializedPubKey)
+		if scriptData[i] != nil && len(scriptData[i]) > 0 {
+			builder.AddData(scriptData[i])
+		}
 		sigScript, err := builder.Script()
 		if err != nil {
 			return err
