@@ -1,9 +1,11 @@
 package zecclient
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -44,8 +46,7 @@ type Client interface {
 // through Mercury server.
 type client struct {
 	network zectypes.Network
-	// FIXME: We do not want to rely on the Bitcoin RPC client in this package as there may be
-	// subtle differences.
+	// FIXME: We do not want to rely on the Bitcoin RPC client in this package as there may be subtle differences.
 	client *rpcclient.Client
 
 	config chaincfg.Params
