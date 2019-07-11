@@ -2,6 +2,7 @@ package btcgateway
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
@@ -15,6 +16,7 @@ type Gateway interface {
 	BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error)
 	Address() btctypes.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
+	Script() []byte
 }
 
 type gateway struct {
