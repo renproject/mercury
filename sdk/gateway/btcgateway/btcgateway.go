@@ -92,10 +92,7 @@ func (gw *gateway) Script() []byte {
 	return script
 }
 
-func (gw *gateway) ScriptLen() int {
-	return len(gw.script)
-}
-
 func (gw *gateway) EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int {
-	return (113+gw.ScriptLen())*numGatewayUTXOs + gw.client.EstimateTxSize(numSpenderUTXOs, numRecipients)
+	scriptLen := len(gw.Script())
+	return (113+scriptLen)*numGatewayUTXOs + gw.client.EstimateTxSize(numSpenderUTXOs, numRecipients)
 }
