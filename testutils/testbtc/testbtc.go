@@ -89,7 +89,7 @@ func (acc *account) UTXOs() (utxos btctypes.UTXOs, err error) {
 func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (btctypes.TxHash, error) {
 	utxos, err := acc.UTXOs()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error fetching utxos: %v", err)
 	}
 
 	fee := acc.Client.GasStation().CalculateGasAmount(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
@@ -103,11 +103,11 @@ func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed t
 	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipients{{Address: to, Amount: value}}, acc.Address(), fee)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error building unsigned tx: %v", err)
 	}
 
 	if err := tx.Sign(acc.key); err != nil {
-		return "", err
+		return "", fmt.Errorf("error signing tx: %v", err)
 	}
 
 	// Submit the signed tx
