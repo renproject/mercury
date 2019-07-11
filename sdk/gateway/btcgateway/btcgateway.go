@@ -2,6 +2,7 @@ package btcgateway
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
