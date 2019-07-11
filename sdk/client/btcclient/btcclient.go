@@ -27,7 +27,7 @@ type Client interface {
 	UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error)
 	UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error)
 	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
-	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
+	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.StandardTx, error)
 	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int
 }
@@ -167,10 +167,10 @@ func (c *client) Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, 
 	return btctypes.Confirmations(tx.Confirmations), nil
 }
 
-func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error) {
+func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.StandardTx, error) {
 	// Pre-condition checks
 	if gas < Dust {
-		return btctypes.Tx{}, fmt.Errorf("pre-condition violation: gas = %v is too low", gas)
+		return nil, fmt.Errorf("pre-condition violation: gas = %v is too low", gas)
 	}
 
 	inputs := make([]btcjson.TransactionInput, len(utxos))
@@ -183,7 +183,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 
 	amountFromUTXOs := utxos.Sum()
 	if amountFromUTXOs < Dust {
-		return btctypes.Tx{}, fmt.Errorf("pre-condition violation: amount=%v from utxos is less than dust=%v", amountFromUTXOs, Dust)
+		return nil, fmt.Errorf("pre-condition violation: amount=%v from utxos is less than dust=%v", amountFromUTXOs, Dust)
 	}
 
 	// Add an output for each recipient and sum the total amount that is being
@@ -199,7 +199,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	// the UTXOs (accounting for gas)
 	amountToRefund := amountFromUTXOs - amountToRecipients - gas
 	if amountToRefund < 0 {
-		return btctypes.Tx{}, fmt.Errorf("insufficient balance: expected %v, got %v", amountToRecipients+gas, amountFromUTXOs)
+		return nil, fmt.Errorf("insufficient balance: expected %v, got %v", amountToRecipients+gas, amountFromUTXOs)
 	}
 
 	// Add an output to refund the difference between what we are transferring
@@ -210,21 +210,11 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	var lockTime int64
 	wireTx, err := c.client.CreateRawTransaction(inputs, outputs, &lockTime)
 	if err != nil {
-		return btctypes.Tx{}, fmt.Errorf("cannot construct raw transaction: %v", err)
+		return nil, fmt.Errorf("cannot construct raw transaction: %v", err)
 	}
 
 	// Get the signature hashes we need to sign
-	unsignedTx := btctypes.NewUnsignedTx(c.network, utxos, wireTx)
-	for _, utxo := range utxos {
-		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
-		if err != nil {
-			return btctypes.Tx{}, err
-		}
-		if err := unsignedTx.AppendSignatureHash(scriptPubKey, txscript.SigHashAll); err != nil {
-			return btctypes.Tx{}, err
-		}
-	}
-	return unsignedTx, nil
+	return btctypes.NewUnsignedTx(c.network, utxos, wireTx)
 }
 
 // SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.

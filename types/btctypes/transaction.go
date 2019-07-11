@@ -21,7 +21,22 @@ type Signature btcec.Signature
 
 type TxHash string
 
-type Tx struct {
+type Tx interface {
+	IsSigned() bool
+	UTXOs() UTXOs
+	Tx() *wire.MsgTx
+	SignatureHashes() []SignatureHash
+}
+
+type StandardTx interface {
+	Tx
+
+	Sign(key *ecdsa.PrivateKey) (err error)
+	InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey, customScript func(*txscript.ScriptBuilder, int)) error
+	ReplaceSignatureHash(script []byte, mode txscript.SigHashType, i int) (err error)
+}
+
+type tx struct {
 	network   Network
 	tx        *wire.MsgTx
 	sigHashes []SignatureHash
@@ -29,34 +44,44 @@ type Tx struct {
 	signed    bool
 }
 
-func NewUnsignedTx(network Network, utxos UTXOs, tx *wire.MsgTx) Tx {
-	return Tx{
+func NewUnsignedTx(network Network, utxos UTXOs, msgtx *wire.MsgTx) (StandardTx, error) {
+	t := tx{
 		network:   network,
-		tx:        tx,
+		tx:        msgtx,
 		sigHashes: []SignatureHash{},
 		utxos:     utxos,
 		signed:    false,
 	}
+	for i, utxo := range utxos {
+		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
+		if err != nil {
+			return nil, err
+		}
+		mode := txscript.SigHashAll
+		sigHash, err := txscript.CalcSignatureHash(scriptPubKey, mode, msgtx, i)
+		t.sigHashes = append(t.sigHashes, sigHash)
+	}
+	return &t, nil
 }
 
-func (tx *Tx) Tx() *wire.MsgTx {
-	return tx.tx
+func (t *tx) Tx() *wire.MsgTx {
+	return t.tx
 }
 
-func (tx *Tx) Hash() TxHash {
-	return TxHash(tx.tx.TxHash().String())
+func (t *tx) Hash() TxHash {
+	return TxHash(t.tx.TxHash().String())
 }
 
-func (tx *Tx) IsSigned() bool {
-	return tx.signed
+func (t *tx) IsSigned() bool {
+	return t.signed
 }
 
-func (tx *Tx) UTXOs() UTXOs {
-	return tx.utxos
+func (t *tx) UTXOs() UTXOs {
+	return t.utxos
 }
 
-func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
-	subScripts := tx.SignatureHashes()
+func (t *tx) Sign(key *ecdsa.PrivateKey) (err error) {
+	subScripts := t.SignatureHashes()
 	sigs := make([]*btcec.Signature, len(subScripts))
 	for i, subScript := range subScripts {
 		sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
@@ -64,29 +89,25 @@ func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
 			return err
 		}
 	}
-	serializedPK := SerializePublicKey(&key.PublicKey, tx.network)
-	scriptData := make([]ScriptData, len(sigs))
-	return tx.InjectSignaturesWithData(sigs, serializedPK, scriptData)
+	serializedPK := SerializePublicKey(&key.PublicKey, t.network)
+	return t.InjectSignatures(sigs, serializedPK, nil)
 }
 
 // InjectSignaturesWithData injects the signed signatureHashes into the Tx. You cannot use the USTX anymore.
 // scriptData is additional data to be appended to the signature script, it can be nil or an empty byte array.
-func (tx *Tx) InjectSignaturesWithData(sigs []*btcec.Signature, serializedPubKey SerializedPubKey, scriptData []ScriptData) error {
+func (t *tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey, customScript func(*txscript.ScriptBuilder, int)) error {
 	// Pre-condition checks
-	if tx.IsSigned() {
+	if t.IsSigned() {
 		panic("pre-condition violation: cannot inject signatures into signed transaction")
 	}
-	if tx.tx == nil {
+	if t.tx == nil {
 		panic("pre-condition violation: cannot inject signatures into nil transaction")
 	}
 	if len(sigs) <= 0 {
 		panic("pre-condition violation: cannot inject empty signatures")
 	}
-	if len(sigs) != len(tx.tx.TxIn) {
-		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), len(tx.tx.TxIn)))
-	}
-	if len(sigs) != len(scriptData) {
-		panic(fmt.Errorf("pre-condition violation: expected scriptData len=%v to equal signature len=%v", len(scriptData), len(sigs)))
+	if len(sigs) != len(t.tx.TxIn) {
+		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), len(t.tx.TxIn)))
 	}
 	if len(serializedPubKey) <= 0 {
 		panic("pre-condition violation: cannot inject signatures with empty pubkey")
@@ -96,50 +117,41 @@ func (tx *Tx) InjectSignaturesWithData(sigs []*btcec.Signature, serializedPubKey
 		builder := txscript.NewScriptBuilder()
 		builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
 		builder.AddData(serializedPubKey)
-		if scriptData[i] != nil && len(scriptData[i]) > 0 {
-			builder.AddData(scriptData[i])
+		if customScript != nil {
+			customScript(builder, i)
 		}
 		sigScript, err := builder.Script()
 		if err != nil {
 			return err
 		}
-		tx.tx.TxIn[i].SignatureScript = sigScript
+		t.tx.TxIn[i].SignatureScript = sigScript
 	}
-	tx.signed = true
+	t.signed = true
 	return nil
 }
 
-func (tx *Tx) AppendSignatureHash(script []byte, mode txscript.SigHashType) error {
-	sigHash, err := txscript.CalcSignatureHash(script, mode, tx.tx, len(tx.sigHashes))
-	if err != nil {
-		return err
-	}
-	tx.sigHashes = append(tx.sigHashes, sigHash)
-	return nil
-}
-
-func (tx *Tx) ReplaceSignatureHash(script []byte, mode txscript.SigHashType, i int) (err error) {
-	if i < 0 || i >= len(tx.sigHashes) {
+func (t *tx) ReplaceSignatureHash(script []byte, mode txscript.SigHashType, i int) (err error) {
+	if i < 0 || i >= len(t.sigHashes) {
 		panic(fmt.Errorf("pre-condition violation: signature hash index=%v is out of range", i))
 	}
-	tx.sigHashes[i], err = txscript.CalcSignatureHash(script, mode, tx.tx, i)
+	t.sigHashes[i], err = txscript.CalcSignatureHash(script, mode, t.tx, i)
 	return
 }
 
 // SignatureHashes returns a list of signature hashes need to be signed.
-func (tx *Tx) SignatureHashes() []SignatureHash {
-	return tx.sigHashes
+func (t *tx) SignatureHashes() []SignatureHash {
+	return t.sigHashes
 }
 
 // Serialize returns the serialized tx in bytes.
-func (tx *Tx) Serialize() []byte {
+func (t *tx) Serialize() []byte {
 	// Pre-condition checks
-	if tx.tx == nil {
+	if t.tx == nil {
 		panic("pre-condition violation: cannot serialize nil transaction")
 	}
 
 	buf := bytes.NewBuffer([]byte{})
-	if err := tx.tx.Serialize(buf); err != nil {
+	if err := t.tx.Serialize(buf); err != nil {
 		return nil
 	}
 	bufBytes := buf.Bytes()
