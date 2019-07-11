@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -12,6 +13,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -35,6 +37,7 @@ type Client interface {
 	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.StandardTx, error)
 	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int
+	GasStation() BtcGasStation
 }
 
 // Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
@@ -43,8 +46,9 @@ type client struct {
 	network btctypes.Network
 	client  *rpcclient.Client
 
-	config chaincfg.Params
-	url    string
+	config     chaincfg.Params
+	url        string
+	gasStation BtcGasStation
 }
 
 // New returns a new Client of given Bitcoin network.
@@ -70,11 +74,14 @@ func New(network btctypes.Network) (Client, error) {
 		return &client{}, err
 	}
 
+	// FIXME: accept logger from caller
+	gasStation := NewBtcGasStation(logrus.StandardLogger(), 10*time.Second)
 	return &client{
-		network: network,
-		client:  c,
-		config:  *network.Params(),
-		url:     config.Host,
+		network:    network,
+		client:     c,
+		config:     *network.Params(),
+		url:        config.Host,
+		gasStation: gasStation,
 	}, nil
 }
 
@@ -242,4 +249,8 @@ func (c *client) VerifyTx(tx btctypes.Tx) error {
 		}
 	}
 	return nil
+}
+
+func (c *client) GasStation() BtcGasStation {
+	return c.gasStation
 }

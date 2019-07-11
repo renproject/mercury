@@ -8,7 +8,7 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/cespare/cp v1.1.1 // indirect
-	github.com/codahale/blake2 v0.0.0-20150924215134-8d10d0420cbf // indirect
+	github.com/codahale/blake2 v0.0.0-20150924215134-8d10d0420cbf
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.8.27
