@@ -1,13 +1,16 @@
 package btcaccount
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcutil"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/sdk/client/btcclient"
+	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
@@ -17,10 +20,11 @@ func ErrInsufficientBalance(expect, have string) error {
 	return fmt.Errorf("insufficient balance, got = %v, have = %v", expect, have)
 }
 
+// Account provides functions for interacting with a bitcoin account
 type Account interface {
 	Address() btctypes.Address
 	PrivateKey() *ecdsa.PrivateKey
-	Transfer(to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) (btctypes.TxHash, error)
+	Transfer(to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (btctypes.TxHash, error)
 	UTXOs() (utxos btctypes.UTXOs, err error)
 }
 
@@ -28,9 +32,10 @@ type Account interface {
 type account struct {
 	Client btcclient.Client
 
-	address btctypes.Address
-	logger  logrus.FieldLogger
-	key     *ecdsa.PrivateKey
+	address    btctypes.Address
+	logger     logrus.FieldLogger
+	key        *ecdsa.PrivateKey
+	gasStation BtcGasStation
 }
 
 // New returns a new Account from the given private key.
@@ -43,10 +48,11 @@ func New(logger logrus.FieldLogger, client btcclient.Client, key *ecdsa.PrivateK
 		return &account{}, err
 	}
 	return &account{
-		Client:  client,
-		address: address,
-		logger:  logger,
-		key:     key,
+		Client:     client,
+		address:    address,
+		logger:     logger,
+		key:        key,
+		gasStation: NewBtcGasStation(logger, 10*time.Minute),
 	}, nil
 }
 
@@ -86,12 +92,13 @@ func (acc *account) UTXOs() (utxos btctypes.UTXOs, err error) {
 
 // Transfer transfer certain amount value to the target address. Important: this only works for accounts that have been
 // imported into the Bitcoin node.
-func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, fee btctypes.Amount) (btctypes.TxHash, error) {
+func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (btctypes.TxHash, error) {
 	utxos, err := acc.UTXOs()
 	if err != nil {
 		return "", err
 	}
 
+	fee := acc.gasStation.CalculateGasAmount(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
 	// Check if we have enough funds
 	balance := utxos.Sum()
 	if balance < value+fee {
