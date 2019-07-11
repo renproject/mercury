@@ -58,6 +58,14 @@ var _ = Describe("btc client", func() {
 			Expect(utxo.Vout).To(Equal(index))
 		})
 
+		It("should return an error for an invalid UTXO index", func() {
+			client, err := New(btctypes.Localnet)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = client.UTXO("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c", 3)
+			Expect(err).To(Equal(ErrUTXOSpent))
+		})
+
 		It("should return an error for a UTXO that has been spent", func() {
 			client, err := New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
@@ -70,8 +78,16 @@ var _ = Describe("btc client", func() {
 			client, err := New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
+			_, err = client.UTXO("abcdefg", 0)
+			Expect(err).To(Equal(ErrInvalidTxHash))
+		})
+
+		It("should return an error for a non-existent transaction hash", func() {
+			client, err := New(btctypes.Localnet)
+			Expect(err).NotTo(HaveOccurred())
+
 			_, err = client.UTXO("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0)
-			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(ErrTxHashNotFound))
 		})
 
 		It("should return a non-zero number of UTXOs for a funded address that has been imported", func() {
