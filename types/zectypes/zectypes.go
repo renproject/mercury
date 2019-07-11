@@ -88,12 +88,28 @@ func addrChecksum(input []byte) (cksum [4]byte) {
 
 var SerializePublicKey = btctypes.SerializePublicKey
 
-type UTXO = btctypes.UTXO
+type UTXO struct {
+	TxHash       TxHash `json:"txHash"`
+	Amount       Amount `json:"amount"`
+	ScriptPubKey string `json:"scriptPubKey"`
+	Vout         uint32 `json:"vout"`
+}
 
-type UTXOs = btctypes.UTXOs
+type UTXOs []UTXO
 
-type Recipient = btctypes.Recipient
+func (utxos *UTXOs) Sum() Amount {
+	total := Amount(0)
+	for _, utxo := range *utxos {
+		total += Amount(utxo.Amount)
+	}
+	return total
+}
 
-type Recipients = btctypes.Recipients
+type Recipient struct {
+	Address Address
+	Amount  Amount
+}
+
+type Recipients []Recipient
 
 type Confirmations = btctypes.Confirmations
