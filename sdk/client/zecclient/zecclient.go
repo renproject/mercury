@@ -221,7 +221,19 @@ func (c *client) BuildUnsignedTx(utxos zectypes.UTXOs, recipients zectypes.Recip
 
 // SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.
 func (c *client) SubmitSignedTx(stx zectypes.Tx) (zectypes.TxHash, error) {
-	panic("unimplemented")
+	// Pre-condition checks
+	if !stx.IsSigned() {
+		return "", errors.New("pre-condition violation: cannot submit unsigned transaction")
+	}
+	if err := stx.Verify(); err != nil {
+		return "", fmt.Errorf("pre-condition violation: transaction failed verification: %v", err)
+	}
+
+	txHash, err := c.client.SendRawTransaction(stx.Tx().MsgTx, false)
+	if err != nil {
+		return "", fmt.Errorf("cannot send raw transaction using zec client: %v", err)
+	}
+	return zectypes.TxHash(txHash.String()), nil
 }
 
 func createRawTransaction(inputs []btcjson.TransactionInput, amounts map[btcutil.Address]btcutil.Amount) (*zecutil.MsgTx, error) {
