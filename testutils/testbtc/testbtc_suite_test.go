@@ -1,4 +1,4 @@
-package btcaccount_test
+package testbtc_test
 
 import (
 	. "github.com/onsi/ginkgo"

@@ -1,18 +1,16 @@
-package btcaccount
+package testbtc
 
 import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
-	"time"
 
 	"github.com/btcsuite/btcutil"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
-	"github.com/sirupsen/logrus"
 )
 
 // ErrInsufficientBalance returns an error which returned when account doesn't have enough funds to make the tx.
@@ -32,14 +30,12 @@ type Account interface {
 type account struct {
 	Client btcclient.Client
 
-	address    btctypes.Address
-	logger     logrus.FieldLogger
-	key        *ecdsa.PrivateKey
-	gasStation BtcGasStation
+	address btctypes.Address
+	key     *ecdsa.PrivateKey
 }
 
-// New returns a new Account from the given private key.
-func New(logger logrus.FieldLogger, client btcclient.Client, key *ecdsa.PrivateKey) (Account, error) {
+// NewAccount returns a new Account from the given private key.
+func NewAccount(client btcclient.Client, key *ecdsa.PrivateKey) (Account, error) {
 	if key == nil {
 		panic("cannot create account with nil key")
 	}
@@ -48,31 +44,29 @@ func New(logger logrus.FieldLogger, client btcclient.Client, key *ecdsa.PrivateK
 		return &account{}, err
 	}
 	return &account{
-		Client:     client,
-		address:    address,
-		logger:     logger,
-		key:        key,
-		gasStation: NewBtcGasStation(logger, 10*time.Minute),
+		Client:  client,
+		address: address,
+		key:     key,
 	}, nil
 }
 
 // NewAccountFromWIF returns a new Account from the given WIF
-func NewAccountFromWIF(logger logrus.FieldLogger, client btcclient.Client, wifStr string) (Account, error) {
+func NewAccountFromWIF(client btcclient.Client, wifStr string) (Account, error) {
 	wif, err := btcutil.DecodeWIF(wifStr)
 	if err != nil {
 		return nil, err
 	}
 	privKey := (*ecdsa.PrivateKey)(wif.PrivKey)
-	return New(logger, client, privKey)
+	return NewAccount(client, privKey)
 }
 
 // RandomAccount returns a new Account using a random private key.
-func RandomAccount(logger logrus.FieldLogger, client btcclient.Client) (Account, error) {
+func RandomAccount(client btcclient.Client) (Account, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return New(logger, client, key)
+	return NewAccount(client, key)
 }
 
 // Address returns the Address of the account
@@ -98,7 +92,7 @@ func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed t
 		return "", err
 	}
 
-	fee := acc.gasStation.CalculateGasAmount(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
+	fee := acc.Client.GasStation().CalculateGasAmount(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
 	// Check if we have enough funds
 	balance := utxos.Sum()
 	if balance < value+fee {

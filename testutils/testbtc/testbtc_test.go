@@ -1,11 +1,11 @@
-package btcaccount_test
+package testbtc_test
 
 import (
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/sdk/account/btcaccount"
+	. "github.com/renproject/mercury/testutils/testbtc"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -47,7 +47,7 @@ var _ = Describe("btc account ", func() {
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := New(logrus.StandardLogger(), client, key)
+			account, err := New(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())
@@ -57,7 +57,7 @@ var _ = Describe("btc account ", func() {
 		It("should fetch zero utxos from a random account", func() {
 			client, err := btcclient.New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := RandomAccount(logrus.StandardLogger(), client)
+			account, err := RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())
@@ -75,7 +75,7 @@ var _ = Describe("btc account ", func() {
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := New(logrus.StandardLogger(), client, key)
+			account, err := New(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())
