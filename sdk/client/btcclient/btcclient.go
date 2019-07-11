@@ -233,7 +233,7 @@ func (c *client) SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error) {
 	if !stx.IsSigned() {
 		return "", errors.New("pre-condition violation: cannot submit unsigned transaction")
 	}
-	if err := stx.Verify(); err != nil {
+	if err := c.VerifyTx(stx); err != nil {
 		return "", fmt.Errorf("pre-condition violation: transaction failed verification: %v", err)
 	}
 
@@ -246,4 +246,23 @@ func (c *client) SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error) {
 
 func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
 	return 146*numUTXOs + 33*numRecipients + 10
+}
+
+func (c *client) VerifyTx(tx btctypes.Tx) error {
+	for i, utxo := range tx.UTXOs() {
+		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
+		if err != nil {
+			return err
+		}
+		engine, err := txscript.NewEngine(scriptPubKey, tx.Tx(), i,
+			txscript.StandardVerifyFlags, txscript.NewSigCache(10),
+			txscript.NewTxSigHashes(tx.Tx()), int64(utxo.Amount))
+		if err != nil {
+			return err
+		}
+		if err := engine.Execute(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -51,6 +51,10 @@ func (tx *Tx) IsSigned() bool {
 	return tx.signed
 }
 
+func (tx *Tx) UTXOs() UTXOs {
+	return tx.utxos
+}
+
 func (tx *Tx) Sign(key *ecdsa.PrivateKey) (err error) {
 	subScripts := tx.SignatureHashes()
 	sigs := make([]*btcec.Signature, len(subScripts))
@@ -145,23 +149,4 @@ func (tx *Tx) Serialize() []byte {
 		panic(fmt.Errorf("post-condition violation: serialized transaction len=%v is invalid", len(bufBytes)))
 	}
 	return bufBytes
-}
-
-func (tx *Tx) Verify() error {
-	for i, utxo := range tx.utxos {
-		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
-		if err != nil {
-			return err
-		}
-		engine, err := txscript.NewEngine(scriptPubKey, tx.tx, i,
-			txscript.StandardVerifyFlags, txscript.NewSigCache(10),
-			txscript.NewTxSigHashes(tx.tx), int64(utxo.Amount))
-		if err != nil {
-			return err
-		}
-		if err := engine.Execute(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
