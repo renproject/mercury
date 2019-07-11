@@ -22,8 +22,10 @@ const (
 )
 
 var (
-	ErrInvalidTxHash = errors.New("invalid tx hash")
-	ErrUTXOSpent     = errors.New("utxo spent")
+	ErrInvalidTxHash    = errors.New("invalid tx hash")
+	ErrInvalidUTXOIndex = errors.New("invalid utxo index")
+	ErrTxHashNotFound   = errors.New("tx hash not found")
+	ErrUTXOSpent        = errors.New("utxo spent")
 )
 
 type Client interface {
@@ -85,16 +87,16 @@ func (c *client) Network() btctypes.Network {
 func (c *client) UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, error) {
 	txHashBytes, err := chainhash.NewHashFromStr(string(txHash))
 	if err != nil {
-		return btctypes.UTXO{}, fmt.Errorf("cannot parse hash: %v", err)
+		return btctypes.UTXO{}, ErrInvalidTxHash
 	}
 	tx, err := c.client.GetRawTransactionVerbose(txHashBytes)
 	if err != nil {
-		return btctypes.UTXO{}, ErrInvalidTxHash
+		return btctypes.UTXO{}, ErrTxHashNotFound
 	}
 
 	txOut, err := c.client.GetTxOut(txHashBytes, index, true)
 	if err != nil {
-		return btctypes.UTXO{}, fmt.Errorf("cannot get tx output from btc client: %v", err)
+		return btctypes.UTXO{}, ErrInvalidUTXOIndex
 	}
 
 	// Check if UTXO has been spent.

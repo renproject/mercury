@@ -16,6 +16,7 @@ type Gateway interface {
 	BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (btctypes.Tx, error)
 	Address() btctypes.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
+	Script() []byte
 }
 
 type gateway struct {
