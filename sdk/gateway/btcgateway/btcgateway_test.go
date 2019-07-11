@@ -46,7 +46,7 @@ var _ = Describe("btc gateway", func() {
 
 	Context("when generating gateways", func() {
 		PIt("should be able to generate a gateway", func() {
-			client, err := btcclient.NewBtcClient(btctypes.Localnet)
+			client, err := btcclient.New(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			key, err := loadTestAccounts(btctypes.Localnet).EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
