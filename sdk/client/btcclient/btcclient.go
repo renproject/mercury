@@ -21,9 +21,14 @@ const (
 	LocalnetMercuryURL = "0.0.0.0:5000/btc/testnet"
 )
 
+var (
+	ErrInvalidTxHash = errors.New("invalid tx hash")
+	ErrUTXOSpent     = errors.New("utxo spent")
+)
+
 type Client interface {
 	Network() btctypes.Network
-	UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error)
+	UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, error)
 	UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error)
 	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
 	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
@@ -76,44 +81,37 @@ func (c *client) Network() btctypes.Network {
 	return c.network
 }
 
-// UTXOs returns the UTXOs for the given transaction hash.
-func (c *client) UTXOs(txHash btctypes.TxHash) (btctypes.UTXOs, error) {
+// UTXO returns the UTXO for the given transaction hash and index.
+func (c *client) UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, error) {
 	txHashBytes, err := chainhash.NewHashFromStr(string(txHash))
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse hash: %v", err)
+		return btctypes.UTXO{}, fmt.Errorf("cannot parse hash: %v", err)
 	}
 	tx, err := c.client.GetRawTransactionVerbose(txHashBytes)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
+		return btctypes.UTXO{}, ErrInvalidTxHash
 	}
 
-	outputs := tx.Vout
-	var utxos btctypes.UTXOs
-	for _, output := range outputs {
-		txOut, err := c.client.GetTxOut(txHashBytes, output.N, true)
-		if err != nil {
-			return nil, fmt.Errorf("cannot get tx output from btc client: %v", err)
-		}
-
-		// If the transaction output has been spent, continue.
-		if txOut == nil {
-			continue
-		}
-
-		amount, err := btcutil.NewAmount(txOut.Value)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
-		}
-		utxo := btctypes.UTXO{
-			TxHash:       btctypes.TxHash(tx.Txid),
-			Amount:       btctypes.Amount(amount),
-			ScriptPubKey: txOut.ScriptPubKey.Hex,
-			Vout:         output.N,
-		}
-		utxos = append(utxos, utxo)
+	txOut, err := c.client.GetTxOut(txHashBytes, index, true)
+	if err != nil {
+		return btctypes.UTXO{}, fmt.Errorf("cannot get tx output from btc client: %v", err)
 	}
 
-	return utxos, nil
+	// Check if UTXO has been spent.
+	if txOut == nil {
+		return btctypes.UTXO{}, ErrUTXOSpent
+	}
+
+	amount, err := btcutil.NewAmount(txOut.Value)
+	if err != nil {
+		return btctypes.UTXO{}, fmt.Errorf("cannot parse amount received from btc client: %v", err)
+	}
+	return btctypes.UTXO{
+		TxHash:       btctypes.TxHash(tx.Txid),
+		Amount:       btctypes.Amount(amount),
+		ScriptPubKey: txOut.ScriptPubKey.Hex,
+		Vout:         index,
+	}, nil
 }
 
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
