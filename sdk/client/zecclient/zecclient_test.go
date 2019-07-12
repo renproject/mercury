@@ -12,7 +12,7 @@ import (
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc/zecrpc"
-	"github.com/renproject/mercury/testutils"
+	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/types/zectypes"
 	"github.com/sirupsen/logrus"
 )
@@ -20,8 +20,8 @@ import (
 var _ = Describe("zec client", func() {
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
-	loadTestAccounts := func(network zectypes.Network) testutils.HdKey {
-		wallet, err := testutils.LoadHdWalletFromEnv("ZEC_TEST_MNEMONIC", "ZEC_TEST_PASSPHRASE", network)
+	loadTestAccounts := func(network zectypes.Network) testutil.HdKey {
+		wallet, err := testutil.LoadHdWalletFromEnv("ZEC_TEST_MNEMONIC", "ZEC_TEST_PASSPHRASE", network)
 		Expect(err).NotTo(HaveOccurred())
 		return wallet
 	}
@@ -104,7 +104,7 @@ var _ = Describe("zec client", func() {
 		It("should return zero UTXOs for a randomly generated address", func() {
 			client, err := New(zectypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
-			address, err := testutils.RandomZECAddress(zectypes.Localnet)
+			address, err := testutil.RandomZECAddress(zectypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			utxos, err := client.UTXOsFromAddress(address)

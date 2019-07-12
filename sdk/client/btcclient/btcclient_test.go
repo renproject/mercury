@@ -13,7 +13,7 @@ import (
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc/btcrpc"
-	"github.com/renproject/mercury/testutils"
+	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
@@ -23,8 +23,8 @@ var _ = Describe("btc client", func() {
 
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
-	loadTestAccounts := func(network btctypes.Network) testutils.HdKey {
-		wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
+	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
+		wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
 		Expect(err).NotTo(HaveOccurred())
 		return wallet
 	}
@@ -106,7 +106,7 @@ var _ = Describe("btc client", func() {
 		It("should return zero UTXOs for a randomly generated address", func() {
 			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
-			address, err := testutils.RandomBTCAddress(btctypes.Localnet)
+			address, err := testutil.RandomBTCAddress(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			utxos, err := client.UTXOsFromAddress(address)

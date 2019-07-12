@@ -68,9 +68,9 @@ func (gw *gateway) UTXO(hash btctypes.TxHash, i uint32) (btctypes.UTXO, error) {
 		return nil, fmt.Errorf("unexpected utxo of type: %T", utxo)
 	}
 
-	return btctypes.ScriptUTXO{
-		StandardUTXO: stdUTXO,
-		Script:       gw.Script(),
+	return &btctypes.ScriptUTXO{
+		Utxo:   stdUTXO,
+		Script: gw.Script(),
 		UpdateSigScript: func(builder *txscript.ScriptBuilder) {
 			builder.AddData(gw.Script())
 		},

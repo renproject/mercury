@@ -88,32 +88,36 @@ func (StandardUTXO) AddData(*txscript.ScriptBuilder) {
 }
 
 type ScriptUTXO struct {
-	utxo StandardUTXO
+	Utxo StandardUTXO
 
 	Script          []byte
 	UpdateSigScript func(builder *txscript.ScriptBuilder)
 }
 
-func (u ScriptUTXO) Amount() Amount {
-	return u.utxo.Amount()
+func (u *ScriptUTXO) Confirmations() Confirmations {
+	return u.Utxo.Confirmations()
 }
 
-func (u ScriptUTXO) TxHash() TxHash {
-	return u.utxo.TxHash()
+func (u *ScriptUTXO) Amount() Amount {
+	return u.Utxo.Amount()
 }
 
-func (u ScriptUTXO) ScriptPubKey() string {
-	return u.utxo.ScriptPubKey()
+func (u *ScriptUTXO) TxHash() TxHash {
+	return u.Utxo.TxHash()
 }
 
-func (u ScriptUTXO) Vout() uint32 {
-	return u.utxo.Vout()
+func (u *ScriptUTXO) ScriptPubKey() string {
+	return u.Utxo.ScriptPubKey()
 }
 
-func (u ScriptUTXO) SigHash(hashType txscript.SigHashType, tx *wire.MsgTx, idx int) ([]byte, error) {
+func (u *ScriptUTXO) Vout() uint32 {
+	return u.Utxo.Vout()
+}
+
+func (u *ScriptUTXO) SigHash(hashType txscript.SigHashType, tx *wire.MsgTx, idx int) ([]byte, error) {
 	return txscript.CalcSignatureHash(u.Script, hashType, tx, idx)
 }
 
-func (u ScriptUTXO) AddData(builder *txscript.ScriptBuilder) {
+func (u *ScriptUTXO) AddData(builder *txscript.ScriptBuilder) {
 	u.UpdateSigScript(builder)
 }

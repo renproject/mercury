@@ -39,7 +39,7 @@ type Client interface {
 	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
 	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int
-	SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) (btctypes.Amount, error)
+	SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount
 }
 
 // Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
@@ -254,12 +254,12 @@ func (c *client) VerifyTx(tx btctypes.Tx) error {
 	return nil
 }
 
-func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) (btctypes.Amount, error) {
+func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount {
 	gasStationPrice, err := c.gasStation.GasRequired(ctx, speed, txSizeInBytes)
 	if err == nil {
-		return gasStationPrice, nil
+		return gasStationPrice
 	}
 	c.logger.Errorf("error getting btc gas information: %v", err)
 	c.logger.Infof("using 10k sats as gas price")
-	return 10000 * btctypes.SAT, nil
+	return 10000 * btctypes.SAT
 }

@@ -17,8 +17,8 @@ import (
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc/btcrpc"
 	"github.com/renproject/mercury/sdk/client/btcclient"
-	"github.com/renproject/mercury/testutils"
-	"github.com/renproject/mercury/testutils/btcaccount"
+	"github.com/renproject/mercury/testutil"
+	"github.com/renproject/mercury/testutil/btcaccount"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
@@ -29,8 +29,8 @@ var _ = Describe("btc gateway", func() {
 
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
-	loadTestAccounts := func(network btctypes.Network) testutils.HdKey {
-		wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
+	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
+		wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
 		Expect(err).NotTo(HaveOccurred())
 		return wallet
 	}
@@ -75,10 +75,8 @@ var _ = Describe("btc gateway", func() {
 			gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
-			gasStation := client.GasStation()
-			gasAmount := gasStation.CalculateGasAmount(context.Background(), types.Standard, txSize)
-			// fmt.Printf("gas amount=%v", gasAmount)
-			Expect(err).NotTo(HaveOccurred())
+			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
+			fmt.Printf("gas amount=%v", gasAmount)
 			recipients := btctypes.Recipients{{
 				Address: account.Address(),
 				Amount:  gatewayUTXOs.Sum() - gasAmount,
