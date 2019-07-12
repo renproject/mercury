@@ -18,6 +18,8 @@ import (
 )
 
 var _ = Describe("btc client", func() {
+	logger := logrus.StandardLogger()
+
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutils.HdKey {
@@ -27,7 +29,6 @@ var _ = Describe("btc client", func() {
 	}
 
 	BeforeSuite(func() {
-		logger := logrus.StandardLogger()
 		store := kv.NewJSON(kv.NewMemDB())
 		cache := cache.New(store, logger)
 
@@ -45,7 +46,7 @@ var _ = Describe("btc client", func() {
 
 	Context("when fetching UTXOs", func() {
 		It("should return the UTXO for a transaction with unspent outputs", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			txHash := btctypes.TxHash("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c")
@@ -59,7 +60,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for an invalid UTXO index", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c", 3)
@@ -67,7 +68,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for a UTXO that has been spent", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("7e65d34373491653934d32cc992211b14b9e0e80d4bb9380e97aaa05fa872df5", 0)
@@ -75,7 +76,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for an invalid transaction hash", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("abcdefg", 0)
@@ -83,7 +84,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for a non-existent transaction hash", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0)
@@ -91,7 +92,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return a non-zero number of UTXOs for a funded address that has been imported", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			address, err := loadTestAccounts(btctypes.Localnet).BTCAddress(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
@@ -102,7 +103,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return zero UTXOs for a randomly generated address", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			address, err := testutils.RandomBTCAddress(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())

@@ -43,16 +43,16 @@ type Client interface {
 // Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 type client struct {
-	network btctypes.Network
-	client  *rpcclient.Client
-
+	network    btctypes.Network
+	client     *rpcclient.Client
 	config     chaincfg.Params
 	url        string
 	gasStation BtcGasStation
+	logger     logrus.FieldLogger
 }
 
 // New returns a new Client of given Bitcoin network.
-func New(network btctypes.Network) (Client, error) {
+func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
 	config := &rpcclient.ConnConfig{
 		HTTPPostMode: true,
 		DisableTLS:   true,
@@ -74,14 +74,14 @@ func New(network btctypes.Network) (Client, error) {
 		return &client{}, err
 	}
 
-	// FIXME: accept logger from caller
-	gasStation := NewBtcGasStation(logrus.StandardLogger(), 10*time.Second)
+	gasStation := NewBtcGasStation(logger, 10*time.Second)
 	return &client{
 		network:    network,
 		client:     c,
 		config:     *network.Params(),
 		url:        config.Host,
 		gasStation: gasStation,
+		logger:     logger,
 	}, nil
 }
 

@@ -25,6 +25,8 @@ import (
 )
 
 var _ = Describe("btc gateway", func() {
+	logger := logrus.StandardLogger()
+
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutils.HdKey {
@@ -34,7 +36,6 @@ var _ = Describe("btc gateway", func() {
 	}
 
 	BeforeSuite(func() {
-		logger := logrus.StandardLogger()
 		store := kv.NewJSON(kv.NewMemDB())
 		cache := cache.New(store, logger)
 
@@ -52,7 +53,7 @@ var _ = Describe("btc gateway", func() {
 
 	Context("when generating gateways", func() {
 		It("should be able to generate a gateway", func() {
-			client, err := btcclient.New(btctypes.Localnet)
+			client, err := btcclient.New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			key, err := loadTestAccounts(btctypes.Localnet).EcdsaKey(44, 1, 0, 0, 1)
 			gateway := New(client, &key.PublicKey, []byte{})
