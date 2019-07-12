@@ -2,7 +2,9 @@ package ethclient
 
 import (
 	"context"
+	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -24,9 +26,10 @@ type Client interface {
 }
 
 type client struct {
-	url    string
-	client *ethclient.Client
-	logger logrus.FieldLogger
+	url        string
+	client     *ethclient.Client
+	logger     logrus.FieldLogger
+	gasStation EthGasStation
 }
 
 // New returns a new Client of given ethereum network.
@@ -48,12 +51,13 @@ func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 func NewCustomClient(logger logrus.FieldLogger, url string) (Client, error) {
 	ec, err := ethclient.Dial(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating EthClient at url=%v. %v", url, err)
 	}
 	return &client{
-		url:    url,
-		client: ec,
-		logger: logger,
+		url:        url,
+		client:     ec,
+		logger:     logger,
+		gasStation: NewEthGasStation(logger, 30*time.Minute),
 	}, nil
 }
 
@@ -76,11 +80,19 @@ func (c *client) BlockNumber(ctx context.Context) (*big.Int, error) {
 }
 
 func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed) (ethtypes.Amount, error) {
-	price, err := c.client.SuggestGasPrice(ctx)
-	if err != nil {
-		return ethtypes.Amount{}, err
+	gasStationPrice, err := c.gasStation.GasRequired(ctx, speed)
+	if err == nil {
+		return gasStationPrice, nil
 	}
-	return ethtypes.WeiFromBig(price), err
+	c.logger.Errorf("error getting gas from EthGasStation: %v", err)
+	c.logger.Infof("trying gas price from EthClient")
+	ethClientPrice, err := c.client.SuggestGasPrice(ctx)
+	if err == nil {
+		return ethtypes.WeiFromBig(ethClientPrice), nil
+	}
+	c.logger.Errorf("error getting gas from EthClient: %v", err)
+	c.logger.Infof("using 21 Gwei as gas price")
+	return ethtypes.Gwei(21), nil
 }
 
 func (c *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Address) (uint64, error) {

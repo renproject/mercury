@@ -16,7 +16,8 @@ import (
 // EthGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
 type EthGasStation interface {
-	GasRequired(ctx context.Context, speed types.TxSpeed) ethtypes.Amount
+	GasRequired(ctx context.Context, speed types.TxSpeed) (ethtypes.Amount, error)
+	Initialized() bool
 }
 
 type ethGasStation struct {
@@ -38,18 +39,27 @@ func NewEthGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) Et
 	}
 }
 
+func (eth ethGasStation) Initialized() bool {
+	return !eth.lastUpdate.IsZero()
+}
+
 // GasRequired returns the recommended gas price
-func (eth ethGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) ethtypes.Amount {
+func (eth ethGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) (amount ethtypes.Amount, err error) {
 	eth.mu.Lock()
 	defer eth.mu.Unlock()
 
 	if time.Now().After(eth.lastUpdate.Add(eth.minUpdateTime)) {
-		if err := eth.gasRequired(ctx); err != nil {
+		if err = eth.gasRequired(ctx); err != nil {
 			eth.logger.Errorf("cannot get recommended fee from ethgasstation.info, err = %v", err)
 		}
 	}
 
-	return eth.fees[speed]
+	// Return an error if we were never able to fetch gas prices
+	if !eth.Initialized() {
+		return ethtypes.Amount{}, fmt.Errorf("failed to fetch gas information: %v", err)
+	}
+
+	return eth.fees[speed], nil
 }
 
 func (eth *ethGasStation) gasRequired(ctx context.Context) error {
@@ -68,17 +78,17 @@ func (eth *ethGasStation) gasRequired(ctx context.Context) error {
 	}
 
 	data := struct {
-		Slow     uint64 `json:"safeLow"`
-		Standard uint64 `json:"average"`
-		Fast     uint64 `json:"fast"`
+		Slow     float64 `json:"safeLow"`
+		Standard float64 `json:"average"`
+		Fast     float64 `json:"fast"`
 	}{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
 		return fmt.Errorf("cannot decode response body from ethGasStation = %v", err)
 	}
 
-	eth.fees[types.Fast] = ethtypes.Gwei(data.Fast)
-	eth.fees[types.Standard] = ethtypes.Gwei(data.Standard)
-	eth.fees[types.Slow] = ethtypes.Gwei(data.Slow)
+	eth.fees[types.Fast] = ethtypes.Gwei(uint64(data.Fast))
+	eth.fees[types.Standard] = ethtypes.Gwei(uint64(data.Standard))
+	eth.fees[types.Slow] = ethtypes.Gwei(uint64(data.Slow))
 	eth.lastUpdate = time.Now()
 	return nil
 }

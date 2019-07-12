@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/ethclient"
+	"github.com/renproject/mercury/types/ethtypes"
 
 	"github.com/renproject/mercury/types"
 
@@ -21,16 +22,16 @@ var _ = Describe("ethereum tx gas", func() {
 
 			ctx := context.Background()
 			fastGas := gas.GasRequired(ctx, types.Fast)
-			Expect(fastGas).Should(BeNumerically(">", 1))
-			logger.Infof("fast gas = %v sat/byte", fastGas)
+			Expect(fastGas.Gt(ethtypes.Wei(1))).Should(BeTrue())
+			logger.Infof("fast gas = %v", fastGas)
 
 			standardGas := gas.GasRequired(ctx, types.Standard)
-			Expect(standardGas).Should(BeNumerically(">", 1))
-			logger.Infof("standard gas = %v sat/byte", standardGas)
+			Expect(standardGas.Gt(ethtypes.Wei(1))).Should(BeTrue())
+			logger.Infof("standard gas = %v", standardGas)
 
 			slowGas := gas.GasRequired(ctx, types.Slow)
-			Expect(slowGas).Should(BeNumerically(">", 1))
-			logger.Infof("slow gas = %v sat/byte", slowGas)
+			Expect(slowGas.Gt(ethtypes.Wei(1))).Should(BeTrue())
+			logger.Infof("slow gas = %v", slowGas)
 
 			Expect(fastGas.Gte(standardGas)).Should(BeTrue())
 			Expect(standardGas.Gte(slowGas)).Should(BeTrue())
