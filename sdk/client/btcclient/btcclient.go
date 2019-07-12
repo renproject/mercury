@@ -12,9 +12,23 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
+	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types/btctypes/btcaddress"
+	"github.com/renproject/mercury/types/btctypes/btcutxo"
 	"github.com/sirupsen/logrus"
 )
+
+type Client interface {
+	Network() btctypes.Network
+	UTXO(txHash types.TxHash, index uint32) (btcutxo.UTXO, error)
+	UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, error)
+	Confirmations(txHash types.TxHash) (types.Confirmations, error)
+	BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients, refundTo btcaddress.Address, gas btctypes.Amount) (types.Tx, error)
+	SubmitSignedTx(stx types.Tx) (types.TxHash, error)
+	EstimateTxSize(numUTXOs, numRecipients int) int
+	GasStation() GasStation
+}
 
 const (
 	Dust               = btctypes.Amount(600)
@@ -29,17 +43,6 @@ var (
 	ErrUTXOSpent      = errors.New("utxo spent or invalid index")
 )
 
-type Client interface {
-	Network() btctypes.Network
-	UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, error)
-	UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error)
-	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
-	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
-	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
-	EstimateTxSize(numUTXOs, numRecipients int) int
-	GasStation() BtcGasStation
-}
-
 // Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 type client struct {
@@ -47,7 +50,7 @@ type client struct {
 	client     *rpcclient.Client
 	config     chaincfg.Params
 	url        string
-	gasStation BtcGasStation
+	gasStation GasStation
 	logger     logrus.FieldLogger
 }
 
@@ -74,7 +77,7 @@ func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
 		return &client{}, err
 	}
 
-	gasStation := NewBtcGasStation(logger, 30*time.Minute)
+	gasStation := NewGasStation(logger, 30*time.Minute)
 	return &client{
 		network:    network,
 		client:     c,
@@ -252,6 +255,6 @@ func (c *client) VerifyTx(tx btctypes.Tx) error {
 	return nil
 }
 
-func (c *client) GasStation() BtcGasStation {
+func (c *client) GasStation() GasStation {
 	return c.gasStation
 }

@@ -13,14 +13,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// BtcGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
+// GasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
-type BtcGasStation interface {
+type GasStation interface {
 	GasRequired(ctx context.Context, speed types.TxSpeed) int64
 	CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount
 }
 
-type btcGasStation struct {
+type gasStation struct {
 	mu            *sync.RWMutex
 	logger        logrus.FieldLogger
 	fees          map[types.TxSpeed]int64
@@ -28,9 +28,9 @@ type btcGasStation struct {
 	minUpdateTime time.Duration
 }
 
-// NewBtcGasStation returns a new BtcGasStation
-func NewBtcGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) BtcGasStation {
-	return &btcGasStation{
+// NewGasStation returns a new GasStation
+func NewGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) GasStation {
+	return &gasStation{
 		mu:            new(sync.RWMutex),
 		logger:        logger,
 		fees:          map[types.TxSpeed]int64{},
@@ -39,7 +39,7 @@ func NewBtcGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) Bt
 	}
 }
 
-func (btc btcGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) int64 {
+func (btc gasStation) GasRequired(ctx context.Context, speed types.TxSpeed) int64 {
 	btc.mu.Lock()
 	defer btc.mu.Unlock()
 
@@ -52,13 +52,13 @@ func (btc btcGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) i
 	return btc.fees[speed]
 }
 
-func (btc btcGasStation) CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount {
+func (btc gasStation) CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount {
 	gasRequired := btc.GasRequired(ctx, speed) // in sats/byte
 	gasInSats := gasRequired * int64(txSizeInBytes)
 	return btctypes.Amount(gasInSats)
 }
 
-func (btc *btcGasStation) gasRequired(ctx context.Context) error {
+func (btc *gasStation) gasRequired(ctx context.Context) error {
 	// FIXME: Use context for http request timeout
 	response, err := http.Get("https://bitcoinfees.earn.com/api/v1/fees/recommended")
 	if err != nil {
