@@ -12,6 +12,7 @@ import (
 
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
+	UTXO(hash btctypes.TxHash, i uint32) (btctypes.UTXO, error)
 	UTXOs() (btctypes.UTXOs, error)
 	Address() btctypes.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
@@ -77,6 +78,26 @@ func (gw *gateway) UTXOs() (btctypes.UTXOs, error) {
 		}
 	}
 	return scriptUTXOs, nil
+}
+
+func (gw *gateway) UTXO(hash btctypes.TxHash, i uint32) (btctypes.UTXO, error) {
+	utxo, err := gw.client.UTXO(hash, i)
+	if err != nil {
+		return nil, err
+	}
+
+	stdUTXO, ok := utxo.(btctypes.StandardUTXO)
+	if !ok {
+		return nil, fmt.Errorf("unexpected utxo of type: %T", utxo)
+	}
+
+	return btctypes.ScriptUTXO{
+		stdUTXO,
+		gw.Script(),
+		func(builder *txscript.ScriptBuilder) {
+			builder.AddData(gw.Script())
+		},
+	}, nil
 }
 
 func (gw *gateway) Address() btctypes.Address {
