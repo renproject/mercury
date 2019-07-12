@@ -115,10 +115,11 @@ func (c *client) UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, erro
 		return btctypes.UTXO{}, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 	}
 	return btctypes.UTXO{
-		TxHash:       btctypes.TxHash(tx.Txid),
-		Amount:       btctypes.Amount(amount),
-		ScriptPubKey: txOut.ScriptPubKey.Hex,
-		Vout:         index,
+		TxHash:        btctypes.TxHash(tx.Txid),
+		Amount:        btctypes.Amount(amount),
+		ScriptPubKey:  txOut.ScriptPubKey.Hex,
+		Vout:          index,
+		Confirmations: btctypes.Confirmations(txOut.Confirmations),
 	}, nil
 }
 
