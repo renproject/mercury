@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/ethclient"
+	"github.com/renproject/mercury/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/renproject/mercury/sdk/account/ethaccount"
@@ -32,7 +33,7 @@ var _ = Describe("eth client", func() {
 
 		It("can suggest a gas price", func() {
 			ctx := context.Background()
-			_, err := client.SuggestGasPrice(ctx)
+			_, err := client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -48,7 +49,7 @@ var _ = Describe("eth client", func() {
 			amount := ethtypes.Ether(3)
 			nonce := uint64(1)
 			gasLimit := uint64(1000)
-			gasPrice, err := client.SuggestGasPrice(ctx)
+			gasPrice, err := client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			client, err := NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
 			Expect(err).NotTo(HaveOccurred())

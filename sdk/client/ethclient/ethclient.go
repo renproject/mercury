@@ -16,7 +16,7 @@ import (
 type Client interface {
 	Balance(context.Context, ethtypes.Address) (ethtypes.Amount, error)
 	BlockNumber(context.Context) (*big.Int, error)
-	SuggestGasPrice(context.Context) (ethtypes.Amount, error)
+	SuggestGasPrice(context.Context, types.TxSpeed) (ethtypes.Amount, error)
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
 	PublishSignedTx(context.Context, ethtypes.Tx) error
@@ -75,7 +75,7 @@ func (c *client) BlockNumber(ctx context.Context) (*big.Int, error) {
 	return value.Number, nil
 }
 
-func (c *client) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, error) {
+func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed) (ethtypes.Amount, error) {
 	price, err := c.client.SuggestGasPrice(ctx)
 	if err != nil {
 		return ethtypes.Amount{}, err
