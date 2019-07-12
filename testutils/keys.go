@@ -15,7 +15,7 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/pkg/errors"
-	"github.com/renproject/mercury/hdutil"
+	"github.com/renproject/mercury/testutils/hdutil"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/renproject/mercury/types/zectypes"
 )

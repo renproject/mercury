@@ -1,11 +1,11 @@
-package testbtc_test
+package btcaccount_test
 
 import (
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/testutils/testbtc"
+	. "github.com/renproject/mercury/testutils/btcaccount"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var _ = Describe("btc account ", func() {
+var _ = Describe("btc account", func() {
 	logger := logrus.StandardLogger()
 
 	BeforeSuite(func() {
@@ -41,13 +41,13 @@ var _ = Describe("btc account ", func() {
 	Context("when fetching utxos", func() {
 		It("should fetch at least one utxo from the funded account", func() {
 			// Get the account with actual balance
-			client, err := btcclient.New(btctypes.Localnet)
+			client, err := btcclient.New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := New(client, key)
+			account, err := NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())
@@ -55,7 +55,7 @@ var _ = Describe("btc account ", func() {
 		})
 
 		It("should fetch zero utxos from a random account", func() {
-			client, err := btcclient.New(btctypes.Localnet)
+			client, err := btcclient.New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			account, err := RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
@@ -69,13 +69,13 @@ var _ = Describe("btc account ", func() {
 	Context("when transferring funds ", func() {
 		It("should be able to transfer funds to itself", func() {
 			// Get the account with actual balance
-			client, err := btcclient.New(btctypes.Localnet)
+			client, err := btcclient.New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := New(client, key)
+			account, err := NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())

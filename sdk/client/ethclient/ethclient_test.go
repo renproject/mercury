@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/ethclient"
 
-	"github.com/renproject/mercury/testutils"
+	"github.com/renproject/mercury/sdk/account/ethaccount"
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
@@ -18,12 +18,12 @@ var _ = Describe("eth client", func() {
 
 	Context("when fetching balances", func() {
 		It("can fetch a zero balance address", func() {
-			_, addr, err := testutils.NewAccount()
+			client, err := NewCustomClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
 			Expect(err).NotTo(HaveOccurred())
-			client, err = NewCustomClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+			account, err := ethaccount.RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
-			balance, err := client.Balance(ctx, addr)
+			balance, err := client.Balance(ctx, account.Address())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(balance.Eq(ethtypes.Wei(0))).Should(BeTrue())
 		})
@@ -48,10 +48,12 @@ var _ = Describe("eth client", func() {
 			gasLimit := uint64(1000)
 			gasPrice, err := client.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, addr, err := testutils.NewAccount()
+			client, err := NewCustomClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+			Expect(err).NotTo(HaveOccurred())
+			account, err := ethaccount.RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			_, err = client.BuildUnsignedTx(ctx, nonce, addr, amount, gasLimit, gasPrice, data)
+			_, err = client.BuildUnsignedTx(ctx, nonce, account.Address(), amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

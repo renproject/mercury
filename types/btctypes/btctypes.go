@@ -104,20 +104,22 @@ func SerializePublicKey(pubkey *ecdsa.PublicKey, network Network) []byte {
 	}
 }
 
-func NewStandardUTXO(txHash TxHash, amount Amount, scriptPubKey string, vout uint32) StandardUTXO {
+func NewStandardUTXO(txHash TxHash, amount Amount, scriptPubKey string, vout uint32, confirmations Confirmations) StandardUTXO {
 	return StandardUTXO{
-		txHash:       txHash,
-		amount:       amount,
-		scriptPubKey: scriptPubKey,
-		vout:         vout,
+		txHash:        txHash,
+		amount:        amount,
+		scriptPubKey:  scriptPubKey,
+		vout:          vout,
+		confirmations: confirmations,
 	}
 }
 
 type StandardUTXO struct {
-	txHash       TxHash
-	amount       Amount
-	scriptPubKey string
-	vout         uint32
+	txHash        TxHash
+	amount        Amount
+	scriptPubKey  string
+	vout          uint32
+	confirmations Confirmations
 }
 
 type UTXO interface {
@@ -125,9 +127,14 @@ type UTXO interface {
 	TxHash() TxHash
 	ScriptPubKey() string
 	Vout() uint32
+	Confirmations() Confirmations
 
 	SigHash(hashType txscript.SigHashType, tx *wire.MsgTx, idx int) ([]byte, error)
 	AddData(builder *txscript.ScriptBuilder)
+}
+
+func (UTXO StandardUTXO) Confirmations() Confirmations {
+	return UTXO.confirmations
 }
 
 func (UTXO StandardUTXO) Amount() Amount {
@@ -196,6 +203,16 @@ func (utxos UTXOs) Sum() Amount {
 		total += utxo.Amount()
 	}
 	return total
+}
+
+func (utxos *UTXOs) Filter(confs Confirmations) UTXOs {
+	newList := UTXOs{}
+	for _, utxo := range *utxos {
+		if utxo.Confirmations() >= confs {
+			newList = append(newList, utxo)
+		}
+	}
+	return newList
 }
 
 type Recipient struct {

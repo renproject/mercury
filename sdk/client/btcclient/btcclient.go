@@ -43,16 +43,16 @@ type Client interface {
 // Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 type client struct {
-	network btctypes.Network
-	client  *rpcclient.Client
-
+	network    btctypes.Network
+	client     *rpcclient.Client
 	config     chaincfg.Params
 	url        string
 	gasStation BtcGasStation
+	logger     logrus.FieldLogger
 }
 
 // New returns a new Client of given Bitcoin network.
-func New(network btctypes.Network) (Client, error) {
+func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
 	config := &rpcclient.ConnConfig{
 		HTTPPostMode: true,
 		DisableTLS:   true,
@@ -74,14 +74,14 @@ func New(network btctypes.Network) (Client, error) {
 		return &client{}, err
 	}
 
-	// FIXME: accept logger from caller
-	gasStation := NewBtcGasStation(logrus.StandardLogger(), 10*time.Second)
+	gasStation := NewBtcGasStation(logger, 30*time.Minute)
 	return &client{
 		network:    network,
 		client:     c,
 		config:     *network.Params(),
 		url:        config.Host,
 		gasStation: gasStation,
+		logger:     logger,
 	}, nil
 }
 
@@ -118,7 +118,9 @@ func (c *client) UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, erro
 		btctypes.TxHash(tx.Txid),
 		btctypes.Amount(amount),
 		txOut.ScriptPubKey.Hex,
-		index), nil
+		index,
+		btctypes.Confirmations(txOut.Confirmations),
+	), nil
 }
 
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
@@ -140,6 +142,7 @@ func (c *client) UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, err
 			btctypes.Amount(amount),
 			output.ScriptPubKey,
 			output.Vout,
+			btctypes.Confirmations(output.Confirmations),
 		)
 	}
 
@@ -161,7 +164,7 @@ func (c *client) Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, 
 }
 
 func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error) {
-	// Pre-condition checks
+	// Pre-condition checks.
 	if gas < Dust {
 		return nil, fmt.Errorf("pre-condition violation: gas = %v is too low", gas)
 	}
@@ -179,8 +182,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 		return nil, fmt.Errorf("pre-condition violation: amount=%v from utxos is less than dust=%v", amountFromUTXOs, Dust)
 	}
 
-	// Add an output for each recipient and sum the total amount that is being
-	// transferred to recipients
+	// Add an output for each recipient and sum the total amount that is being transferred to recipients.
 	amountToRecipients := btctypes.Amount(0)
 	outputs := make(map[btcutil.Address]btcutil.Amount, len(recipients))
 	for _, recipient := range recipients {
@@ -188,16 +190,14 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 		outputs[recipient.Address] = btcutil.Amount(recipient.Amount)
 	}
 
-	// Check that we are not transferring more to recipients than available in
-	// the UTXOs (accounting for gas)
+	// Check that we are not transferring more to recipients than available in the UTXOs (accounting for gas).
 	amountToRefund := amountFromUTXOs - amountToRecipients - gas
 	if amountToRefund < 0 {
 		return nil, fmt.Errorf("insufficient balance: expected %v, got %v", amountToRecipients+gas, amountFromUTXOs)
 	}
 
-	// Add an output to refund the difference between what we are transferring
-	// to recipients and what we are spending from the UTXOs (accounting for
-	// gas)
+	// Add an output to refund the difference between the amount being transferred to recipients and the total amount
+	// from the UTXOs.
 	if amountToRefund > 0 {
 		outputs[refundTo] += btcutil.Amount(amountToRefund)
 	}
@@ -205,10 +205,10 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	var lockTime int64
 	wireTx, err := c.client.CreateRawTransaction(inputs, outputs, &lockTime)
 	if err != nil {
-		return nil, fmt.Errorf("cannot construct raw transaction: %v", err)
+		return nil, fmt.Errorf("cannot create raw transaction: %v", err)
 	}
 
-	// Get the signature hashes we need to sign
+	// Get the signature hashes we need to sign.
 	return btctypes.NewUnsignedTx(c.network, utxos, wireTx)
 }
 

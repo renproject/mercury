@@ -18,13 +18,15 @@ import (
 	"github.com/renproject/mercury/rpc/btcrpc"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/testutils"
-	"github.com/renproject/mercury/testutils/testbtc"
+	"github.com/renproject/mercury/testutils/btcaccount"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
 
 var _ = Describe("btc gateway", func() {
+	logger := logrus.StandardLogger()
+
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutils.HdKey {
@@ -34,7 +36,6 @@ var _ = Describe("btc gateway", func() {
 	}
 
 	BeforeSuite(func() {
-		logger := logrus.StandardLogger()
 		store := kv.NewJSON(kv.NewMemDB())
 		cache := cache.New(store, logger)
 
@@ -52,11 +53,11 @@ var _ = Describe("btc gateway", func() {
 
 	Context("when generating gateways", func() {
 		It("should be able to generate a gateway", func() {
-			client, err := btcclient.New(btctypes.Localnet)
+			client, err := btcclient.New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			key, err := loadTestAccounts(btctypes.Localnet).EcdsaKey(44, 1, 0, 0, 1)
 			gateway := New(client, &key.PublicKey, []byte{})
-			account, err := testbtc.NewAccount(client, key)
+			account, err := btcaccount.NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Transfer some funds to the gateway address
