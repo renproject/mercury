@@ -146,7 +146,7 @@ var _ = Describe("btc client", func() {
 
 	Context("when building a utx", func() {
 		It("should return the expected serialized transaction", func() {
-			client, err := New(btctypes.Localnet)
+			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 			address, err := loadTestAccounts(btctypes.Localnet).BTCAddress(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
