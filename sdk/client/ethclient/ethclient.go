@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
+	"github.com/sirupsen/logrus"
 )
 
 // Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
@@ -25,10 +26,11 @@ type Client interface {
 type client struct {
 	url    string
 	client *ethclient.Client
+	logger logrus.FieldLogger
 }
 
-// NewClient returns a new Client of given ethereum network.
-func New(network ethtypes.Network) (Client, error) {
+// New returns a new Client of given ethereum network.
+func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 	var url string
 	switch network {
 
@@ -39,11 +41,11 @@ func New(network ethtypes.Network) (Client, error) {
 	default:
 		return &client{}, types.ErrUnknownNetwork
 	}
-	return NewCustomClient(url)
+	return NewCustomClient(logger, url)
 }
 
 // NewCustomClient returns an Client for a specific RPC url
-func NewCustomClient(url string) (Client, error) {
+func NewCustomClient(logger logrus.FieldLogger, url string) (Client, error) {
 	ec, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
@@ -51,6 +53,7 @@ func NewCustomClient(url string) (Client, error) {
 	return &client{
 		url:    url,
 		client: ec,
+		logger: logger,
 	}, nil
 }
 
