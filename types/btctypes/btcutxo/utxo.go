@@ -1,6 +1,8 @@
 package btcutxo
 
 import (
+	"fmt"
+
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
@@ -34,4 +36,46 @@ func (utxos *UTXOs) Filter(confs types.Confirmations) UTXOs {
 		}
 	}
 	return newList
+}
+
+func NewStandardUTXO(chain btctypes.Chain, txhash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) UTXO {
+	switch chain {
+	case btctypes.Bitcoin:
+		return StandardBtcUTXO{
+			txhash,
+			amount,
+			scriptPubKey,
+			vout,
+			confirmations,
+		}
+	case btctypes.ZCash:
+		return StandardZecUTXO{
+			txhash,
+			amount,
+			scriptPubKey,
+			vout,
+			confirmations,
+		}
+	default:
+		panic(fmt.Sprintf("unknown blockchain: %d", chain))
+	}
+}
+
+func NewScriptUTXO(utxo UTXO, script []byte, updateSigScript func(builder *txscript.ScriptBuilder)) UTXO {
+	switch utxo := utxo.(type) {
+	case StandardBtcUTXO:
+		return ScriptBtcUTXO{
+			StandardBtcUTXO: utxo,
+			Script:          script,
+			UpdateSigScript: updateSigScript,
+		}
+	case StandardZecUTXO:
+		return ScriptZecUTXO{
+			StandardZecUTXO: utxo,
+			Script:          script,
+			UpdateSigScript: updateSigScript,
+		}
+	default:
+		panic(fmt.Sprintf("unknown standard utxo: %T", utxo))
+	}
 }
