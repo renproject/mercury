@@ -18,18 +18,21 @@ var _ = Describe("ethereum tx gas", func() {
 	Context("when getting tx gas of different speed tier", func() {
 		It("should return the live data", func() {
 			logger := logrus.StandardLogger()
-			gas := NewEthGasStation(logger, 5*time.Second)
+			gs := NewEthGasStation(logger, 5*time.Second)
 
 			ctx := context.Background()
-			fastGas := gas.GasRequired(ctx, types.Fast)
+			fastGas, err := gs.GasRequired(ctx, types.Fast)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(fastGas.Gt(ethtypes.Wei(1))).Should(BeTrue())
 			logger.Infof("fast gas = %v", fastGas)
 
-			standardGas := gas.GasRequired(ctx, types.Standard)
+			standardGas, err := gs.GasRequired(ctx, types.Standard)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(standardGas.Gt(ethtypes.Wei(1))).Should(BeTrue())
 			logger.Infof("standard gas = %v", standardGas)
 
-			slowGas := gas.GasRequired(ctx, types.Slow)
+			slowGas, err := gs.GasRequired(ctx, types.Slow)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(slowGas.Gt(ethtypes.Wei(1))).Should(BeTrue())
 			logger.Infof("slow gas = %v", slowGas)
 
