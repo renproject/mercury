@@ -7,10 +7,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/renproject/mercury/sdk/account/ethaccount"
 
-	"github.com/renproject/mercury/sdk/account/ethaccount"
 	"github.com/renproject/mercury/sdk/client/ethclient"
-	"github.com/renproject/mercury/testutils"
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
@@ -24,10 +23,10 @@ var _ = Describe("eth account", func() {
 			gasLimit := uint64(1000)
 			gasPrice, err := Client.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, addr, err := testutils.NewAccount()
+			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			_, err = Account.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
+			_, err = EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -37,41 +36,41 @@ var _ = Describe("eth account", func() {
 			gasLimit := uint64(1000)
 			gasPrice, err := Client.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, addr, err := testutils.NewAccount()
+			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			utx, err := Account.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
+			utx, err := EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
-			err = Account.SignUnsignedTx(ctx, &utx)
+			err = EthAccount.SignUnsignedTx(ctx, &utx)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("can transfer funds", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
-			ownerBal, err := Account.Balance(ctx)
+			ownerBal, err := EthAccount.Balance(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("owner balance: %v", ownerBal)
 			Expect(ownerBal.Gte(amount)).Should(BeTrue())
 			gasLimit := uint64(30000)
 			gasPrice, err := Client.SuggestGasPrice(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, addr, err := testutils.NewAccount()
+			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
-			bal, err := Client.Balance(ctx, addr)
+			bal, err := Client.Balance(ctx, account.Address())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
 			var data []byte
-			tx, err := Account.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
+			tx, err := EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
 			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
-			err = Account.SignUnsignedTx(ctx, &tx)
+			err = EthAccount.SignUnsignedTx(ctx, &tx)
 			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
 			err = Client.PublishSignedTx(ctx, tx)
 			Expect(err).NotTo(HaveOccurred())
 			// check new balance
-			newBal, err := Client.Balance(ctx, addr)
+			newBal, err := Client.Balance(ctx, account.Address())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newBal.Eq(amount)).Should(BeTrue())
 		})
@@ -81,7 +80,7 @@ var _ = Describe("eth account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
-			acc, err := ethaccount.NewAccountFromMnemonic(kovanClient, mnemonic, path)
+			acc, err := NewAccountFromMnemonic(kovanClient, mnemonic, path)
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
 			bal, err := kovanClient.Balance(ctx, acc.Address())
@@ -94,7 +93,7 @@ var _ = Describe("eth account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
-			acc, err := ethaccount.NewAccountFromMnemonic(kovanClient, mnemonic, path)
+			acc, err := NewAccountFromMnemonic(kovanClient, mnemonic, path)
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
 			amount := ethtypes.Ether(1)
