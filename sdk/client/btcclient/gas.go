@@ -64,10 +64,16 @@ func (btc btcGasStation) GasRequired(ctx context.Context, speed types.TxSpeed, t
 }
 
 func (btc *btcGasStation) gasRequired(ctx context.Context) error {
-	// FIXME: Use context for http request timeout
-	response, err := http.Get("https://bitcoinfees.earn.com/api/v1/fees/recommended")
+	request, err := http.NewRequest("GET", "https://bitcoinfees.earn.com/api/v1/fees/recommended", nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot build request to bitcoinfees.earn.com = %v", err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.WithContext(ctx)
+
+	response, err := (&http.Client{}).Do(request)
+	if err != nil {
+		return fmt.Errorf("error submitting gas request: %v", err)
 	}
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code %v", response.StatusCode)

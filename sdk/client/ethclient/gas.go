@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// EthGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
+// EthGasStation retrieves the recommended tx fee from `ethgasstation.info`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
 type EthGasStation interface {
 	Initialized() bool
@@ -68,6 +68,7 @@ func (eth *ethGasStation) gasRequired(ctx context.Context) error {
 		return fmt.Errorf("cannot build request to ethGasStation = %v", err)
 	}
 	request.Header.Set("Content-Type", "application/json")
+	request.WithContext(ctx)
 
 	res, err := (&http.Client{}).Do(request)
 	if err != nil {
