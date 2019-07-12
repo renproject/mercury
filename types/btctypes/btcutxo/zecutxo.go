@@ -1,8 +1,9 @@
-package zectypes
+package btcutxo
 
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"math"
 
@@ -11,7 +12,97 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/codahale/blake2"
 	"github.com/iqoption/zecutil"
+	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/btctypes"
 )
+
+type StandardZecUTXO struct {
+	txHash        types.TxHash
+	amount        btctypes.Amount
+	scriptPubKey  string
+	vout          uint32
+	confirmations types.Confirmations
+}
+
+func NewStandardZecUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) StandardZecUTXO {
+	return StandardZecUTXO{
+		txHash:        txHash,
+		amount:        amount,
+		scriptPubKey:  scriptPubKey,
+		vout:          vout,
+		confirmations: confirmations,
+	}
+}
+
+func (u StandardZecUTXO) Confirmations() types.Confirmations {
+	return u.confirmations
+}
+
+func (u StandardZecUTXO) Amount() btctypes.Amount {
+	return u.amount
+}
+
+func (u StandardZecUTXO) TxHash() types.TxHash {
+	return u.txHash
+}
+
+func (u StandardZecUTXO) ScriptPubKey() string {
+	return u.scriptPubKey
+}
+
+func (u StandardZecUTXO) Vout() uint32 {
+	return u.vout
+}
+
+func (u StandardZecUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
+	var tx *zecutil.MsgTx
+	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
+		return nil, err
+	}
+	scriptPubKey, err := hex.DecodeString(u.scriptPubKey)
+	if err != nil {
+		return nil, err
+	}
+	return calcSignatureHash(scriptPubKey, hashType, tx, idx, u.amount)
+}
+
+func (StandardZecUTXO) AddData(*txscript.ScriptBuilder) {
+}
+
+type ScriptZecUTXO struct {
+	StandardZecUTXO
+
+	Script          []byte
+	UpdateSigScript func(builder *txscript.ScriptBuilder)
+}
+
+func (u ScriptZecUTXO) Amount() btctypes.Amount {
+	return u.amount
+}
+
+func (u ScriptZecUTXO) TxHash() types.TxHash {
+	return u.txHash
+}
+
+func (u ScriptZecUTXO) ScriptPubKey() string {
+	return u.scriptPubKey
+}
+
+func (u ScriptZecUTXO) Vout() uint32 {
+	return u.vout
+}
+
+func (u ScriptZecUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
+	var tx *zecutil.MsgTx
+	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
+		return nil, err
+	}
+	return calcSignatureHash(u.Script, hashType, tx, idx, u.amount)
+}
+
+func (u ScriptZecUTXO) AddData(builder *txscript.ScriptBuilder) {
+	u.UpdateSigScript(builder)
+}
 
 type upgradeParam struct {
 	ActivationHeight uint32
@@ -22,15 +113,10 @@ const (
 	sigHashMask                = 0x1f
 	blake2BSigHash             = "ZcashSigHash"
 	outputsHashPersonalization = "ZcashOutputsHash"
-)
 
-const (
-	versionOverwinter int32 = 3
-	versionSapling          = 4
-)
-
-const (
+	versionOverwinter        int32  = 3
 	versionOverwinterGroupID uint32 = 0x3C48270
+	versionSapling                  = 4
 	versionSaplingGroupID           = 0x892f2085
 )
 
@@ -40,27 +126,12 @@ var upgradeParams = []upgradeParam{
 	{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
 }
 
-// blake2bHash zcash hash func
-func blake2bHash(data, key []byte) (h chainhash.Hash, err error) {
-	bHash := blake2.New(&blake2.Config{
-		Size:     32,
-		Personal: key,
-	})
-
-	if _, err = bHash.Write(data); err != nil {
-		return h, err
-	}
-
-	err = (&h).SetBytes(bHash.Sum(nil))
-	return h, err
-}
-
-func CalcSignatureHash(
+func calcSignatureHash(
 	subScript []byte,
 	hashType txscript.SigHashType,
 	tx *zecutil.MsgTx,
 	idx int,
-	amt int64,
+	amt btctypes.Amount,
 ) ([]byte, error) {
 	sigHashes, err := zecutil.NewTxSigHashes(tx)
 	if err != nil {
@@ -218,7 +289,20 @@ func CalcSignatureHash(
 	return h.CloneBytes(), nil
 }
 
-// sigHashKey return blake2b key by current height
+func blake2bHash(data, key []byte) (h chainhash.Hash, err error) {
+	bHash := blake2.New(&blake2.Config{
+		Size:     32,
+		Personal: key,
+	})
+
+	if _, err = bHash.Write(data); err != nil {
+		return h, err
+	}
+
+	err = (&h).SetBytes(bHash.Sum(nil))
+	return h, err
+}
+
 func sigHashKey(activationHeight uint32) []byte {
 	var i int
 	for i = len(upgradeParams) - 1; i >= 0; i-- {

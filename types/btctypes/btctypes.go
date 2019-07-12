@@ -1,22 +1,23 @@
 package btctypes
 
 import (
-	"crypto/ecdsa"
-	"fmt"
 	"strings"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/types"
 )
 
-// Amount represents bitcoin value in Satoshi (1e-8 Bitcoin).
+// Amount represents the value in the smallest possible unit for the respective blockchain.
 type Amount int64
 
 const (
 	SAT = Amount(1)
 	BTC = Amount(1e8 * SAT)
+)
+
+const (
+	ZAT = Amount(1)
+	ZEC = Amount(1e8 * ZAT)
 )
 
 // Network of Bitcoin blockchain.
@@ -68,44 +69,3 @@ func (network Network) String() string {
 		panic(types.ErrUnknownNetwork)
 	}
 }
-
-// Address is an interface type for any type of destination a transaction output may spend to. This includes pay-to-
-// pubkey (P2PK), pay-to-pubkey-hash (P2PKH), and pay-to-script-hash (P2SH). Address is designed to be generic enough
-// that other kinds of addresses may be added in the future without changing the decoding and encoding API.
-type Address btcutil.Address
-
-// AddressFromBase58 decodes the base58 encoding bitcoin address to a `Address`.
-func AddressFromBase58(addr string, network Network) (Address, error) {
-	return btcutil.DecodeAddress(addr, network.Params())
-}
-
-// AddressFromPubKey gets the `Address` from a public key.
-func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Address, error) {
-	addr, err := btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
-	if err != nil {
-		return nil, fmt.Errorf("cannot decode address from public key: %v", err)
-	}
-
-	return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
-}
-
-// SerializePublicKey serializes the public key to bytes.
-func SerializePublicKey(pubkey *ecdsa.PublicKey, network Network) []byte {
-	switch network {
-	case Mainnet:
-		return (*btcec.PublicKey)(pubkey).SerializeCompressed()
-	case Testnet, Localnet:
-		return (*btcec.PublicKey)(pubkey).SerializeUncompressed()
-	default:
-		panic(types.ErrUnknownNetwork)
-	}
-}
-
-type Recipient struct {
-	Address Address
-	Amount  Amount
-}
-
-type Recipients []Recipient
-
-type Confirmations int64

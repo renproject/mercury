@@ -1,4 +1,4 @@
-package zectypes
+package btcaddress
 
 import (
 	"crypto/ecdsa"
@@ -12,32 +12,13 @@ import (
 	"github.com/renproject/mercury/types/btctypes"
 )
 
-type Amount = btctypes.Amount
-
-const (
-	ZAT = Amount(1)
-	ZEC = Amount(1e8 * ZAT)
-)
-
-type Network = btctypes.Network
-
-const (
-	Localnet = btctypes.Localnet
-	Mainnet  = btctypes.Mainnet
-	Testnet  = btctypes.Testnet
-)
-
-var NewNetwork = btctypes.NewNetwork
-
-type Address = btctypes.Address
-
-// AddressFromBase58 decodes the base58 encoding ZCash address to an `Address`.
-func AddressFromBase58(addr string, network Network) (Address, error) {
+// ZecAddressFromBase58 decodes the base58 encoding ZCash address to an `Address`.
+func ZecAddressFromBase58(addr string, network btctypes.Network) (Address, error) {
 	return zecutil.DecodeAddress(addr, network.Params().Name)
 }
 
-// AddressFromPubKey gets the `Address` from a public key.
-func AddressFromPubKey(pubkey *ecdsa.PublicKey, network Network) (Address, error) {
+// ZecAddressFromPubKey gets the `Address` from a public key.
+func ZecAddressFromPubKey(pubkey *ecdsa.PublicKey, network btctypes.Network) (Address, error) {
 	addr, err := addressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
 	if err != nil {
 		return nil, fmt.Errorf("cannot decode address from public key: %v", err)
@@ -85,31 +66,3 @@ func addrChecksum(input []byte) (cksum [4]byte) {
 	copy(cksum[:], h2[:4])
 	return
 }
-
-var SerializePublicKey = btctypes.SerializePublicKey
-
-type UTXO struct {
-	TxHash       TxHash `json:"txHash"`
-	Amount       Amount `json:"amount"`
-	ScriptPubKey string `json:"scriptPubKey"`
-	Vout         uint32 `json:"vout"`
-}
-
-type UTXOs []UTXO
-
-func (utxos *UTXOs) Sum() Amount {
-	total := Amount(0)
-	for _, utxo := range *utxos {
-		total += Amount(utxo.Amount)
-	}
-	return total
-}
-
-type Recipient struct {
-	Address Address
-	Amount  Amount
-}
-
-type Recipients []Recipient
-
-type Confirmations = btctypes.Confirmations

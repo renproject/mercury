@@ -6,18 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ErrUnexpectedNetwork struct {
-	error
-
-	GotNetwork string
-}
-
-func NewErrUnexpectedNetwork(gotNetwork string) error {
-	return ErrUnexpectedNetwork{
-		error: fmt.Errorf("unexpected network error. network=%v", gotNetwork),
-	}
-}
-
 type ErrHTTPResponse struct {
 	error
 
