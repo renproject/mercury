@@ -16,8 +16,8 @@ import (
 // BtcGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
 type BtcGasStation interface {
-	GasRequired(ctx context.Context, speed types.TxSpeed) int64
-	CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount
+	Initialized() bool
+	GasRequired(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) (btctypes.Amount, error)
 }
 
 type btcGasStation struct {
@@ -39,23 +39,28 @@ func NewBtcGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) Bt
 	}
 }
 
-func (btc btcGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) int64 {
+func (btc btcGasStation) Initialized() bool {
+	return !btc.lastUpdate.IsZero()
+}
+
+func (btc btcGasStation) GasRequired(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) (amount btctypes.Amount, err error) {
 	btc.mu.Lock()
 	defer btc.mu.Unlock()
 
 	if time.Now().After(btc.lastUpdate.Add(btc.minUpdateTime)) {
-		if err := btc.gasRequired(ctx); err != nil {
+		if err = btc.gasRequired(ctx); err != nil {
 			btc.logger.Errorf("cannot get recommended fee from bitcoinfees.earn.com, err = %v", err)
 		}
 	}
 
-	return btc.fees[speed]
-}
+	// Return an error if we were never able to fetch gas prices
+	if !btc.Initialized() {
+		return btctypes.Amount(0), fmt.Errorf("failed to fetch gas information: %v", err)
+	}
 
-func (btc btcGasStation) CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount {
-	gasRequired := btc.GasRequired(ctx, speed) // in sats/byte
+	gasRequired := btc.fees[speed]
 	gasInSats := gasRequired * int64(txSizeInBytes)
-	return btctypes.Amount(gasInSats)
+	return btctypes.Amount(gasInSats), nil
 }
 
 func (btc *btcGasStation) gasRequired(ctx context.Context) error {

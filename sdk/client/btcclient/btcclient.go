@@ -1,6 +1,7 @@
 package btcclient
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
+	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
@@ -37,7 +39,7 @@ type Client interface {
 	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
 	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int
-	GasStation() BtcGasStation
+	SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) (btctypes.Amount, error)
 }
 
 // Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
@@ -252,6 +254,12 @@ func (c *client) VerifyTx(tx btctypes.Tx) error {
 	return nil
 }
 
-func (c *client) GasStation() BtcGasStation {
-	return c.gasStation
+func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) (btctypes.Amount, error) {
+	gasStationPrice, err := c.gasStation.GasRequired(ctx, speed, txSizeInBytes)
+	if err == nil {
+		return gasStationPrice, nil
+	}
+	c.logger.Errorf("error getting btc gas information: %v", err)
+	c.logger.Infof("using 10k sats as gas price")
+	return 10000 * btctypes.SAT, nil
 }
