@@ -2,11 +2,14 @@ package btctypes
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/types"
 )
@@ -101,19 +104,96 @@ func SerializePublicKey(pubkey *ecdsa.PublicKey, network Network) []byte {
 	}
 }
 
-type UTXO struct {
-	TxHash       TxHash `json:"txHash"`
-	Amount       Amount `json:"amount"`
-	ScriptPubKey string `json:"scriptPubKey"`
-	Vout         uint32 `json:"vout"`
+func NewStandardUTXO(txHash TxHash, amount Amount, scriptPubKey string, vout uint32) StandardUTXO {
+	return StandardUTXO{
+		txHash:       txHash,
+		amount:       amount,
+		scriptPubKey: scriptPubKey,
+		vout:         vout,
+	}
+}
+
+type StandardUTXO struct {
+	txHash       TxHash
+	amount       Amount
+	scriptPubKey string
+	vout         uint32
+}
+
+type UTXO interface {
+	Amount() Amount
+	TxHash() TxHash
+	ScriptPubKey() string
+	Vout() uint32
+
+	SigHash(hashType txscript.SigHashType, tx *wire.MsgTx, idx int) ([]byte, error)
+	AddData(builder *txscript.ScriptBuilder)
+}
+
+func (UTXO StandardUTXO) Amount() Amount {
+	return UTXO.amount
+}
+
+func (UTXO StandardUTXO) TxHash() TxHash {
+	return UTXO.txHash
+}
+
+func (UTXO StandardUTXO) ScriptPubKey() string {
+	return UTXO.scriptPubKey
+}
+
+func (UTXO StandardUTXO) Vout() uint32 {
+	return UTXO.vout
+}
+
+func (UTXO StandardUTXO) SigHash(hashType txscript.SigHashType, tx *wire.MsgTx, idx int) ([]byte, error) {
+	scriptPubKey, err := hex.DecodeString(UTXO.scriptPubKey)
+	if err != nil {
+		return nil, err
+	}
+	return txscript.CalcSignatureHash(scriptPubKey, hashType, tx, idx)
+}
+
+func (StandardUTXO) AddData(*txscript.ScriptBuilder) {
+}
+
+type ScriptUTXO struct {
+	StandardUTXO
+
+	Script          []byte
+	UpdateSigScript func(builder *txscript.ScriptBuilder)
+}
+
+func (UTXO ScriptUTXO) Amount() Amount {
+	return UTXO.amount
+}
+
+func (UTXO ScriptUTXO) TxHash() TxHash {
+	return UTXO.txHash
+}
+
+func (UTXO ScriptUTXO) ScriptPubKey() string {
+	return UTXO.scriptPubKey
+}
+
+func (UTXO ScriptUTXO) Vout() uint32 {
+	return UTXO.vout
+}
+
+func (UTXO ScriptUTXO) SigHash(hashType txscript.SigHashType, tx *wire.MsgTx, idx int) ([]byte, error) {
+	return txscript.CalcSignatureHash(UTXO.Script, hashType, tx, idx)
+}
+
+func (UTXO ScriptUTXO) AddData(builder *txscript.ScriptBuilder) {
+	UTXO.UpdateSigScript(builder)
 }
 
 type UTXOs []UTXO
 
-func (utxos *UTXOs) Sum() Amount {
+func (utxos UTXOs) Sum() Amount {
 	total := Amount(0)
-	for _, utxo := range *utxos {
-		total += Amount(utxo.Amount)
+	for _, utxo := range utxos {
+		total += utxo.Amount()
 	}
 	return total
 }

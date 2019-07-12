@@ -3,7 +3,6 @@ package btctypes
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -22,18 +21,14 @@ type Signature btcec.Signature
 type TxHash string
 
 type Tx interface {
+	Hash() TxHash
 	IsSigned() bool
-	UTXOs() UTXOs
-	Tx() *wire.MsgTx
 	SignatureHashes() []SignatureHash
-}
-
-type StandardTx interface {
-	Tx
-
+	InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error
+	Serialize() ([]byte, error)
+	Tx() *wire.MsgTx
+	UTXOs() UTXOs
 	Sign(key *ecdsa.PrivateKey) (err error)
-	InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey, customScript func(*txscript.ScriptBuilder, int)) error
-	ReplaceSignatureHash(script []byte, mode txscript.SigHashType, i int) (err error)
 }
 
 type tx struct {
@@ -44,7 +39,7 @@ type tx struct {
 	signed    bool
 }
 
-func NewUnsignedTx(network Network, utxos UTXOs, msgtx *wire.MsgTx) (StandardTx, error) {
+func NewUnsignedTx(network Network, utxos UTXOs, msgtx *wire.MsgTx) (Tx, error) {
 	t := tx{
 		network:   network,
 		tx:        msgtx,
@@ -52,13 +47,12 @@ func NewUnsignedTx(network Network, utxos UTXOs, msgtx *wire.MsgTx) (StandardTx,
 		utxos:     utxos,
 		signed:    false,
 	}
+
 	for i, utxo := range utxos {
-		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
+		sigHash, err := utxo.SigHash(txscript.SigHashAll, msgtx, i)
 		if err != nil {
 			return nil, err
 		}
-		mode := txscript.SigHashAll
-		sigHash, err := txscript.CalcSignatureHash(scriptPubKey, mode, msgtx, i)
 		t.sigHashes = append(t.sigHashes, sigHash)
 	}
 	return &t, nil
@@ -90,12 +84,12 @@ func (t *tx) Sign(key *ecdsa.PrivateKey) (err error) {
 		}
 	}
 	serializedPK := SerializePublicKey(&key.PublicKey, t.network)
-	return t.InjectSignatures(sigs, serializedPK, nil)
+	return t.InjectSignatures(sigs, serializedPK)
 }
 
 // InjectSignaturesWithData injects the signed signatureHashes into the Tx. You cannot use the USTX anymore.
 // scriptData is additional data to be appended to the signature script, it can be nil or an empty byte array.
-func (t *tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey, customScript func(*txscript.ScriptBuilder, int)) error {
+func (t *tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey SerializedPubKey) error {
 	// Pre-condition checks
 	if t.IsSigned() {
 		panic("pre-condition violation: cannot inject signatures into signed transaction")
@@ -117,9 +111,7 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey Serializ
 		builder := txscript.NewScriptBuilder()
 		builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
 		builder.AddData(serializedPubKey)
-		if customScript != nil {
-			customScript(builder, i)
-		}
+		t.utxos[i].AddData(builder)
 		sigScript, err := builder.Script()
 		if err != nil {
 			return err
@@ -144,7 +136,7 @@ func (t *tx) SignatureHashes() []SignatureHash {
 }
 
 // Serialize returns the serialized tx in bytes.
-func (t *tx) Serialize() []byte {
+func (t *tx) Serialize() ([]byte, error) {
 	// Pre-condition checks
 	if t.tx == nil {
 		panic("pre-condition violation: cannot serialize nil transaction")
@@ -152,7 +144,7 @@ func (t *tx) Serialize() []byte {
 
 	buf := bytes.NewBuffer([]byte{})
 	if err := t.tx.Serialize(buf); err != nil {
-		return nil
+		return nil, err
 	}
 	bufBytes := buf.Bytes()
 
@@ -160,5 +152,5 @@ func (t *tx) Serialize() []byte {
 	if len(bufBytes) <= 0 {
 		panic(fmt.Errorf("post-condition violation: serialized transaction len=%v is invalid", len(bufBytes)))
 	}
-	return bufBytes
+	return bufBytes, nil
 }
