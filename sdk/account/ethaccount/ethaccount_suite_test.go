@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/account/ethaccount"
+	"github.com/sirupsen/logrus"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/renproject/mercury/sdk/client/ethclient"
@@ -24,9 +25,10 @@ var EthAccount Account
 
 var _ = BeforeSuite(func() {
 	var err error
-	Client, err = ethclient.NewCustomClient(fmt.Sprintf("http://localhost:%s", os.Getenv("GANACHE_PORT")))
+	logger := logrus.StandardLogger()
+	Client, err = ethclient.NewCustomClient(logger, fmt.Sprintf("http://localhost:%s", os.Getenv("GANACHE_PORT")))
 	Expect(err).NotTo(HaveOccurred())
-	privateKey, err := crypto.HexToECDSA(os.Getenv("LOCAL_ETH_TESTNET_PRIVATE_KEY"))
+	privateKey, err := crypto.HexToECDSA(os.Getenv("LOCAL_ETH_TESTNET_PRIVATE_KEY")[2:])
 	Expect(err).ToNot(HaveOccurred())
 	ownerAccount, err := NewAccountFromPrivateKey(Client, privateKey)
 	Expect(err).NotTo(HaveOccurred())
