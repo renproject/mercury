@@ -1,12 +1,12 @@
 package hdutil_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"encoding/hex"
 
-	. "github.com/renproject/mercury/hdutil"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	. "github.com/renproject/mercury/testutils/hdutil"
+
 	"github.com/renproject/mercury/types/btctypes"
 )
 
