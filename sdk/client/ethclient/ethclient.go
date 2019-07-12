@@ -13,8 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
-// through Mercury server.
+// Client is a client which is used to interact with the Ethereum network using the Mercury server.
 type Client interface {
 	Balance(context.Context, ethtypes.Address) (ethtypes.Amount, error)
 	BlockNumber(context.Context) (*big.Int, error)
