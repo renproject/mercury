@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/testutils/btcaccount"
+	. "github.com/renproject/mercury/testutil/btcaccount"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -13,7 +13,7 @@ import (
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc/btcrpc"
 	"github.com/renproject/mercury/sdk/client/btcclient"
-	"github.com/renproject/mercury/testutils"
+	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
@@ -43,7 +43,7 @@ var _ = Describe("btc account", func() {
 			// Get the account with actual balance
 			client, err := btcclient.New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
-			wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
+			wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
@@ -71,7 +71,7 @@ var _ = Describe("btc account", func() {
 			// Get the account with actual balance
 			client, err := btcclient.New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
-			wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
+			wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
