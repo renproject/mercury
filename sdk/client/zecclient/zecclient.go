@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -166,14 +165,6 @@ func (c *client) BuildUnsignedTx(utxos zectypes.UTXOs, recipients zectypes.Recip
 		return zectypes.Tx{}, fmt.Errorf("pre-condition violation: gas = %v is too low", gas)
 	}
 
-	inputs := make([]btcjson.TransactionInput, len(utxos))
-	for i, utxo := range utxos {
-		inputs[i] = btcjson.TransactionInput{
-			Txid: string(utxo.TxHash),
-			Vout: utxo.Vout,
-		}
-	}
-
 	amountFromUTXOs := utxos.Sum()
 	if amountFromUTXOs < Dust {
 		return zectypes.Tx{}, fmt.Errorf("pre-condition violation: amount=%v from utxos is less than dust=%v", amountFromUTXOs, Dust)
@@ -182,10 +173,8 @@ func (c *client) BuildUnsignedTx(utxos zectypes.UTXOs, recipients zectypes.Recip
 	// Add an output for each recipient and sum the total amount that is being
 	// transferred to recipients
 	amountToRecipients := zectypes.Amount(0)
-	outputs := make(map[btcutil.Address]btcutil.Amount, len(recipients))
 	for _, recipient := range recipients {
 		amountToRecipients += recipient.Amount
-		outputs[recipient.Address] = btcutil.Amount(recipient.Amount)
 	}
 
 	// Check that we are not transferring more to recipients than available in
@@ -198,9 +187,14 @@ func (c *client) BuildUnsignedTx(utxos zectypes.UTXOs, recipients zectypes.Recip
 	// Add an output to refund the difference between what we are transferring
 	// to recipients and what we are spending from the UTXOs (accounting for
 	// gas)
-	outputs[refundTo] += btcutil.Amount(amountToRefund)
+	recipients = append(zectypes.Recipients{
+		{
+			Address: refundTo,
+			Amount:  amountToRefund,
+		},
+	}, recipients...)
 
-	wireTx, err := createRawTransaction(inputs, outputs)
+	wireTx, err := createRawTransaction(utxos, recipients)
 	if err != nil {
 		return zectypes.Tx{}, fmt.Errorf("cannot construct raw transaction: %v", err)
 	}
@@ -236,26 +230,26 @@ func (c *client) SubmitSignedTx(stx zectypes.Tx) (zectypes.TxHash, error) {
 	return zectypes.TxHash(txHash.String()), nil
 }
 
-func createRawTransaction(inputs []btcjson.TransactionInput, amounts map[btcutil.Address]btcutil.Amount) (*zecutil.MsgTx, error) {
+func createRawTransaction(utxos zectypes.UTXOs, recipients zectypes.Recipients) (*zecutil.MsgTx, error) {
 	wireTx := zecutil.MsgTx{
 		MsgTx:        wire.NewMsgTx(Version),
 		ExpiryHeight: ExpiryHeight,
 	}
 
-	for _, input := range inputs {
-		hash, err := chainhash.NewHashFromStr(input.Txid)
+	for _, utxo := range utxos {
+		hash, err := chainhash.NewHashFromStr(utxo.ScriptPubKey)
 		if err != nil {
 			return nil, err
 		}
-		wireTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, input.Vout), nil, nil))
+		wireTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout), nil, nil))
 	}
 
-	for address, amount := range amounts {
-		script, err := zecutil.PayToAddrScript(address)
+	for _, recipient := range recipients {
+		script, err := zecutil.PayToAddrScript(recipient.Address)
 		if err != nil {
 			return nil, err
 		}
-		wireTx.AddTxOut(wire.NewTxOut(int64(amount.ToUnit(btcutil.AmountSatoshi)), script))
+		wireTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
 	}
 
 	return &wireTx, nil
