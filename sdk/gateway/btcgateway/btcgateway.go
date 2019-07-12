@@ -2,18 +2,19 @@ package btcgateway
 
 import (
 	"crypto/ecdsa"
-	"fmt"
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/sdk/client/btcclient"
-	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/btctypes/btcaddress"
+	"github.com/renproject/mercury/types/btctypes/btcutxo"
 )
 
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
-	UTXO(hash btctypes.TxHash, i uint32) (btctypes.UTXO, error)
-	Address() btctypes.Address
+	UTXO(hash types.TxHash, i uint32) (btcutxo.UTXO, error)
+	Address() btcaddress.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
 	Script() []byte
 }
@@ -21,13 +22,13 @@ type Gateway interface {
 type gateway struct {
 	client      btcclient.Client
 	script      []byte
-	gwAddr      btctypes.Address
-	spenderAddr btctypes.Address
+	gwAddr      btcaddress.Address
+	spenderAddr btcaddress.Address
 }
 
 // New returns a new Gateway
 func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) Gateway {
-	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey, client.Network())
+	pubKeyBytes := btcaddress.SerializePublicKey(spenderPubKey, client.Network())
 	pubKeyHash160 := btcutil.Hash160(pubKeyBytes)
 	b := txscript.NewScriptBuilder()
 	b.AddData(ghash)
@@ -41,11 +42,11 @@ func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) 
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script")
 	}
-	gwAddr, err := btcutil.NewAddressScriptHash(script, client.Network().Params())
+	gwAddr, err := btcaddress.AddressFromScript(script, client.Chain(), client.Network())
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script address")
 	}
-	spenderAddr, err := btctypes.AddressFromPubKey(spenderPubKey, client.Network())
+	spenderAddr, err := btcaddress.AddressFromPubKey(spenderPubKey, client.Chain(), client.Network())
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway spender address")
 	}
@@ -57,27 +58,22 @@ func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) 
 	}
 }
 
-func (gw *gateway) UTXO(hash btctypes.TxHash, i uint32) (btctypes.UTXO, error) {
+func (gw *gateway) UTXO(hash types.TxHash, i uint32) (btcutxo.UTXO, error) {
 	utxo, err := gw.client.UTXO(hash, i)
 	if err != nil {
 		return nil, err
 	}
 
-	stdUTXO, ok := utxo.(btctypes.StandardUTXO)
-	if !ok {
-		return nil, fmt.Errorf("unexpected utxo of type: %T", utxo)
-	}
-
-	return btctypes.ScriptUTXO{
-		StandardUTXO: stdUTXO,
-		Script:       gw.Script(),
-		UpdateSigScript: func(builder *txscript.ScriptBuilder) {
+	return btcutxo.NewScriptUTXO(
+		utxo,
+		gw.Script(),
+		func(builder *txscript.ScriptBuilder) {
 			builder.AddData(gw.Script())
 		},
-	}, nil
+	), nil
 }
 
-func (gw *gateway) Address() btctypes.Address {
+func (gw *gateway) Address() btcaddress.Address {
 	return gw.gwAddr
 }
 
