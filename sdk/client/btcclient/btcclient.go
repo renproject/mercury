@@ -34,7 +34,7 @@ type Client interface {
 	UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, error)
 	UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error)
 	Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, error)
-	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.StandardTx, error)
+	BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error)
 	SubmitSignedTx(stx btctypes.Tx) (btctypes.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int
 	GasStation() BtcGasStation
@@ -93,34 +93,34 @@ func (c *client) Network() btctypes.Network {
 func (c *client) UTXO(txHash btctypes.TxHash, index uint32) (btctypes.UTXO, error) {
 	txHashBytes, err := chainhash.NewHashFromStr(string(txHash))
 	if err != nil {
-		return btctypes.UTXO{}, ErrInvalidTxHash
+		return nil, ErrInvalidTxHash
 	}
 	tx, err := c.client.GetRawTransactionVerbose(txHashBytes)
 	if err != nil {
-		return btctypes.UTXO{}, ErrTxHashNotFound
+		return nil, ErrTxHashNotFound
 	}
 
 	txOut, err := c.client.GetTxOut(txHashBytes, index, true)
 	if err != nil {
-		return btctypes.UTXO{}, fmt.Errorf("cannot get tx output from btc client: %v", err)
+		return nil, fmt.Errorf("cannot get tx output from btc client: %v", err)
 	}
 
 	// Check if UTXO has been spent.
 	if txOut == nil {
-		return btctypes.UTXO{}, ErrUTXOSpent
+		return nil, ErrUTXOSpent
 	}
 
 	amount, err := btcutil.NewAmount(txOut.Value)
 	if err != nil {
-		return btctypes.UTXO{}, fmt.Errorf("cannot parse amount received from btc client: %v", err)
+		return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 	}
-	return btctypes.UTXO{
-		TxHash:        btctypes.TxHash(tx.Txid),
-		Amount:        btctypes.Amount(amount),
-		ScriptPubKey:  txOut.ScriptPubKey.Hex,
-		Vout:          index,
-		Confirmations: btctypes.Confirmations(txOut.Confirmations),
-	}, nil
+	return btctypes.NewStandardUTXO(
+		btctypes.TxHash(tx.Txid),
+		btctypes.Amount(amount),
+		txOut.ScriptPubKey.Hex,
+		index,
+		btctypes.Confirmations(txOut.Confirmations),
+	), nil
 }
 
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
@@ -137,12 +137,13 @@ func (c *client) UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, err
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 		}
-		utxos[i] = btctypes.UTXO{
-			TxHash:       btctypes.TxHash(output.TxID),
-			Amount:       btctypes.Amount(amount),
-			ScriptPubKey: output.ScriptPubKey,
-			Vout:         output.Vout,
-		}
+		utxos[i] = btctypes.NewStandardUTXO(
+			btctypes.TxHash(output.TxID),
+			btctypes.Amount(amount),
+			output.ScriptPubKey,
+			output.Vout,
+			btctypes.Confirmations(output.Confirmations),
+		)
 	}
 
 	return utxos, nil
@@ -162,8 +163,8 @@ func (c *client) Confirmations(txHash btctypes.TxHash) (btctypes.Confirmations, 
 	return btctypes.Confirmations(tx.Confirmations), nil
 }
 
-func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.StandardTx, error) {
-	// Pre-condition checks
+func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.Tx, error) {
+	// Pre-condition checks.
 	if gas < Dust {
 		return nil, fmt.Errorf("pre-condition violation: gas = %v is too low", gas)
 	}
@@ -171,8 +172,8 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	inputs := make([]btcjson.TransactionInput, len(utxos))
 	for i, utxo := range utxos {
 		inputs[i] = btcjson.TransactionInput{
-			Txid: string(utxo.TxHash),
-			Vout: utxo.Vout,
+			Txid: string(utxo.TxHash()),
+			Vout: utxo.Vout(),
 		}
 	}
 
@@ -181,8 +182,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 		return nil, fmt.Errorf("pre-condition violation: amount=%v from utxos is less than dust=%v", amountFromUTXOs, Dust)
 	}
 
-	// Add an output for each recipient and sum the total amount that is being
-	// transferred to recipients
+	// Add an output for each recipient and sum the total amount that is being transferred to recipients.
 	amountToRecipients := btctypes.Amount(0)
 	outputs := make(map[btcutil.Address]btcutil.Amount, len(recipients))
 	for _, recipient := range recipients {
@@ -190,25 +190,25 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 		outputs[recipient.Address] = btcutil.Amount(recipient.Amount)
 	}
 
-	// Check that we are not transferring more to recipients than available in
-	// the UTXOs (accounting for gas)
+	// Check that we are not transferring more to recipients than available in the UTXOs (accounting for gas).
 	amountToRefund := amountFromUTXOs - amountToRecipients - gas
 	if amountToRefund < 0 {
 		return nil, fmt.Errorf("insufficient balance: expected %v, got %v", amountToRecipients+gas, amountFromUTXOs)
 	}
 
-	// Add an output to refund the difference between what we are transferring
-	// to recipients and what we are spending from the UTXOs (accounting for
-	// gas)
-	outputs[refundTo] += btcutil.Amount(amountToRefund)
+	// Add an output to refund the difference between the amount being transferred to recipients and the total amount
+	// from the UTXOs.
+	if amountToRefund > 0 {
+		outputs[refundTo] += btcutil.Amount(amountToRefund)
+	}
 
 	var lockTime int64
 	wireTx, err := c.client.CreateRawTransaction(inputs, outputs, &lockTime)
 	if err != nil {
-		return nil, fmt.Errorf("cannot construct raw transaction: %v", err)
+		return nil, fmt.Errorf("cannot create raw transaction: %v", err)
 	}
 
-	// Get the signature hashes we need to sign
+	// Get the signature hashes we need to sign.
 	return btctypes.NewUnsignedTx(c.network, utxos, wireTx)
 }
 
@@ -235,13 +235,13 @@ func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
 
 func (c *client) VerifyTx(tx btctypes.Tx) error {
 	for i, utxo := range tx.UTXOs() {
-		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey)
+		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey())
 		if err != nil {
 			return err
 		}
 		engine, err := txscript.NewEngine(scriptPubKey, tx.Tx(), i,
 			txscript.StandardVerifyFlags, txscript.NewSigCache(10),
-			txscript.NewTxSigHashes(tx.Tx()), int64(utxo.Amount))
+			txscript.NewTxSigHashes(tx.Tx()), int64(utxo.Amount()))
 		if err != nil {
 			return err
 		}

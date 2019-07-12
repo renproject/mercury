@@ -12,8 +12,7 @@ import (
 
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
-	UTXOs() (btctypes.UTXOs, error)
-	BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (GatewayTx, error)
+	UTXO(hash btctypes.TxHash, i uint32) (btctypes.UTXO, error)
 	Address() btctypes.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
 	Script() []byte
@@ -58,34 +57,24 @@ func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) 
 	}
 }
 
-func (gw *gateway) UTXOs() (btctypes.UTXOs, error) {
-	return gw.client.UTXOsFromAddress(gw.Address())
-}
-
-func (gw *gateway) BuildUnsignedTx(gwUTXOs btctypes.UTXOs, spenderUTXOs btctypes.UTXOs, gas btctypes.Amount) (GatewayTx, error) {
-	amount := gwUTXOs.Sum()
-	recipients := btctypes.Recipients{{Address: gw.spenderAddr, Amount: amount}}
-	standardTx, err := gw.client.BuildUnsignedTx(
-		append(spenderUTXOs, gwUTXOs...),
-		recipients,
-		gw.spenderAddr,
-		gas,
-	)
+func (gw *gateway) UTXO(hash btctypes.TxHash, i uint32) (btctypes.UTXO, error) {
+	utxo, err := gw.client.UTXO(hash, i)
 	if err != nil {
-		return nil, fmt.Errorf("error generating new gateway: %v", err)
+		return nil, err
 	}
-	gtx := &gatewayTx{
-		tx:           standardTx,
-		gatewayUTXOs: gwUTXOs,
-		spenderUTXOs: spenderUTXOs,
-		script:       gw.Script(),
+
+	stdUTXO, ok := utxo.(btctypes.StandardUTXO)
+	if !ok {
+		return nil, fmt.Errorf("unexpected utxo of type: %T", utxo)
 	}
-	for i := len(spenderUTXOs); i < len(spenderUTXOs)+len(gwUTXOs); i++ {
-		if err = gtx.tx.ReplaceSignatureHash(gw.Script(), txscript.SigHashAll, i); err != nil {
-			return nil, fmt.Errorf("error setting gateway signature hashes: %v", err)
-		}
-	}
-	return gtx, nil
+
+	return btctypes.ScriptUTXO{
+		StandardUTXO: stdUTXO,
+		Script:       gw.Script(),
+		UpdateSigScript: func(builder *txscript.ScriptBuilder) {
+			builder.AddData(gw.Script())
+		},
+	}, nil
 }
 
 func (gw *gateway) Address() btctypes.Address {

@@ -69,18 +69,21 @@ var _ = Describe("btc gateway", func() {
 			time.Sleep(5 * time.Second)
 
 			// Fetch the UTXOs for the transaction hash
-			gatewayUTXO, err := client.UTXO(txHash, 0)
+			gatewayUTXO, err := gateway.UTXO(txHash, 0)
 			Expect(err).NotTo(HaveOccurred())
 			// fmt.Printf("utxo: %v", gatewayUTXO)
 			gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
-			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 2)
+			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 			gasStation := client.GasStation()
 			gasAmount := gasStation.CalculateGasAmount(context.Background(), types.Standard, txSize)
 			// fmt.Printf("gas amount=%v", gasAmount)
-			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())
-			tx, err := gateway.BuildUnsignedTx(gatewayUTXOs, utxos, gasAmount)
+			recipients := btctypes.Recipients{{
+				Address: account.Address(),
+				Amount:  gatewayUTXOs.Sum() - gasAmount,
+			}}
+			tx, err := client.BuildUnsignedTx(gatewayUTXOs, recipients, account.Address(), gasAmount)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Sign the transaction

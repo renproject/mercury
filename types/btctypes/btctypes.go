@@ -101,34 +101,6 @@ func SerializePublicKey(pubkey *ecdsa.PublicKey, network Network) []byte {
 	}
 }
 
-type UTXO struct {
-	TxHash        TxHash        `json:"txHash"`
-	Amount        Amount        `json:"amount"`
-	ScriptPubKey  string        `json:"scriptPubKey"`
-	Vout          uint32        `json:"vout"`
-	Confirmations Confirmations `json:"confirmations"`
-}
-
-type UTXOs []UTXO
-
-func (utxos *UTXOs) Sum() Amount {
-	total := Amount(0)
-	for _, utxo := range *utxos {
-		total += Amount(utxo.Amount)
-	}
-	return total
-}
-
-func (utxos *UTXOs) Filter(confs Confirmations) UTXOs {
-	newList := UTXOs{}
-	for _, utxo := range *utxos {
-		if utxo.Confirmations >= confs {
-			newList = append(newList, utxo)
-		}
-	}
-	return newList
-}
-
 type Recipient struct {
 	Address Address
 	Amount  Amount
