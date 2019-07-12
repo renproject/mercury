@@ -38,6 +38,7 @@ func NewEthGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) Et
 	}
 }
 
+// GasRequired returns the recommended gas price
 func (eth ethGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) ethtypes.Amount {
 	eth.mu.Lock()
 	defer eth.mu.Unlock()

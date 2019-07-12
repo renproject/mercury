@@ -39,7 +39,7 @@ func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 	case ethtypes.Kovan:
 		url = "http://206.189.83.88:5000/eth/testnet"
 	default:
-		return &client{}, types.ErrUnknownNetwork
+		return nil, types.ErrUnknownNetwork
 	}
 	return NewCustomClient(logger, url)
 }
@@ -83,8 +83,8 @@ func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed) (etht
 	return ethtypes.WeiFromBig(price), err
 }
 
-func (client *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Address) (uint64, error) {
-	return client.client.PendingNonceAt(ctx, common.Address(fromAddress))
+func (c *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Address) (uint64, error) {
+	return c.client.PendingNonceAt(ctx, common.Address(fromAddress))
 }
 
 func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
