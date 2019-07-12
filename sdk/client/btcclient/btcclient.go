@@ -198,7 +198,9 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	// Add an output to refund the difference between what we are transferring
 	// to recipients and what we are spending from the UTXOs (accounting for
 	// gas)
-	outputs[refundTo] += btcutil.Amount(amountToRefund)
+	if amountToRefund > 0 {
+		outputs[refundTo] += btcutil.Amount(amountToRefund)
+	}
 
 	var lockTime int64
 	wireTx, err := c.client.CreateRawTransaction(inputs, outputs, &lockTime)
