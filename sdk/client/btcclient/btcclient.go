@@ -74,7 +74,7 @@ func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
 		return &client{}, err
 	}
 
-	gasStation := NewBtcGasStation(logger, 10*time.Second)
+	gasStation := NewBtcGasStation(logger, 30*time.Minute)
 	return &client{
 		network:    network,
 		client:     c,
