@@ -17,12 +17,16 @@ import (
 
 var _ = Describe("eth client", func() {
 	var client Client
+	var err error
 	logger := logrus.StandardLogger()
+
+	BeforeSuite(func() {
+		client, err = NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+		Expect(err).NotTo(HaveOccurred())
+	})
 
 	Context("when fetching balances", func() {
 		It("can fetch a zero balance address", func() {
-			client, err := NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
-			Expect(err).NotTo(HaveOccurred())
 			account, err := ethaccount.RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
@@ -50,8 +54,6 @@ var _ = Describe("eth client", func() {
 			nonce := uint64(1)
 			gasLimit := uint64(1000)
 			gasPrice, err := client.SuggestGasPrice(ctx, types.Standard)
-			Expect(err).NotTo(HaveOccurred())
-			client, err := NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
 			Expect(err).NotTo(HaveOccurred())
 			account, err := ethaccount.RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
