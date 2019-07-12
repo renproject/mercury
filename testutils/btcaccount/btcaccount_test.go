@@ -1,11 +1,11 @@
-package testbtc_test
+package btcaccount_test
 
 import (
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/testutils/testbtc"
+	. "github.com/renproject/mercury/testutils/btcaccount"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var _ = Describe("btc account ", func() {
+var _ = Describe("btc account", func() {
 	logger := logrus.StandardLogger()
 
 	BeforeSuite(func() {
@@ -47,7 +47,7 @@ var _ = Describe("btc account ", func() {
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := New(client, key)
+			account, err := NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())
@@ -75,7 +75,7 @@ var _ = Describe("btc account ", func() {
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := New(client, key)
+			account, err := NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs()
 			Expect(err).NotTo(HaveOccurred())

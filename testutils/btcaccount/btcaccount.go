@@ -1,4 +1,4 @@
-package testbtc
+package btcaccount
 
 import (
 	"context"
