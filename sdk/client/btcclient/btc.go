@@ -11,13 +11,21 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types/btctypes/btcaddress"
+	"github.com/renproject/mercury/types/btctypes/btctx"
+	"github.com/renproject/mercury/types/btctypes/btcutxo"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	Dust               = btctypes.Amount(600)
+	Dust            = btctypes.Amount(600)
+	ZecExpiryHeight = uint32(10000000)
+	ZecVersion      = 4
+
 	MainnetMercuryURL  = "206.189.83.88:5000/btc/mainnet"
 	TestnetMercuryURL  = "206.189.83.88:5000/btc/testnet"
 	LocalnetMercuryURL = "0.0.0.0:5000/btc/testnet"
@@ -243,4 +251,29 @@ func (c *client) VerifyTx(tx btctypes.Tx) error {
 
 func (c *client) GasStation() GasStation {
 	return c.gasStation
+}
+
+func zecCreateRawTransaction(network btctypes.Network, utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
+	msgTx := zecutil.MsgTx{
+		MsgTx:        wire.NewMsgTx(ZecVersion),
+		ExpiryHeight: ZecExpiryHeight,
+	}
+
+	for _, utxo := range utxos {
+		hash, err := chainhash.NewHashFromStr(utxo.ScriptPubKey())
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
+	}
+
+	for _, recipient := range recipients {
+		script, err := zecutil.PayToAddrScript(recipient.Address)
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
+	}
+
+	return btctx.NewUnsignedZecTx(network, utxos, &msgTx)
 }

@@ -1,11 +1,11 @@
-package zecclient_test
+package btcclient_test
 
 import (
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/sdk/client/zecclient"
+	. "github.com/renproject/mercury/sdk/client/btcclient"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
