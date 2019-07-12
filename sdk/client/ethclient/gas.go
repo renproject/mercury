@@ -16,8 +16,8 @@ import (
 // EthGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
 type EthGasStation interface {
-	GasRequired(ctx context.Context, speed types.TxSpeed) (ethtypes.Amount, error)
 	Initialized() bool
+	GasRequired(ctx context.Context, speed types.TxSpeed) (ethtypes.Amount, error)
 }
 
 type ethGasStation struct {
