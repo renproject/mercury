@@ -20,7 +20,14 @@ const (
 	ZEC = Amount(1e8 * ZAT)
 )
 
-// Network of Bitcoin blockchain.
+type Chain uint8
+
+const (
+	Bitcoin Chain = 0
+	ZCash   Chain = 1
+)
+
+// Network of the blockchain.
 type Network uint8
 
 const (
