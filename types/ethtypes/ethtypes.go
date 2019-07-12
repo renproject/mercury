@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	coretypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/renproject/mercury/types"
 )
 
@@ -72,6 +73,11 @@ func NewUnsignedTx(chainID *big.Int, nonce uint64, to Address, value Amount, gas
 
 type Address common.Address
 type Hash common.Hash
+
+func AddressFromPublicKey(publicKeyECDSA *ecdsa.PublicKey) Address {
+	address := crypto.PubkeyToAddress(*publicKeyECDSA)
+	return Address(address)
+}
 
 func AddressFromHex(addr string) Address {
 	return Address(common.HexToAddress(addr))
