@@ -16,14 +16,13 @@ import (
 // EthGasStation retrieves the recommended tx fee from `bitcoinfees.earn.com`. It cached the result to avoid hitting the
 // rate limiting of the API. It's safe for using concurrently.
 type EthGasStation interface {
-	GasRequired(ctx context.Context, speed types.TxSpeed) int64
-	CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) ethtypes.Amount
+	GasRequired(ctx context.Context, speed types.TxSpeed) ethtypes.Amount
 }
 
 type ethGasStation struct {
 	mu            *sync.RWMutex
 	logger        logrus.FieldLogger
-	fees          map[types.TxSpeed]int64
+	fees          map[types.TxSpeed]ethtypes.Amount
 	lastUpdate    time.Time
 	minUpdateTime time.Duration
 }
@@ -33,52 +32,52 @@ func NewEthGasStation(logger logrus.FieldLogger, minUpdateTime time.Duration) Et
 	return &ethGasStation{
 		mu:            new(sync.RWMutex),
 		logger:        logger,
-		fees:          map[types.TxSpeed]int64{},
+		fees:          map[types.TxSpeed]ethtypes.Amount{},
 		lastUpdate:    time.Time{},
 		minUpdateTime: minUpdateTime,
 	}
 }
 
-func (eth ethGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) int64 {
+func (eth ethGasStation) GasRequired(ctx context.Context, speed types.TxSpeed) ethtypes.Amount {
 	eth.mu.Lock()
 	defer eth.mu.Unlock()
 
 	if time.Now().After(eth.lastUpdate.Add(eth.minUpdateTime)) {
 		if err := eth.gasRequired(ctx); err != nil {
-			eth.logger.Errorf("cannot get recommended fee from bitcoinfees.earn.com, err = %v", err)
+			eth.logger.Errorf("cannot get recommended fee from ethgasstation.info, err = %v", err)
 		}
 	}
 
 	return eth.fees[speed]
 }
 
-func (eth ethGasStation) CalculateGasAmount(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) ethtypes.Amount {
-	gasRequired := eth.GasRequired(ctx, speed) // in sats/byte
-	gasInSats := gasRequired * int64(txSizeInBytes)
-	return ethtypes.Amount(gasInSats)
-}
-
 func (eth *ethGasStation) gasRequired(ctx context.Context) error {
-	// FIXME: Use context for http request timeout
-	response, err := http.Get("https://bitcoinfees.earn.com/api/v1/fees/recommended")
+	request, err := http.NewRequest("GET", "https://ethgasstation.info/json/ethgasAPI.json", nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot build request to ethGasStation = %v", err)
 	}
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code %v", response.StatusCode)
+	request.Header.Set("Content-Type", "application/json")
+
+	res, err := (&http.Client{}).Do(request)
+	if err != nil {
+		return fmt.Errorf("cannot connect to ethGasStationAPI = %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code %v from ethGasStation", res.StatusCode)
 	}
 
-	var fee = struct {
-		Fast     int64 `json:"fastestFee"`
-		Standard int64 `json:"halfHourFee"`
-		Slow     int64 `json:"hourFee"`
+	data := struct {
+		Slow     uint64 `json:"safeLow"`
+		Standard uint64 `json:"average"`
+		Fast     uint64 `json:"fast"`
 	}{}
-	if err := json.NewDecoder(response.Body).Decode(&fee); err != nil {
-		return err
+	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
+		return fmt.Errorf("cannot decode response body from ethGasStation = %v", err)
 	}
-	eth.fees[types.Fast] = fee.Fast
-	eth.fees[types.Standard] = fee.Standard
-	eth.fees[types.Slow] = fee.Slow
+
+	eth.fees[types.Fast] = ethtypes.Gwei(data.Fast)
+	eth.fees[types.Standard] = ethtypes.Gwei(data.Standard)
+	eth.fees[types.Slow] = ethtypes.Gwei(data.Slow)
 	eth.lastUpdate = time.Now()
 	return nil
 }
