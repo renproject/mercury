@@ -11,6 +11,8 @@ import (
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types/btctypes/btcaddress"
+	"github.com/renproject/mercury/types/btctypes/btcutxo"
 )
 
 // ErrInsufficientBalance returns an error which returned when account doesn't have enough funds to make the tx.
@@ -20,17 +22,17 @@ func ErrInsufficientBalance(expect, have string) error {
 
 // Account provides functions for interacting with a bitcoin account
 type Account interface {
-	Address() btctypes.Address
+	Address() btcaddress.Address
 	PrivateKey() *ecdsa.PrivateKey
-	Transfer(to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (btctypes.TxHash, error)
-	UTXOs() (utxos btctypes.UTXOs, err error)
+	Transfer(to btcaddress.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error)
+	UTXOs() (utxos btcutxo.UTXOs, err error)
 }
 
 // account is a bitcoin wallet which can transfer funds and building tx.
 type account struct {
 	Client btcclient.Client
 
-	address btctypes.Address
+	address btcaddress.Address
 	key     *ecdsa.PrivateKey
 }
 
@@ -39,7 +41,7 @@ func NewAccount(client btcclient.Client, key *ecdsa.PrivateKey) (Account, error)
 	if key == nil {
 		panic("cannot create account with nil key")
 	}
-	address, err := btctypes.AddressFromPubKey(&key.PublicKey, client.Network())
+	address, err := btcaddress.AddressFromPubKey(&key.PublicKey, client.Chain(), client.Network())
 	if err != nil {
 		return &account{}, err
 	}
@@ -70,7 +72,7 @@ func RandomAccount(client btcclient.Client) (Account, error) {
 }
 
 // Address returns the Address of the account
-func (acc *account) Address() btctypes.Address {
+func (acc *account) Address() btcaddress.Address {
 	return acc.address
 }
 
@@ -80,19 +82,23 @@ func (acc *account) PrivateKey() *ecdsa.PrivateKey {
 }
 
 // UTXOs returns the UTXOs for an imported account.
-func (acc *account) UTXOs() (utxos btctypes.UTXOs, err error) {
+func (acc *account) UTXOs() (utxos btcutxo.UTXOs, err error) {
 	return acc.Client.UTXOsFromAddress(acc.address)
 }
 
 // Transfer transfer certain amount value to the target address. Important: this only works for accounts that have been
 // imported into the Bitcoin node.
-func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (btctypes.TxHash, error) {
+func (acc *account) Transfer(to btcaddress.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error) {
 	utxos, err := acc.UTXOs()
 	if err != nil {
 		return "", fmt.Errorf("error fetching utxos: %v", err)
 	}
 
-	fee := acc.Client.GasStation().CalculateGasAmount(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
+	fee, err := acc.Client.GasStation().GasRequired(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
+	if err != nil {
+		return "", fmt.Errorf("failed to estimate gas: %v", err)
+	}
+
 	// Check if we have enough funds
 	balance := utxos.Sum()
 	if balance < value+fee {
@@ -100,7 +106,7 @@ func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed t
 	}
 
 	// todo : select some utxos from all the utxos we have.
-	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipients{{Address: to, Amount: value}}, acc.Address(), fee)
+	tx, err := acc.Client.BuildUnsignedTx(utxos, btcaddress.Recipients{{Address: to, Amount: value}}, acc.Address(), fee)
 
 	if err != nil {
 		return "", fmt.Errorf("error building unsigned tx: %v", err)

@@ -9,19 +9,19 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
-	"github.com/renproject/mercury/types/zectypes"
+	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
 )
 
 type ZecApi struct {
-	network zectypes.Network
+	network btctypes.Network
 	proxy   *proxy.Proxy
 	cache   *cache.Cache
 	logger  logrus.FieldLogger
 }
 
 // NewZecApi returns a new ZecApi.
-func NewZecApi(network zectypes.Network, proxy *proxy.Proxy, cache *cache.Cache, logger logrus.FieldLogger) *ZecApi {
+func NewZecApi(network btctypes.Network, proxy *proxy.Proxy, cache *cache.Cache, logger logrus.FieldLogger) *ZecApi {
 	return &ZecApi{
 		network: network,
 		proxy:   proxy,

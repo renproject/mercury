@@ -7,14 +7,18 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/btcclient"
+	"github.com/renproject/mercury/types"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc/btcrpc"
-	"github.com/renproject/mercury/testutils"
+	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types/btctypes/btcaddress"
+	"github.com/renproject/mercury/types/btctypes/btctx"
+	"github.com/renproject/mercury/types/btctypes/btcutxo"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,8 +27,8 @@ var _ = Describe("btc client", func() {
 
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
-	loadTestAccounts := func(network btctypes.Network) testutils.HdKey {
-		wallet, err := testutils.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
+	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
+		wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
 		Expect(err).NotTo(HaveOccurred())
 		return wallet
 	}
@@ -50,7 +54,7 @@ var _ = Describe("btc client", func() {
 			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
-			txHash := btctypes.TxHash("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c")
+			txHash := types.TxHash("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c")
 			index := uint32(0)
 			utxo, err := client.UTXO(txHash, index)
 			Expect(err).NotTo(HaveOccurred())
@@ -106,7 +110,7 @@ var _ = Describe("btc client", func() {
 		It("should return zero UTXOs for a randomly generated address", func() {
 			client, err := New(logger, btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
-			address, err := testutils.RandomBTCAddress(btctypes.Localnet)
+			address, err := testutil.RandomBTCAddress(btctypes.Localnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			utxos, err := client.UTXOsFromAddress(address)
@@ -115,23 +119,28 @@ var _ = Describe("btc client", func() {
 		})
 	})
 
-	tx := func(client Client, address btctypes.Address) btctypes.StandardTx {
+	tx := func(client Client, address btcaddress.Address) btctx.BtcTx {
 		recipient, err := loadTestAccounts(btctypes.Localnet).BTCAddress(44, 1, 0, 0, 2)
 		Expect(err).NotTo(HaveOccurred())
 
-		utxos := btctypes.UTXOs{
-			{
-				TxHash: "4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1",
-				Amount: 20000,
-				Vout:   0,
-			},
-			{
-				TxHash: "1b112299cc23d43935619437343d56e75fd278af50aaa79e0839bb4d08e0e9b4",
-				Amount: 80000,
-				Vout:   1,
-			},
+		utxos := btcutxo.UTXOs{
+			btcutxo.NewStandardBtcUTXO(
+				"4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1",
+				20000,
+				"",
+				0,
+				0,
+			),
+			btcutxo.NewStandardBtcUTXO(
+				"1b112299cc23d43935619437343d56e75fd278af50aaa79e0839bb4d08e0e9b4",
+				80000,
+				"",
+				1,
+				0,
+			),
 		}
-		recipients := btctypes.Recipients{
+
+		recipients := btcaddress.Recipients{
 			{
 				Address: recipient,
 				Amount:  40000,
@@ -153,7 +162,9 @@ var _ = Describe("btc client", func() {
 
 			// Build unsigned transaction.
 			tx := tx(client, address)
-			serializedTx := hex.EncodeToString(tx.Serialize())
+			txBytes, err := tx.Serialize()
+			Expect(err).NotTo(HaveOccurred())
+			serializedTx := hex.EncodeToString(txBytes)
 
 			// Validate serialized transaction. We expect it to be one of the following two due to some non-determinism
 			// with Golang maps in the recipient ordering. This can be removed if we stop relying on the

@@ -76,3 +76,15 @@ func (network Network) String() string {
 		panic(types.ErrUnknownNetwork)
 	}
 }
+
+// String implements the `Stringer` interface.
+func (chain Chain) String() string {
+	switch chain {
+	case Bitcoin:
+		return "bitcoin"
+	case ZCash:
+		return "zcash"
+	default:
+		panic(types.ErrUnknownChain)
+	}
+}

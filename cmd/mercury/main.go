@@ -12,7 +12,6 @@ import (
 	"github.com/renproject/mercury/rpc/zecrpc"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/renproject/mercury/types/ethtypes"
-	"github.com/renproject/mercury/types/zectypes"
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,7 +43,7 @@ func main() {
 		logger.Fatalf("cannot construct zec client: %v", err)
 	}
 	zecTestnetProxy := proxy.NewProxy(zecTestnetNodeClient)
-	zecTestnetAPI := api.NewZecApi(zectypes.Testnet, zecTestnetProxy, cache, logger)
+	zecTestnetAPI := api.NewZecApi(btctypes.Testnet, zecTestnetProxy, cache, logger)
 
 	// Initialize Ethereum API.
 	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")

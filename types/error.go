@@ -46,3 +46,6 @@ func (errs ErrList) Error() string {
 
 // ErrUnknownNetwork is returned when the given network is unknown to us.
 var ErrUnknownNetwork = errors.New("unknown network")
+
+// ErrUnknownChain is returned when the given chain is unknown to us.
+var ErrUnknownChain = errors.New("unknown chain")

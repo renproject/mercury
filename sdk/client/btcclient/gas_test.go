@@ -17,18 +17,21 @@ var _ = Describe("bitcoin tx gas", func() {
 	Context("when getting tx gas of different speed tier", func() {
 		It("should return the live data", func() {
 			logger := logrus.StandardLogger()
-			gas := NewGasStation(logger, 5*time.Second)
+			gas := NewBtcGasStation(logger, 5*time.Second)
 
 			ctx := context.Background()
-			fastGas := gas.GasRequired(ctx, types.Fast)
+			fastGas, err := gas.GasRequired(ctx, types.Fast, 100)
+			Expect(err).Should(BeNil())
 			Expect(fastGas).Should(BeNumerically(">", 1))
 			logger.Infof("fast gas = %v sat/byte", fastGas)
 
-			standardGas := gas.GasRequired(ctx, types.Standard)
+			standardGas, err := gas.GasRequired(ctx, types.Standard, 100)
+			Expect(err).Should(BeNil())
 			Expect(standardGas).Should(BeNumerically(">", 1))
 			logger.Infof("standard gas = %v sat/byte", standardGas)
 
-			slowGas := gas.GasRequired(ctx, types.Slow)
+			slowGas, err := gas.GasRequired(ctx, types.Slow, 100)
+			Expect(err).Should(BeNil())
 			Expect(slowGas).Should(BeNumerically(">", 1))
 			logger.Infof("slow gas = %v sat/byte", slowGas)
 

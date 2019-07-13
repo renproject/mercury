@@ -48,7 +48,7 @@ type client struct {
 	network    btctypes.Network
 	config     chaincfg.Params
 	url        string
-	gasStation GasStation
+	gasStation BtcGasStation
 	logger     logrus.FieldLogger
 }
 
@@ -70,7 +70,7 @@ func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
 		panic("unknown bitcoin network")
 	}
 
-	gasStation := NewGasStation(logger, 30*time.Minute)
+	gasStation := NewBtcGasStation(logger, 30*time.Minute)
 	return &client{
 		network:    network,
 		config:     *network.Params(),
@@ -251,7 +251,7 @@ func (c *client) VerifyTx(tx btctx.BtcTx) error {
 	return nil
 }
 
-func (c *client) GasStation() GasStation {
+func (c *client) GasStation() BtcGasStation {
 	return c.gasStation
 }
 
