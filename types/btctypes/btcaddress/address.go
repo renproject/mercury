@@ -43,7 +43,7 @@ func AddressFromBase58(addr string, chain btctypes.Chain, network btctypes.Netwo
 	case btctypes.ZCash:
 		return zecutil.DecodeAddress(addr, network.Params().Name)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %d", chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", chain)
 	}
 }
 
@@ -57,13 +57,9 @@ func AddressFromPubKey(pubkey *ecdsa.PublicKey, chain btctypes.Chain, network bt
 		}
 		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
 	case btctypes.ZCash:
-		addr, err := zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
-		if err != nil {
-			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
-		}
-		return zecutil.DecodeAddress(addr.EncodeAddress(), network.Params().Name)
+		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %d", chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", chain)
 	}
 }
 
@@ -77,12 +73,8 @@ func AddressFromScript(script []byte, chain btctypes.Chain, network btctypes.Net
 		}
 		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
 	case btctypes.ZCash:
-		addr, err := zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
-		if err != nil {
-			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
-		}
-		return zecutil.DecodeAddress(addr.EncodeAddress(), network.Params().Name)
+		return zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %d", chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", chain)
 	}
 }
