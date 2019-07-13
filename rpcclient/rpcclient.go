@@ -2,6 +2,7 @@ package rpcclient
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,24 +12,25 @@ import (
 
 // request represents a JSON-RPC request sent by a client.
 type request struct {
-	Method string            `json:"method"`
-	Params []json.RawMessage `json:"params"`
-	ID     uint64            `json:"id"`
+	Version string            `json:"jsonrpc"`
+	ID      string            `json:"id"`
+	Method  string            `json:"method"`
+	Params  []json.RawMessage `json:"params"`
 }
 
 // response represents a JSON-RPC response returned to a client.
 type response struct {
 	Result *json.RawMessage `json:"result"`
 	Error  interface{}      `json:"error"`
-	ID     uint64           `json:"id"`
+	ID     string           `json:"id"`
 }
 
-// err is a wrapper for a JSON interface value.
-type err struct {
+// errObj is a wrapper for a JSON interface value.
+type errObj struct {
 	Data interface{}
 }
 
-func (e *err) Error() string {
+func (e *errObj) Error() string {
 	return fmt.Sprintf("%v", e.Data)
 }
 
@@ -51,10 +53,10 @@ func NewClient(host, user, password string) Client {
 func (client *client) SendRequest(method string, response interface{}, params ...interface{}) error {
 	data, err := encodeRequest(method, params)
 	if err != nil {
-
+		return err
 	}
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("http://%s", client.host), bytes.NewBuffer(data))
+	request, err := http.NewRequest("POST", client.host, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -79,10 +81,13 @@ func encodeRequest(method string, params []interface{}) ([]byte, error) {
 		}
 	}
 
+	data := [16]byte{}
+	rand.Read(data[:])
 	req := &request{
-		ID:     uint64(rand.Int63()),
-		Method: method,
-		Params: ps,
+		Version: "1.0",
+		ID:      base64.StdEncoding.EncodeToString(data[:]),
+		Method:  method,
+		Params:  ps,
 	}
 	return json.Marshal(req)
 }
@@ -93,11 +98,14 @@ func decodeResponse(r io.Reader, reply interface{}) error {
 	if err := json.NewDecoder(r).Decode(&c); err != nil {
 		return err
 	}
+
 	if c.Error != nil {
-		return &err{Data: c.Error}
+		return &errObj{Data: c.Error}
 	}
 	if c.Result == nil {
-		return fmt.Errorf("unexpected null result")
+		return ErrNullResult
 	}
 	return json.Unmarshal(*c.Result, reply)
 }
+
+var ErrNullResult = fmt.Errorf("unexpected null result")
