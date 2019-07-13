@@ -77,8 +77,8 @@ type Client interface {
 	AddressTxIDs(address string) ([]string, error)
 	SendRawTransaction(stx []byte) (string, error)
 	GetTxOut(txid string, i uint32) (GetTxOutResponse, error)
-	GetRawTransaction(txids []string) (string, error)
-	GetRawTransactionVerbose(txids []string) (RawTransactionVerbose, error)
+	GetRawTransaction(txid string) (string, error)
+	GetRawTransactionVerbose(txid string) (RawTransactionVerbose, error)
 	ExtractScriptSig(txs []string) (string, error)
 	OmniGetBalance(token int64, address string) (OmniGetBalanceResponse, error)
 }
@@ -146,17 +146,17 @@ func (client *rpcClient) GetTxOut(tx string, i uint32) (GetTxOutResponse, error)
 	return resp, nil
 }
 
-func (client *rpcClient) GetRawTransaction(txids []string) (string, error) {
+func (client *rpcClient) GetRawTransaction(txid string) (string, error) {
 	resp := ""
-	if err := client.client.SendRequest("getrawtransaction", &resp, txids); err != nil {
+	if err := client.client.SendRequest("getrawtransaction", &resp, txid); err != nil {
 		return resp, err
 	}
 	return resp, nil
 }
 
-func (client *rpcClient) GetRawTransactionVerbose(txids []string) (RawTransactionVerbose, error) {
+func (client *rpcClient) GetRawTransactionVerbose(txid string) (RawTransactionVerbose, error) {
 	resp := RawTransactionVerbose{}
-	if err := client.client.SendRequest("getrawtransaction", &resp, txids, 1); err != nil {
+	if err := client.client.SendRequest("getrawtransaction", &resp, txid, 1); err != nil {
 		return resp, err
 	}
 	return resp, nil
