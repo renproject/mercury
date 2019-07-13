@@ -55,7 +55,7 @@ func (u StandardZecUTXO) Vout() uint32 {
 }
 
 func (u StandardZecUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	var tx *zecutil.MsgTx
+	tx := new(zecutil.MsgTx)
 	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (u ScriptZecUTXO) Vout() uint32 {
 }
 
 func (u ScriptZecUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	var tx *zecutil.MsgTx
+	tx := new(zecutil.MsgTx)
 	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
 		return nil, err
 	}

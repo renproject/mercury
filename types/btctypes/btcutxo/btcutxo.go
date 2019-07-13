@@ -49,7 +49,7 @@ func (u StandardBtcUTXO) Vout() uint32 {
 }
 
 func (u StandardBtcUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	var tx *wire.MsgTx
+	tx := new(wire.MsgTx)
 	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (u ScriptBtcUTXO) Vout() uint32 {
 }
 
 func (u ScriptBtcUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	var tx *wire.MsgTx
+	tx := new(wire.MsgTx)
 	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
 		return nil, err
 	}
