@@ -2,20 +2,22 @@ package ethclient
 
 import (
 	"context"
+	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
+	"github.com/sirupsen/logrus"
 )
 
-// Client is a client which is used to talking with certain bitcoin network. It can interacting with the blockchain
-// through Mercury server.
+// Client is a client which is used to interact with the Ethereum network using the Mercury server.
 type Client interface {
 	Balance(context.Context, ethtypes.Address) (ethtypes.Amount, error)
 	BlockNumber(context.Context) (*big.Int, error)
-	SuggestGasPrice(context.Context) (ethtypes.Amount, error)
+	SuggestGasPrice(context.Context, types.TxSpeed) (ethtypes.Amount, error)
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
 	PublishSignedTx(context.Context, ethtypes.Tx) error
@@ -23,12 +25,14 @@ type Client interface {
 }
 
 type client struct {
-	url    string
-	client *ethclient.Client
+	url        string
+	client     *ethclient.Client
+	logger     logrus.FieldLogger
+	gasStation EthGasStation
 }
 
-// NewClient returns a new Client of given ethereum network.
-func New(network ethtypes.Network) (Client, error) {
+// New returns a new Client of given ethereum network.
+func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 	var url string
 	switch network {
 
@@ -37,20 +41,22 @@ func New(network ethtypes.Network) (Client, error) {
 	case ethtypes.Kovan:
 		url = "http://206.189.83.88:5000/eth/testnet"
 	default:
-		return &client{}, types.ErrUnknownNetwork
+		return nil, types.ErrUnknownNetwork
 	}
-	return NewCustomClient(url)
+	return NewCustomClient(logger, url)
 }
 
 // NewCustomClient returns an Client for a specific RPC url
-func NewCustomClient(url string) (Client, error) {
+func NewCustomClient(logger logrus.FieldLogger, url string) (Client, error) {
 	ec, err := ethclient.Dial(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating EthClient at url=%v. %v", url, err)
 	}
 	return &client{
-		url:    url,
-		client: ec,
+		url:        url,
+		client:     ec,
+		logger:     logger,
+		gasStation: NewEthGasStation(logger, 30*time.Minute),
 	}, nil
 }
 
@@ -72,16 +78,24 @@ func (c *client) BlockNumber(ctx context.Context) (*big.Int, error) {
 	return value.Number, nil
 }
 
-func (c *client) SuggestGasPrice(ctx context.Context) (ethtypes.Amount, error) {
-	price, err := c.client.SuggestGasPrice(ctx)
-	if err != nil {
-		return ethtypes.Amount{}, err
+func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed) (ethtypes.Amount, error) {
+	gasStationPrice, err := c.gasStation.GasRequired(ctx, speed)
+	if err == nil {
+		return gasStationPrice, nil
 	}
-	return ethtypes.WeiFromBig(price), err
+	c.logger.Errorf("error getting gas from EthGasStation: %v", err)
+	c.logger.Infof("trying gas price from EthClient")
+	ethClientPrice, err := c.client.SuggestGasPrice(ctx)
+	if err == nil {
+		return ethtypes.WeiFromBig(ethClientPrice), nil
+	}
+	c.logger.Errorf("error getting gas from EthClient: %v", err)
+	c.logger.Infof("using 21 Gwei as gas price")
+	return ethtypes.Gwei(21), nil
 }
 
-func (client *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Address) (uint64, error) {
-	return client.client.PendingNonceAt(ctx, common.Address(fromAddress))
+func (c *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Address) (uint64, error) {
+	return c.client.PendingNonceAt(ctx, common.Address(fromAddress))
 }
 
 func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {

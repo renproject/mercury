@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/ethclient"
+	"github.com/renproject/mercury/types"
+	"github.com/sirupsen/logrus"
 
 	"github.com/renproject/mercury/sdk/account/ethaccount"
 	"github.com/renproject/mercury/types/ethtypes"
@@ -15,11 +17,16 @@ import (
 
 var _ = Describe("eth client", func() {
 	var client Client
+	var err error
+	logger := logrus.StandardLogger()
+
+	BeforeSuite(func() {
+		client, err = NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+		Expect(err).NotTo(HaveOccurred())
+	})
 
 	Context("when fetching balances", func() {
 		It("can fetch a zero balance address", func() {
-			client, err := NewCustomClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
-			Expect(err).NotTo(HaveOccurred())
 			account, err := ethaccount.RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
@@ -30,7 +37,7 @@ var _ = Describe("eth client", func() {
 
 		It("can suggest a gas price", func() {
 			ctx := context.Background()
-			_, err := client.SuggestGasPrice(ctx)
+			_, err := client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -46,9 +53,7 @@ var _ = Describe("eth client", func() {
 			amount := ethtypes.Ether(3)
 			nonce := uint64(1)
 			gasLimit := uint64(1000)
-			gasPrice, err := client.SuggestGasPrice(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			client, err := NewCustomClient(fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+			gasPrice, err := client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			account, err := ethaccount.RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())

@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/testutils/hdutil"
+	. "github.com/renproject/mercury/testutil/hdutil"
 
 	"github.com/renproject/mercury/types/btctypes"
 )

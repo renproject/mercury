@@ -8,20 +8,30 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/account/ethaccount"
+	"github.com/sirupsen/logrus"
 
 	"github.com/renproject/mercury/sdk/client/ethclient"
+	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
 var _ = Describe("eth account", func() {
+	logger := logrus.StandardLogger()
 
 	Context("can sign", func() {
+
+		FIt("can create a random account", func() {
+			account, err := RandomAccount(Client)
+			Expect(err).NotTo(HaveOccurred())
+			convertedAddr := ethtypes.AddressFromPublicKey(&account.PrivateKey().PublicKey)
+			Expect(account.Address()).To(BeEquivalentTo(convertedAddr))
+		})
 
 		It("can create an unsigned transaction", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
 			gasLimit := uint64(1000)
-			gasPrice, err := Client.SuggestGasPrice(ctx)
+			gasPrice, err := Client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
@@ -34,7 +44,7 @@ var _ = Describe("eth account", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
 			gasLimit := uint64(1000)
-			gasPrice, err := Client.SuggestGasPrice(ctx)
+			gasPrice, err := Client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
@@ -53,7 +63,7 @@ var _ = Describe("eth account", func() {
 			fmt.Printf("owner balance: %v", ownerBal)
 			Expect(ownerBal.Gte(amount)).Should(BeTrue())
 			gasLimit := uint64(30000)
-			gasPrice, err := Client.SuggestGasPrice(ctx)
+			gasPrice, err := Client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
@@ -76,7 +86,7 @@ var _ = Describe("eth account", func() {
 		})
 
 		It("can check kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomClient("http://139.59.221.34/eth-kovan")
+			kovanClient, err := ethclient.NewCustomClient(logger, "http://139.59.221.34/eth-kovan")
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
@@ -89,7 +99,7 @@ var _ = Describe("eth account", func() {
 		})
 
 		It("can send kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomClient("http://139.59.221.34/eth-kovan")
+			kovanClient, err := ethclient.NewCustomClient(logger, "http://139.59.221.34/eth-kovan")
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
@@ -98,7 +108,7 @@ var _ = Describe("eth account", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(1)
 			gasLimit := uint64(30000)
-			gasPrice, err := kovanClient.SuggestGasPrice(ctx)
+			gasPrice, err := kovanClient.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			addr := ethtypes.AddressFromHex("0xdF9dEfE40a4E3B2CfF85b51CfcBf87876C7Af902")
 			bal, err := kovanClient.Balance(ctx, addr)
