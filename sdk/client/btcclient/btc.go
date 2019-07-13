@@ -9,11 +9,11 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/iqoption/zecutil"
+	"github.com/renproject/mercury/rpcclient"
 	"github.com/renproject/mercury/rpcclient/btcrpcclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
@@ -29,9 +29,9 @@ const (
 	ZecVersion      = 4
 	BtcVersion      = 2
 
-	MainnetMercuryURL  = "206.189.83.88:5000/btc/mainnet"
-	TestnetMercuryURL  = "206.189.83.88:5000/btc/testnet"
-	LocalnetMercuryURL = "0.0.0.0:5000/btc/testnet"
+	MainnetMercuryURL  = "http://206.189.83.88:5000/btc/mainnet"
+	TestnetMercuryURL  = "http://206.189.83.88:5000/btc/testnet"
+	LocalnetMercuryURL = "http://0.0.0.0:5000/btc/testnet"
 )
 
 var (
@@ -54,27 +54,24 @@ type client struct {
 
 // New returns a new Client of given Bitcoin network.
 func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
-	config := &rpcclient.ConnConfig{
-		HTTPPostMode: true,
-		DisableTLS:   true,
-	}
-
+	var host string
 	switch network {
 	case btctypes.Mainnet:
-		config.Host = MainnetMercuryURL
+		host = MainnetMercuryURL
 	case btctypes.Testnet:
-		config.Host = TestnetMercuryURL
+		host = TestnetMercuryURL
 	case btctypes.Localnet:
-		config.Host = LocalnetMercuryURL
+		host = LocalnetMercuryURL
 	default:
 		panic("unknown bitcoin network")
 	}
 
 	gasStation := NewBtcGasStation(logger, 30*time.Minute)
 	return &client{
+		client:     btcrpcclient.NewRPCClient(host, "", ""),
 		network:    network,
 		config:     *network.Params(),
-		url:        config.Host,
+		url:        host,
 		gasStation: gasStation,
 		logger:     logger,
 	}, nil
@@ -90,21 +87,22 @@ func (c *client) Chain() btctypes.Chain {
 
 // UTXO returns the UTXO for the given transaction hash and index.
 func (c *client) UTXO(txHash types.TxHash, index uint32) (btcutxo.UTXO, error) {
-	tx, err := c.client.GetRawTransactionVerbose([]string{string(txHash)})
+	if len(txHash) != 64 {
+		return nil, ErrInvalidTxHash
+	}
+
+	tx, err := c.client.GetRawTransactionVerbose(string(txHash))
 	if err != nil {
 		return nil, ErrTxHashNotFound
 	}
 
 	txOut, err := c.client.GetTxOut(string(txHash), index)
 	if err != nil {
+		if err == rpcclient.ErrNullResult {
+			return nil, ErrUTXOSpent
+		}
 		return nil, fmt.Errorf("cannot get tx output from btc client: %v", err)
 	}
-
-	// TODO: add validation checking back
-	// Check if UTXO has been spent.
-	// if txOut == nil {
-	// 	return nil, ErrUTXOSpent
-	// }
 
 	amount, err := btcutil.NewAmount(txOut.Value)
 	if err != nil {
@@ -150,7 +148,7 @@ func (c *client) UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, er
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
 func (c *client) Confirmations(txHash types.TxHash) (types.Confirmations, error) {
-	tx, err := c.client.GetRawTransactionVerbose([]string{string(txHash)})
+	tx, err := c.client.GetRawTransactionVerbose(string(txHash))
 	if err != nil {
 		return 0, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
@@ -257,10 +255,12 @@ func (c *client) GasStation() BtcGasStation {
 
 func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
 	switch c.chain {
+	case btctypes.Bitcoin:
+		return btcCreateUnsignedTx(c.network, utxos, recipients)
 	case btctypes.ZCash:
 		return zecCreateUnsignedTx(c.network, utxos, recipients)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %d", c.chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", c.chain)
 	}
 }
 
@@ -271,7 +271,7 @@ func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 	}
 
 	for _, utxo := range utxos {
-		hash, err := chainhash.NewHashFromStr(utxo.ScriptPubKey())
+		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
 		if err != nil {
 			return nil, err
 		}
@@ -292,7 +292,7 @@ func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 func btcCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
 	msgTx := wire.NewMsgTx(BtcVersion)
 	for _, utxo := range utxos {
-		hash, err := chainhash.NewHashFromStr(utxo.ScriptPubKey())
+		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
 		if err != nil {
 			return nil, err
 		}

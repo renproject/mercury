@@ -40,6 +40,7 @@ var _ = Describe("btc client", func() {
 		btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
 		btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USERNAME")
 		btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
+
 		btcTestnetNodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -58,10 +59,11 @@ var _ = Describe("btc client", func() {
 			index := uint32(0)
 			utxo, err := client.UTXO(txHash, index)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(utxo.TxHash).To(Equal(txHash))
-			Expect(utxo.Amount).To(Equal(btctypes.Amount(100000)))
-			Expect(utxo.ScriptPubKey).To(Equal("76a9142d2b683141de54613e7c6648afdb454fa3b4126d88ac"))
-			Expect(utxo.Vout).To(Equal(index))
+
+			Expect(utxo.TxHash()).To(Equal(txHash))
+			Expect(utxo.Amount()).To(Equal(btctypes.Amount(100000)))
+			Expect(utxo.ScriptPubKey()).To(Equal("76a9142d2b683141de54613e7c6648afdb454fa3b4126d88ac"))
+			Expect(utxo.Vout()).To(Equal(index))
 		})
 
 		It("should return an error for an invalid UTXO index", func() {
