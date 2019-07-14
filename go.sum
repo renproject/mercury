@@ -7,7 +7,6 @@ github.com/aristanetworks/goarista v0.0.0-20190628180533-8e7d5b18fe7a h1:AtHySZz
 github.com/aristanetworks/goarista v0.0.0-20190628180533-8e7d5b18fe7a/go.mod h1:D/tb0zPVXnP7fmsLZjtdUhSsumbK/ij54UXjjVgMGxQ=
 github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8 h1:mOg8/RgDSHTQ1R0IR+LMDuW4TDShPv+JzYHuR4GLoNA=
 github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8/go.mod h1:3J08xEfcugPacsc34/LKRU2yO7YmuT8yt28J8k2+rrI=
-github.com/btcsuite/btcec v0.0.0-20150206173013-d9c08e27e9f1 h1:ZmGo3z3aHHDqJf8+bEuGR0WtuJ//XOfWQXMS2tkYiAc=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f h1:bAs4lUbRJpnnkd9VhRV3jjAVU7DJVjMaK+IsvSeZvFo=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f/go.mod h1:TdznJufoqS23FtqVCzL0ZqgP5MqXbb4fg/WgDys70nA=
 github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d h1:yJzD/yFppdVCf6ApMkVy8cUxV0XrxdP9rVf6D87/Mng=
