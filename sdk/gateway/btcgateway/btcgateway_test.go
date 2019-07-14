@@ -78,11 +78,9 @@ var _ = Describe("btc gateway", func() {
 			gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
-			gasStation := client.GasStation()
-			gasAmount, err := gasStation.GasRequired(context.Background(), types.Standard, txSize)
-			// fmt.Printf("gas amount=%v", gasAmount)
-			Expect(err).NotTo(HaveOccurred())
-			recipients := btcaddress.Recipients{{
+			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
+			fmt.Printf("gas amount=%v", gasAmount)
+			recipients := btctypes.Recipients{{
 				Address: account.Address(),
 				Amount:  gatewayUTXOs.Sum() - gasAmount,
 			}}

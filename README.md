@@ -1,4 +1,4 @@
-# `mercury`
+# `☿ mercury`
 ## Universal blockchain API
 
 [![CircleCI](https://circleci.com/gh/renproject/mercury.svg?style=shield)](https://circleci.com/gh/renproject/mercury)

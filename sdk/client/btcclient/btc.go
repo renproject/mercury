@@ -2,6 +2,7 @@ package btcclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -249,8 +250,14 @@ func (c *client) VerifyTx(tx btctx.BtcTx) error {
 	return nil
 }
 
-func (c *client) GasStation() BtcGasStation {
-	return c.gasStation
+func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount {
+	gasStationPrice, err := c.gasStation.GasRequired(ctx, speed, txSizeInBytes)
+	if err == nil {
+		return gasStationPrice
+	}
+	c.logger.Errorf("error getting btc gas information: %v", err)
+	c.logger.Infof("using 10k sats as gas price")
+	return 10000 * btctypes.SAT
 }
 
 func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {

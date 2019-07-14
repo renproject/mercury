@@ -17,5 +17,5 @@ type Client interface {
 	BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients, refundTo btcaddress.Address, gas btctypes.Amount) (btctx.BtcTx, error)
 	SubmitSignedTx(stx btctx.BtcTx) (types.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int
-	GasStation() BtcGasStation
+	SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount
 }

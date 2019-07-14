@@ -1,12 +1,11 @@
-package btcclient_test
+package zecclient_test
 
 // import (
 // 	"os"
 
 // 	. "github.com/onsi/ginkgo"
 // 	. "github.com/onsi/gomega"
-// 	. "github.com/renproject/mercury/sdk/client/btcclient"
-// 	"github.com/renproject/mercury/types"
+// 	. "github.com/renproject/mercury/sdk/client/zecclient"
 
 // 	"github.com/renproject/kv"
 // 	"github.com/renproject/mercury/api"
@@ -14,14 +13,14 @@ package btcclient_test
 // 	"github.com/renproject/mercury/proxy"
 // 	"github.com/renproject/mercury/rpc/zecrpc"
 // 	"github.com/renproject/mercury/testutil"
-// 	"github.com/renproject/mercury/types/btctypes"
+// 	"github.com/renproject/mercury/types/zectypes"
 // 	"github.com/sirupsen/logrus"
 // )
 
 // var _ = Describe("zec client", func() {
 // 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 // 	// test. (i.e have known balance, utxos.)
-// 	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
+// 	loadTestAccounts := func(network zectypes.Network) testutil.HdKey {
 // 		wallet, err := testutil.LoadHdWalletFromEnv("ZEC_TEST_MNEMONIC", "ZEC_TEST_PASSPHRASE", network)
 // 		Expect(err).NotTo(HaveOccurred())
 // 		return wallet
@@ -39,28 +38,28 @@ package btcclient_test
 // 		Expect(err).ToNot(HaveOccurred())
 
 // 		zecTestnetProxy := proxy.NewProxy(zecTestnetNodeClient)
-// 		zecTestnetAPI := api.NewZecApi(btctypes.Testnet, zecTestnetProxy, cache, logger)
+// 		zecTestnetAPI := api.NewZecApi(zectypes.Testnet, zecTestnetProxy, cache, logger)
 // 		server := api.NewServer(logger, "5000", zecTestnetAPI)
 // 		go server.Run()
 // 	})
 
 // 	Context("when fetching UTXOs", func() {
 // 		It("should return the UTXO for a transaction with unspent outputs", func() {
-// 			client, err := New(logrus.StandardLogger(), btctypes.Localnet)
+// 			client, err := New(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
 
-// 			txHash := types.TxHash("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65")
+// 			txHash := zectypes.TxHash("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65")
 // 			index := uint32(0)
 // 			utxo, err := client.UTXO(txHash, index)
 // 			Expect(err).NotTo(HaveOccurred())
 // 			Expect(utxo.TxHash).To(Equal(txHash))
-// 			Expect(utxo.Amount).To(Equal(btctypes.Amount(30000000)))
+// 			Expect(utxo.Amount).To(Equal(zectypes.Amount(30000000)))
 // 			Expect(utxo.ScriptPubKey).To(Equal("76a914d125189e1002f3f1c948e2e123dc2926db2efb5188ac"))
 // 			Expect(utxo.Vout).To(Equal(index))
 // 		})
 
 // 		It("should return an error for an invalid UTXO index", func() {
-// 			client, err := New(logrus.StandardLogger(), btctypes.Localnet)
+// 			client, err := New(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
 
 // 			_, err = client.UTXO("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65", 3)
@@ -68,7 +67,7 @@ package btcclient_test
 // 		})
 
 // 		It("should return an error for a UTXO that has been spent", func() {
-// 			client, err := New(logrus.StandardLogger(), btctypes.Localnet)
+// 			client, err := New(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
 
 // 			_, err = client.UTXO("d16e32d5e7b5442c8aaffe687ed0db7c2b4a7221a8607620902c06b214f8c4b1", 0)
@@ -76,7 +75,7 @@ package btcclient_test
 // 		})
 
 // 		It("should return an error for an invalid transaction hash", func() {
-// 			client, err := New(logrus.StandardLogger(), btctypes.Localnet)
+// 			client, err := New(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
 
 // 			_, err = client.UTXO("abcdefg", 0)
@@ -84,7 +83,7 @@ package btcclient_test
 // 		})
 
 // 		It("should return an error for a non-existent transaction hash", func() {
-// 			client, err := New(logrus.StandardLogger(), btctypes.Localnet)
+// 			client, err := New(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
 
 // 			_, err = client.UTXO("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0)
@@ -92,9 +91,9 @@ package btcclient_test
 // 		})
 
 // 		It("should return a non-zero number of UTXOs for a funded address that has been imported", func() {
-// 			client, err := New(logrus.StandardLogger(), btctypes.Localnet)
+// 			client, err := New(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
-// 			address, err := loadTestAccounts(btctypes.Localnet).ZECAddress(44, 1, 0, 0, 1)
+// 			address, err := loadTestAccounts(zectypes.Localnet).ZECAddress(44, 1, 0, 0, 1)
 // 			Expect(err).NotTo(HaveOccurred())
 
 // 			utxos, err := client.UTXOsFromAddress(address)
@@ -103,9 +102,9 @@ package btcclient_test
 // 		})
 
 // 		It("should return zero UTXOs for a randomly generated address", func() {
-// 			client, err := New(logrus.StandardLogger(), btctypes.Localnet)
+// 			client, err := New(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
-// 			address, err := testutil.RandomZECAddress(btctypes.Localnet)
+// 			address, err := testutil.RandomZECAddress(zectypes.Localnet)
 // 			Expect(err).NotTo(HaveOccurred())
 
 // 			utxos, err := client.UTXOsFromAddress(address)

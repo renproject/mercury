@@ -94,11 +94,7 @@ func (acc *account) Transfer(to btcaddress.Address, value btctypes.Amount, speed
 		return "", fmt.Errorf("error fetching utxos: %v", err)
 	}
 
-	fee, err := acc.Client.GasStation().GasRequired(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
-	if err != nil {
-		return "", fmt.Errorf("failed to estimate gas: %v", err)
-	}
-
+	fee := acc.Client.SuggestGasPrice(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
 	// Check if we have enough funds
 	balance := utxos.Sum()
 	if balance < value+fee {

@@ -35,12 +35,6 @@ var _ = Describe("eth client", func() {
 			Expect(balance.Eq(ethtypes.Wei(0))).Should(BeTrue())
 		})
 
-		It("can suggest a gas price", func() {
-			ctx := context.Background()
-			_, err := client.SuggestGasPrice(ctx, types.Standard)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		It("can check the gas limit", func() {
 			ctx := context.Background()
 			gl, err := client.GasLimit(ctx)
@@ -53,8 +47,7 @@ var _ = Describe("eth client", func() {
 			amount := ethtypes.Ether(3)
 			nonce := uint64(1)
 			gasLimit := uint64(1000)
-			gasPrice, err := client.SuggestGasPrice(ctx, types.Standard)
-			Expect(err).NotTo(HaveOccurred())
+			gasPrice := client.SuggestGasPrice(ctx, types.Standard)
 			account, err := ethaccount.RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
