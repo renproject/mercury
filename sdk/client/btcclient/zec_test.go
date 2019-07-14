@@ -1,4 +1,4 @@
-package zecclient_test
+package btcclient_test
 
 // import (
 // 	"os"

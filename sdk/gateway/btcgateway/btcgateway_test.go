@@ -80,7 +80,7 @@ var _ = Describe("btc gateway", func() {
 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
 			fmt.Printf("gas amount=%v", gasAmount)
-			recipients := btctypes.Recipients{{
+			recipients := btcaddress.Recipients{{
 				Address: account.Address(),
 				Amount:  gatewayUTXOs.Sum() - gasAmount,
 			}}
