@@ -65,6 +65,8 @@ var _ = Describe("btc gateway", func() {
 
 			// Transfer some funds to the gateway address
 			amount := 20000 * btctypes.SAT
+
+			// Fund mjSUANWKvokgHo6mxoHdq27aBgdCJ39uNA if the following transfer fails with not enough balance.
 			txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
@@ -72,7 +74,7 @@ var _ = Describe("btc gateway", func() {
 			time.Sleep(5 * time.Second)
 
 			// Fetch the UTXOs for the transaction hash
-			gatewayUTXO, err := gateway.UTXO(txHash, 0)
+			gatewayUTXO, err := gateway.UTXO(txHash, 1)
 			Expect(err).NotTo(HaveOccurred())
 			// fmt.Printf("utxo: %v", gatewayUTXO)
 			gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
