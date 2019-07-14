@@ -306,7 +306,7 @@ func btcCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
 	}
 	for _, recipient := range recipients {
-		script, err := zecutil.PayToAddrScript(recipient.Address)
+		script, err := txscript.PayToAddrScript(recipient.Address)
 		if err != nil {
 			return nil, err
 		}
