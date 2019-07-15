@@ -7,6 +7,12 @@ import (
 	"github.com/renproject/mercury/types"
 )
 
+type Network interface {
+	types.Network
+
+	Params() *chaincfg.Params
+}
+
 // Amount represents the value in the smallest possible unit for the respective blockchain.
 type Amount int64
 
@@ -20,43 +26,66 @@ const (
 	ZEC = Amount(1e8 * ZAT)
 )
 
-type Chain uint8
+type network uint8
 
 const (
-	Bitcoin Chain = 0
-	ZCash   Chain = 1
-)
+	BtcLocalnet network = 0
+	BtcMainnet  network = 1
+	BtcTestnet  network = 2
 
-// Network of the blockchain.
-type Network uint8
-
-const (
-	Localnet Network = 0
-	Mainnet  Network = 1
-	Testnet  Network = 2
+	ZecLocalnet network = 3
+	ZecMainnet  network = 4
+	ZecTestnet  network = 5
 )
 
 // NewNetwork parse the network from a string.
-func NewNetwork(network string) Network {
+func NewNetwork(chain types.Chain, network string) Network {
+	switch chain {
+	case types.Bitcoin:
+		return NewBtcNetwork(network)
+	case types.ZCash:
+		return NewZecNetwork(network)
+	default:
+		panic(types.ErrUnknownChain)
+	}
+}
+
+// NewBtcNetwork parse the btc network from a string.
+func NewBtcNetwork(network string) Network {
 	network = strings.ToLower(strings.TrimSpace(network))
 	switch network {
 	case "mainnet":
-		return Mainnet
+		return BtcMainnet
 	case "testnet", "testnet3":
-		return Testnet
+		return BtcTestnet
 	case "localnet", "localhost":
-		return Localnet
+		return BtcLocalnet
+	default:
+		panic(types.ErrUnknownNetwork)
+	}
+}
+
+// NewZecNetwork parse the zec network from a string.
+func NewZecNetwork(network string) Network {
+	network = strings.ToLower(strings.TrimSpace(network))
+	switch network {
+	case "mainnet":
+		return ZecMainnet
+	case "testnet", "testnet3":
+		return ZecTestnet
+	case "localnet", "localhost":
+		return ZecLocalnet
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
 }
 
 // Params returns the params config for the network
-func (network Network) Params() *chaincfg.Params {
+func (network network) Params() *chaincfg.Params {
 	switch network {
-	case Mainnet:
+	case BtcMainnet, ZecMainnet:
 		return &chaincfg.MainNetParams
-	case Testnet, Localnet:
+	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet:
 		return &chaincfg.TestNet3Params
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -64,27 +93,27 @@ func (network Network) Params() *chaincfg.Params {
 }
 
 // String implements the `Stringer` interface.
-func (network Network) String() string {
+func (network network) String() string {
 	switch network {
-	case Mainnet:
+	case BtcMainnet, ZecMainnet:
 		return "mainnet"
-	case Testnet:
+	case BtcTestnet, ZecTestnet:
 		return "testnet"
-	case Localnet:
+	case BtcLocalnet, ZecLocalnet:
 		return "localnet"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
 }
 
-// String implements the `Stringer` interface.
-func (chain Chain) String() string {
-	switch chain {
-	case Bitcoin:
-		return "bitcoin"
-	case ZCash:
-		return "zcash"
+// Chain implements the types.Network interface.
+func (network network) Chain() types.Chain {
+	switch network {
+	case BtcMainnet, BtcTestnet, BtcLocalnet:
+		return types.Bitcoin
+	case ZecMainnet, ZecTestnet, ZecLocalnet:
+		return types.ZCash
 	default:
-		panic(types.ErrUnknownChain)
+		panic(types.ErrUnknownNetwork)
 	}
 }
