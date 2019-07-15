@@ -29,10 +29,6 @@ const (
 	ZecExpiryHeight = uint32(10000000)
 	ZecVersion      = 4
 	BtcVersion      = 2
-
-	MainnetMercuryURL  = "http://206.189.83.88:5000/btc/mainnet"
-	TestnetMercuryURL  = "http://206.189.83.88:5000/btc/testnet"
-	LocalnetMercuryURL = "http://0.0.0.0:5000/btc/testnet"
 )
 
 var (
@@ -45,7 +41,6 @@ var (
 // through Mercury server.
 type client struct {
 	client     btcrpcclient.Client
-	chain      btctypes.Chain
 	network    btctypes.Network
 	config     chaincfg.Params
 	url        string
@@ -53,20 +48,32 @@ type client struct {
 	logger     logrus.FieldLogger
 }
 
-// New returns a new Client of given Bitcoin network.
-func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
-	var host string
-	switch network {
-	case btctypes.Mainnet:
-		host = MainnetMercuryURL
-	case btctypes.Testnet:
-		host = TestnetMercuryURL
-	case btctypes.Localnet:
-		host = LocalnetMercuryURL
+func MercuryURL(network btctypes.Network) string {
+	var chainStr string
+	switch network.Chain() {
+	case types.Bitcoin:
+		chainStr = "btc"
+	case types.ZCash:
+		chainStr = "zec"
 	default:
-		panic("unknown bitcoin network")
+		panic(types.ErrUnknownChain)
 	}
 
+	switch network {
+	case btctypes.BtcMainnet, btctypes.ZecMainnet:
+		return fmt.Sprintf("http://206.189.83.88:5000/%s/mainnet", chainStr)
+	case btctypes.BtcTestnet, btctypes.ZecTestnet:
+		return fmt.Sprintf("http://206.189.83.88:5000/%s/testnet", chainStr)
+	case btctypes.BtcLocalnet, btctypes.ZecLocalnet:
+		return fmt.Sprintf("http://0.0.0.0:5000/%s/testnet", chainStr)
+	default:
+		panic(types.ErrUnknownNetwork)
+	}
+}
+
+// New returns a new Client of given Bitcoin network.
+func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
+	host := MercuryURL(network)
 	gasStation := NewBtcGasStation(logger, 30*time.Minute)
 	return &client{
 		client:     btcrpcclient.NewRPCClient(host, "", ""),
@@ -80,10 +87,6 @@ func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
 
 func (c *client) Network() btctypes.Network {
 	return c.network
-}
-
-func (c *client) Chain() btctypes.Chain {
-	return c.chain
 }
 
 // UTXO returns the UTXO for the given transaction hash and index.
@@ -110,7 +113,7 @@ func (c *client) UTXO(txHash types.TxHash, index uint32) (btcutxo.UTXO, error) {
 		return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 	}
 	return btcutxo.NewStandardUTXO(
-		c.chain,
+		c.network.Chain(),
 		types.TxHash(tx.TxID),
 		btctypes.Amount(amount),
 		txOut.ScriptPubKey.Hex,
@@ -135,7 +138,7 @@ func (c *client) UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, er
 		}
 
 		utxos[i] = btcutxo.NewStandardUTXO(
-			c.chain,
+			c.network.Chain(),
 			types.TxHash(output.TxID),
 			btctypes.Amount(amount),
 			output.ScriptPubKey,
@@ -221,7 +224,7 @@ func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
 }
 
 func (c *client) VerifyTx(tx btctx.BtcTx) error {
-	if c.chain != btctypes.Bitcoin {
+	if c.network.Chain() != types.Bitcoin {
 		return nil
 	}
 
@@ -261,13 +264,13 @@ func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSiz
 }
 
 func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
-	switch c.chain {
-	case btctypes.Bitcoin:
+	switch c.network.Chain() {
+	case types.Bitcoin:
 		return btcCreateUnsignedTx(c.network, utxos, recipients)
-	case btctypes.ZCash:
+	case types.ZCash:
 		return zecCreateUnsignedTx(c.network, utxos, recipients)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %v", c.chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", c.network.Chain())
 	}
 }
 
@@ -276,7 +279,6 @@ func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 		MsgTx:        wire.NewMsgTx(ZecVersion),
 		ExpiryHeight: ZecExpiryHeight,
 	}
-
 	for _, utxo := range utxos {
 		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
 		if err != nil {
@@ -284,15 +286,13 @@ func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 		}
 		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
 	}
-
 	for _, recipient := range recipients {
-		script, err := zecutil.PayToAddrScript(recipient.Address)
+		script, err := btcaddress.PayToAddrScript(recipient.Address, network)
 		if err != nil {
 			return nil, err
 		}
 		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
 	}
-
 	return btctx.NewUnsignedZecTx(network, utxos, &msgTx)
 }
 
@@ -306,7 +306,7 @@ func btcCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
 	}
 	for _, recipient := range recipients {
-		script, err := txscript.PayToAddrScript(recipient.Address)
+		script, err := btcaddress.PayToAddrScript(recipient.Address, network)
 		if err != nil {
 			return nil, err
 		}
