@@ -36,6 +36,10 @@ type Tx struct {
 
 type TxHash common.Hash
 
+func NewTxHashFromHex(hexString string) TxHash {
+	return TxHash(common.HexToHash(hexString))
+}
+
 func (tx *Tx) Hash() TxHash {
 	return TxHash(tx.tx.Hash())
 }
