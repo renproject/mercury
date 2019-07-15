@@ -20,7 +20,7 @@ type Client interface {
 	SuggestGasPrice(context.Context, types.TxSpeed) ethtypes.Amount
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
-	PublishSignedTx(context.Context, ethtypes.Tx) error
+	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
 }
 
@@ -107,12 +107,12 @@ func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress et
 }
 
 // PublishSTX publishes a signed transaction
-func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) error {
+func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) (ethtypes.TxHash, error) {
 	// Pre-condition checks
 	if !tx.IsSigned() {
 		panic("pre-condition violation: cannot publish unsigned transaction")
 	}
-	return c.client.SendTransaction(ctx, tx.ToTransaction())
+	return tx.Hash(), c.client.SendTransaction(ctx, tx.ToTransaction())
 }
 
 // BlockNumber returns the gas limit of the latest block.
