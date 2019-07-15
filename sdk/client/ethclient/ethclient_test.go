@@ -3,6 +3,7 @@ package ethclient_test
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -23,6 +24,18 @@ var _ = Describe("eth client", func() {
 	BeforeSuite(func() {
 		client, err = NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	Context("when fetching confirmations", func() {
+		It("can fetch the confirmations of a Kovan transaction", func() {
+			kovanClient, err := New(logger, ethtypes.Kovan)
+			Expect(err).NotTo(HaveOccurred())
+			hash := ethtypes.NewTxHashFromHex("0x288a0fe0cb305195bac6fefa6b16df576f0180c229fe5b4a453d57b0dcb42673")
+			ctx := context.Background()
+			confs, err := kovanClient.Confirmations(ctx, hash)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(confs.Cmp(big.NewInt(0))).Should(BeEquivalentTo(1))
+		})
 	})
 
 	Context("when fetching balances", func() {
