@@ -75,7 +75,7 @@ var _ = Describe("eth account", func() {
 			err = EthAccount.SignUnsignedTx(ctx, &tx)
 			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
-			err = Client.PublishSignedTx(ctx, tx)
+			_, err = Client.PublishSignedTx(ctx, tx)
 			Expect(err).NotTo(HaveOccurred())
 			// check new balance
 			newBal, err := Client.Balance(ctx, account.Address())
@@ -119,7 +119,7 @@ var _ = Describe("eth account", func() {
 			err = acc.SignUnsignedTx(ctx, &tx)
 			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
-			err = kovanClient.PublishSignedTx(ctx, tx)
+			_, err = kovanClient.PublishSignedTx(ctx, tx)
 			Expect(err).NotTo(HaveOccurred())
 			// check new balance
 			newBal, err := kovanClient.Balance(ctx, addr)
