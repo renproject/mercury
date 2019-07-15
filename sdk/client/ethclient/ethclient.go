@@ -119,11 +119,11 @@ func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) (ethtypes.
 func (c *client) Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error) {
 	currentBlockNumber, err := c.BlockNumber(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching current block number: %v", err)
 	}
 	receipt, err := c.client.TransactionReceipt(ctx, common.Hash(hash))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching tx hash=%v receipt: %v", hash, err)
 	}
 	confs := big.NewInt(0).Sub(currentBlockNumber, receipt.BlockNumber)
 	return confs, nil
