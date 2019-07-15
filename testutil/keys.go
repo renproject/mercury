@@ -56,7 +56,7 @@ func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) BTCAddress(path ...uint32) (btcaddress.Address, error) {
+func (hdkey HdKey) Address(path ...uint32) (btcaddress.Address, error) {
 	key, err := hdkey.EcdsaKey(path...)
 	if err != nil {
 		return nil, err
@@ -64,24 +64,7 @@ func (hdkey HdKey) BTCAddress(path ...uint32) (btcaddress.Address, error) {
 	return btcaddress.AddressFromPubKey(&key.PublicKey, hdkey.network)
 }
 
-// EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) ZECAddress(path ...uint32) (btcaddress.Address, error) {
-	key, err := hdkey.EcdsaKey(path...)
-	if err != nil {
-		return nil, err
-	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, hdkey.network)
-}
-
-func RandomBTCAddress(network btctypes.Network) (btcaddress.Address, error) {
-	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, network)
-}
-
-func RandomZECAddress(network btctypes.Network) (btcaddress.Address, error) {
+func RandomAddress(network btctypes.Network) (btcaddress.Address, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
