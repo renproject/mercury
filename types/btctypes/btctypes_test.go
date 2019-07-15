@@ -23,7 +23,7 @@ var _ = Describe("btc types ", func() {
 		Context(fmt.Sprintf("when generate new btc addresses of %v", network), func() {
 			It("should be able to generate random address of given network", func() {
 				randAddr := func() bool {
-					address, err := testutil.RandomBTCAddress(network)
+					address, err := testutil.RandomAddress(network)
 					Expect(err).NotTo(HaveOccurred())
 					if network == BtcMainnet {
 						return strings.HasPrefix(address.EncodeAddress(), "1")
@@ -37,7 +37,7 @@ var _ = Describe("btc types ", func() {
 			})
 
 			It("should be able to decode an address from string", func() {
-				randAddr, err := testutil.RandomBTCAddress(network)
+				randAddr, err := testutil.RandomAddress(network)
 				Expect(err).NotTo(HaveOccurred())
 				address, err := btcaddress.AddressFromBase58(randAddr.EncodeAddress(), network)
 				Expect(err).NotTo(HaveOccurred())
