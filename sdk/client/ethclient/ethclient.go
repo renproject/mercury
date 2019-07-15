@@ -22,6 +22,7 @@ type Client interface {
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
 	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
+	Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error)
 }
 
 type client struct {
@@ -113,6 +114,19 @@ func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) (ethtypes.
 		panic("pre-condition violation: cannot publish unsigned transaction")
 	}
 	return tx.Hash(), c.client.SendTransaction(ctx, tx.ToTransaction())
+}
+
+func (c *client) Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error) {
+	currentBlockNumber, err := c.BlockNumber(ctx)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := c.client.TransactionReceipt(ctx, common.Hash(hash))
+	if err != nil {
+		return nil, err
+	}
+	confs := big.NewInt(0).Sub(currentBlockNumber, receipt.BlockNumber)
+	return confs, nil
 }
 
 // BlockNumber returns the gas limit of the latest block.
