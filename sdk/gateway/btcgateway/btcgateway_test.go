@@ -74,7 +74,7 @@ var _ = Describe("btc gateway", func() {
 		go server.Run()
 	})
 
-	networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet}
+	networks := []btctypes.Network{btctypes.BtcTestnet, btctypes.ZecTestnet}
 	Context("when generating gateways", func() {
 		for _, network := range networks {
 			network := network
