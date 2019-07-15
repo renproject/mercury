@@ -7,6 +7,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
@@ -32,13 +33,8 @@ func NewUnsignedZecTx(network btctypes.Network, utxos btcutxo.UTXOs, msgTx *zecu
 		signed:    false,
 	}
 
-	buf := new(bytes.Buffer)
-	if err := msgTx.Serialize(buf); err != nil {
-		return nil, err
-	}
-
 	for i, utxo := range utxos {
-		sigHash, err := utxo.SigHash(txscript.SigHashAll, buf.Bytes(), i)
+		sigHash, err := utxo.SigHash(txscript.SigHashAll, btcutxo.NewZecMsgTx(msgTx), i)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +73,7 @@ func (t *zecTx) Serialize() ([]byte, error) {
 	}
 
 	buf := bytes.NewBuffer([]byte{})
-	if err := t.tx.Serialize(buf); err != nil {
+	if err := t.tx.ZecEncode(buf, 0, wire.BaseEncoding); err != nil {
 		return nil, err
 	}
 	bufBytes := buf.Bytes()

@@ -37,7 +37,7 @@ func NewUnsignedBtcTx(network btctypes.Network, utxos btcutxo.UTXOs, msgTx *wire
 	}
 
 	for i, utxo := range utxos {
-		sigHash, err := utxo.SigHash(txscript.SigHashAll, buf.Bytes(), i)
+		sigHash, err := utxo.SigHash(txscript.SigHashAll, btcutxo.NewBtcMsgTx(msgTx), i)
 		if err != nil {
 			return nil, err
 		}
