@@ -74,105 +74,59 @@ var _ = Describe("btc gateway", func() {
 		go server.Run()
 	})
 
+	networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet}
 	Context("when generating gateways", func() {
-		It("should be able to generate a btc gateway", func() {
-			client, err := btcclient.New(logger, btctypes.BtcLocalnet)
-			Expect(err).NotTo(HaveOccurred())
-			key, err := loadTestAccounts(btctypes.BtcLocalnet).EcdsaKey(44, 1, 0, 0, 1)
-			gateway := New(client, &key.PublicKey, []byte{})
-			account, err := btcaccount.NewAccount(client, key)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Transfer some funds to the gateway address
-			amount := 20000 * btctypes.SAT
-
-			// Fund mjSUANWKvokgHo6mxoHdq27aBgdCJ39uNA if the following transfer fails with not enough balance.
-			txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
-			// Sleep for a small period of time in hopes that the transaction will go through
-			time.Sleep(5 * time.Second)
-
-			// Fetch the UTXOs for the transaction hash
-			gatewayUTXO, err := gateway.UTXO(txHash, 1)
-			Expect(err).NotTo(HaveOccurred())
-			// fmt.Printf("utxo: %v", gatewayUTXO)
-			gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
-			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
-			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
-			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
-			fmt.Printf("gas amount=%v", gasAmount)
-			recipients := btcaddress.Recipients{{
-				Address: account.Address(),
-				Amount:  gatewayUTXOs.Sum() - gasAmount,
-			}}
-			tx, err := client.BuildUnsignedTx(gatewayUTXOs, recipients, account.Address(), gasAmount)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Sign the transaction
-			subScripts := tx.SignatureHashes()
-			sigs := make([]*btcec.Signature, len(subScripts))
-			for i, subScript := range subScripts {
-				sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
+		for _, network := range networks {
+			network := network
+			It("should be able to generate a btc gateway", func() {
+				client, err := btcclient.New(logger, network)
 				Expect(err).NotTo(HaveOccurred())
-			}
-			serializedPK := btcaddress.SerializePublicKey(&key.PublicKey, client.Network())
-			err = tx.InjectSignatures(sigs, serializedPK)
-
-			Expect(err).NotTo(HaveOccurred())
-			newTxHash, err := client.SubmitSignedTx(tx)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
-		})
-
-		It("should be able to generate a zec gateway", func() {
-			client, err := btcclient.New(logger, btctypes.ZecLocalnet)
-			Expect(err).NotTo(HaveOccurred())
-			key, err := loadTestAccounts(btctypes.ZecLocalnet).EcdsaKey(44, 1, 0, 0, 1)
-			gateway := New(client, &key.PublicKey, []byte{})
-			account, err := btcaccount.NewAccount(client, key)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Transfer some funds to the gateway address
-			amount := 20000 * btctypes.ZAT
-
-			// Fund tmUnCzkVXfEn1gbRA7BCUiyMNkb7tjJYuhQ if the following transfer fails with not enough balance.
-			txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
-			// Sleep for a small period of time in hopes that the transaction will go through
-			time.Sleep(5 * time.Second)
-
-			// Fetch the UTXOs for the transaction hash
-			gatewayUTXO, err := gateway.UTXO(txHash, 1)
-			Expect(err).NotTo(HaveOccurred())
-			// fmt.Printf("utxo: %v", gatewayUTXO)
-			gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
-			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
-			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
-			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
-			fmt.Printf("gas amount=%v", gasAmount)
-			recipients := btcaddress.Recipients{{
-				Address: account.Address(),
-				Amount:  gatewayUTXOs.Sum() - gasAmount,
-			}}
-			tx, err := client.BuildUnsignedTx(gatewayUTXOs, recipients, account.Address(), gasAmount)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Sign the transaction
-			subScripts := tx.SignatureHashes()
-			sigs := make([]*btcec.Signature, len(subScripts))
-			for i, subScript := range subScripts {
-				sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
+				key, err := loadTestAccounts(network).EcdsaKey(44, 1, 0, 0, 1)
+				gateway := New(client, &key.PublicKey, []byte{})
+				account, err := btcaccount.NewAccount(client, key)
 				Expect(err).NotTo(HaveOccurred())
-			}
-			serializedPK := btcaddress.SerializePublicKey(&key.PublicKey, client.Network())
-			err = tx.InjectSignatures(sigs, serializedPK)
-			Expect(err).NotTo(HaveOccurred())
 
-			newTxHash, err := client.SubmitSignedTx(tx)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
-		})
+				// Transfer some funds to the gateway address
+				amount := 20000 * btctypes.SAT
+
+				// Fund mjSUANWKvokgHo6mxoHdq27aBgdCJ39uNA if the following transfer fails with not enough balance.
+				txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
+				Expect(err).NotTo(HaveOccurred())
+				fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
+				// Sleep for a small period of time in hopes that the transaction will go through
+				time.Sleep(5 * time.Second)
+
+				// Fetch the UTXOs for the transaction hash
+				gatewayUTXO, err := gateway.UTXO(txHash, 1)
+				Expect(err).NotTo(HaveOccurred())
+				// fmt.Printf("utxo: %v", gatewayUTXO)
+				gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
+				Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
+				txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
+				gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
+				fmt.Printf("gas amount=%v", gasAmount)
+				recipients := btcaddress.Recipients{{
+					Address: account.Address(),
+					Amount:  gatewayUTXOs.Sum() - gasAmount,
+				}}
+				tx, err := client.BuildUnsignedTx(gatewayUTXOs, recipients, account.Address(), gasAmount)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Sign the transaction
+				subScripts := tx.SignatureHashes()
+				sigs := make([]*btcec.Signature, len(subScripts))
+				for i, subScript := range subScripts {
+					sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
+					Expect(err).NotTo(HaveOccurred())
+				}
+				serializedPK := btcaddress.SerializePublicKey(&key.PublicKey, client.Network())
+				err = tx.InjectSignatures(sigs, serializedPK)
+
+				Expect(err).NotTo(HaveOccurred())
+				newTxHash, err := client.SubmitSignedTx(tx)
+				Expect(err).NotTo(HaveOccurred())
+				fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
+			})
+		}
 	})
 })
