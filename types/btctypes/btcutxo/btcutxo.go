@@ -1,7 +1,6 @@
 package btcutxo
 
 import (
-	"bytes"
 	"encoding/hex"
 
 	"github.com/btcsuite/btcd/txscript"
@@ -48,16 +47,12 @@ func (u StandardBtcUTXO) Vout() uint32 {
 	return u.vout
 }
 
-func (u StandardBtcUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	tx := new(wire.MsgTx)
-	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
-		return nil, err
-	}
+func (u StandardBtcUTXO) SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error) {
 	scriptPubKey, err := hex.DecodeString(u.scriptPubKey)
 	if err != nil {
 		return nil, err
 	}
-	return txscript.CalcSignatureHash(scriptPubKey, hashType, tx, idx)
+	return txscript.CalcSignatureHash(scriptPubKey, hashType, tx.(BtcMsgTx).MsgTx, idx)
 }
 
 func (StandardBtcUTXO) AddData(*txscript.ScriptBuilder) {
@@ -86,14 +81,21 @@ func (u ScriptBtcUTXO) Vout() uint32 {
 	return u.vout
 }
 
-func (u ScriptBtcUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	tx := new(wire.MsgTx)
-	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
-		return nil, err
-	}
-	return txscript.CalcSignatureHash(u.Script, hashType, tx, idx)
+func (u ScriptBtcUTXO) SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error) {
+	return txscript.CalcSignatureHash(u.Script, hashType, tx.(BtcMsgTx).MsgTx, idx)
 }
 
 func (u ScriptBtcUTXO) AddData(builder *txscript.ScriptBuilder) {
 	u.UpdateSigScript(builder)
+}
+
+type BtcMsgTx struct {
+	*wire.MsgTx
+}
+
+func NewBtcMsgTx(msgTx *wire.MsgTx) BtcMsgTx {
+	return BtcMsgTx{msgTx}
+}
+
+func (BtcMsgTx) IsMsgTx() {
 }

@@ -14,7 +14,7 @@ type UTXO interface {
 	ScriptPubKey() string
 	Vout() uint32
 	Confirmations() types.Confirmations
-	SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error)
+	SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error)
 	AddData(builder *txscript.ScriptBuilder)
 }
 
@@ -78,4 +78,8 @@ func NewScriptUTXO(utxo UTXO, script []byte, updateSigScript func(builder *txscr
 	default:
 		panic(fmt.Sprintf("unknown standard utxo: %T", utxo))
 	}
+}
+
+type MsgTx interface {
+	IsMsgTx()
 }
