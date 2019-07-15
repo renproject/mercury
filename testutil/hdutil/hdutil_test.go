@@ -15,7 +15,7 @@ import (
 var _ = Describe("hdutil key derivation", func() {
 	const mnemonic = "movie middle bunker bullet bind asset plastic permit right alter dwarf fragile"
 	const password = "password"
-	const network = btctypes.Testnet
+	const network = btctypes.BtcTestnet
 
 	Context("when deriving bip39 keys", func() {
 		It("can derive the correct bip39 seed", func() {

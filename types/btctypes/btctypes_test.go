@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/renproject/mercury/types"
 	. "github.com/renproject/mercury/types/btctypes"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
@@ -17,14 +18,14 @@ import (
 )
 
 var _ = Describe("btc types ", func() {
-	for _, network := range []Network{Testnet, Mainnet} {
+	for _, network := range []Network{BtcTestnet, BtcMainnet} {
 		network := network
 		Context(fmt.Sprintf("when generate new btc addresses of %v", network), func() {
 			It("should be able to generate random address of given network", func() {
 				randAddr := func() bool {
 					address, err := testutil.RandomBTCAddress(network)
 					Expect(err).NotTo(HaveOccurred())
-					if network == Mainnet {
+					if network == BtcMainnet {
 						return strings.HasPrefix(address.EncodeAddress(), "1")
 					} else {
 						addr := address.EncodeAddress()
@@ -38,7 +39,7 @@ var _ = Describe("btc types ", func() {
 			It("should be able to decode an address from string", func() {
 				randAddr, err := testutil.RandomBTCAddress(network)
 				Expect(err).NotTo(HaveOccurred())
-				address, err := btcaddress.AddressFromBase58(randAddr.EncodeAddress(), Bitcoin, network)
+				address, err := btcaddress.AddressFromBase58(randAddr.EncodeAddress(), network)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(address.EncodeAddress()).Should(Equal(randAddr.EncodeAddress()))
 			})
@@ -47,8 +48,8 @@ var _ = Describe("btc types ", func() {
 				test := func() bool {
 					randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 					Expect(err).NotTo(HaveOccurred())
-					address, err := btcaddress.AddressFromPubKey(&randKey.PublicKey, Bitcoin, network)
-					if network == Mainnet {
+					address, err := btcaddress.AddressFromPubKey(&randKey.PublicKey, network)
+					if network == BtcMainnet {
 						return strings.HasPrefix(address.EncodeAddress(), "1")
 					} else {
 						addr := address.EncodeAddress()
@@ -69,16 +70,16 @@ var _ = Describe("btc types ", func() {
 	Context("bitcoin networks", func() {
 		It("should be able to parse network from a string", func() {
 			testnet := "testnet"
-			Expect(func() { NewNetwork(testnet) }).ShouldNot(Panic())
+			Expect(func() { NewNetwork(types.Bitcoin, testnet) }).ShouldNot(Panic())
 
 			testnet3 := "testnet3"
-			Expect(func() { NewNetwork(testnet3) }).ShouldNot(Panic())
+			Expect(func() { NewNetwork(types.Bitcoin, testnet3) }).ShouldNot(Panic())
 
 			mainnet := "mainnet"
-			Expect(func() { NewNetwork(mainnet) }).ShouldNot(Panic())
+			Expect(func() { NewNetwork(types.Bitcoin, mainnet) }).ShouldNot(Panic())
 
 			unknownNetwork := func(network string) bool {
-				Expect(func() { NewNetwork(testnet) }).ShouldNot(Panic())
+				Expect(func() { NewNetwork(types.Bitcoin, testnet) }).ShouldNot(Panic())
 				return true
 			}
 			Expect(quick.Check(unknownNetwork, nil)).To(Succeed())

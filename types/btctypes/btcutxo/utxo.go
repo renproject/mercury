@@ -38,9 +38,9 @@ func (utxos *UTXOs) Filter(confs types.Confirmations) UTXOs {
 	return newList
 }
 
-func NewStandardUTXO(chain btctypes.Chain, txhash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) UTXO {
+func NewStandardUTXO(chain types.Chain, txhash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) UTXO {
 	switch chain {
-	case btctypes.Bitcoin:
+	case types.Bitcoin:
 		return StandardBtcUTXO{
 			txhash,
 			amount,
@@ -48,7 +48,7 @@ func NewStandardUTXO(chain btctypes.Chain, txhash types.TxHash, amount btctypes.
 			vout,
 			confirmations,
 		}
-	case btctypes.ZCash:
+	case types.ZCash:
 		return StandardZecUTXO{
 			txhash,
 			amount,

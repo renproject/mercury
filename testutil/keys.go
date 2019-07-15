@@ -61,7 +61,7 @@ func (hdkey HdKey) BTCAddress(path ...uint32) (btcaddress.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, btctypes.Bitcoin, hdkey.network)
+	return btcaddress.AddressFromPubKey(&key.PublicKey, hdkey.network)
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
@@ -70,7 +70,7 @@ func (hdkey HdKey) ZECAddress(path ...uint32) (btcaddress.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, btctypes.ZCash, hdkey.network)
+	return btcaddress.AddressFromPubKey(&key.PublicKey, hdkey.network)
 }
 
 func RandomBTCAddress(network btctypes.Network) (btcaddress.Address, error) {
@@ -78,7 +78,7 @@ func RandomBTCAddress(network btctypes.Network) (btcaddress.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, btctypes.Bitcoin, network)
+	return btcaddress.AddressFromPubKey(&key.PublicKey, network)
 }
 
 func RandomZECAddress(network btctypes.Network) (btcaddress.Address, error) {
@@ -86,12 +86,12 @@ func RandomZECAddress(network btctypes.Network) (btcaddress.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, btctypes.ZCash, network)
+	return btcaddress.AddressFromPubKey(&key.PublicKey, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.
 func GenerateSignedTx(network btctypes.Network, key *ecdsa.PrivateKey, destination string, amount int64, txHash string) ([]byte, error) {
-	wif, err := btcutil.NewWIF((*btcec.PrivateKey)(key), network.Params(), network == btctypes.Mainnet)
+	wif, err := btcutil.NewWIF((*btcec.PrivateKey)(key), network.Params(), network == btctypes.BtcMainnet || network == btctypes.ZecMainnet)
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,6 @@ import (
 )
 
 type Client interface {
-	Chain() btctypes.Chain
 	Network() btctypes.Network
 	UTXO(txHash types.TxHash, index uint32) (btcutxo.UTXO, error)
 	UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, error)

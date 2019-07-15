@@ -32,7 +32,7 @@ func main() {
 		logger.Fatalf("cannot construct btc client: %v", err)
 	}
 	btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
-	btcTestnetAPI := api.NewBtcApi(btctypes.Testnet, btcTestnetProxy, cache, logger)
+	btcTestnetAPI := api.NewBtcApi(btctypes.BtcTestnet, btcTestnetProxy, cache, logger)
 
 	// Initialise ZCash API.
 	zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
@@ -43,7 +43,7 @@ func main() {
 		logger.Fatalf("cannot construct zec client: %v", err)
 	}
 	zecTestnetProxy := proxy.NewProxy(zecTestnetNodeClient)
-	zecTestnetAPI := api.NewZecApi(btctypes.Testnet, zecTestnetProxy, cache, logger)
+	zecTestnetAPI := api.NewZecApi(btctypes.ZecTestnet, zecTestnetProxy, cache, logger)
 
 	// Initialize Ethereum API.
 	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")

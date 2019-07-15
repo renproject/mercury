@@ -42,11 +42,11 @@ func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) 
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script")
 	}
-	gwAddr, err := btcaddress.AddressFromScript(script, client.Chain(), client.Network())
+	gwAddr, err := btcaddress.AddressFromScript(script, client.Network())
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script address")
 	}
-	spenderAddr, err := btcaddress.AddressFromPubKey(spenderPubKey, client.Chain(), client.Network())
+	spenderAddr, err := btcaddress.AddressFromPubKey(spenderPubKey, client.Network())
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway spender address")
 	}
