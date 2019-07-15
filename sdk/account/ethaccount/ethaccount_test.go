@@ -20,7 +20,7 @@ var _ = Describe("eth account", func() {
 
 	Context("can sign", func() {
 
-		FIt("can create a random account", func() {
+		It("can create a random account", func() {
 			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
 			convertedAddr := ethtypes.AddressFromPublicKey(&account.PrivateKey().PublicKey)
