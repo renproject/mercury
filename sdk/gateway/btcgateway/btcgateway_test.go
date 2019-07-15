@@ -125,7 +125,7 @@ var _ = Describe("btc gateway", func() {
 			fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
 		})
 
-		FIt("should be able to generate a btc gateway", func() {
+		It("should be able to generate a zec gateway", func() {
 			client, err := btcclient.New(logger, btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 			key, err := loadTestAccounts(btctypes.ZecLocalnet).EcdsaKey(44, 1, 0, 0, 1)
@@ -135,8 +135,6 @@ var _ = Describe("btc gateway", func() {
 
 			// Transfer some funds to the gateway address
 			amount := 20000 * btctypes.ZAT
-
-			fmt.Println(account.Address())
 
 			// Fund tmUnCzkVXfEn1gbRA7BCUiyMNkb7tjJYuhQ if the following transfer fails with not enough balance.
 			txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
@@ -170,8 +168,8 @@ var _ = Describe("btc gateway", func() {
 			}
 			serializedPK := btcaddress.SerializePublicKey(&key.PublicKey, client.Network())
 			err = tx.InjectSignatures(sigs, serializedPK)
-
 			Expect(err).NotTo(HaveOccurred())
+
 			newTxHash, err := client.SubmitSignedTx(tx)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
