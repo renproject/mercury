@@ -275,7 +275,7 @@ func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Rec
 }
 
 func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
-	msgTx := zecutil.MsgTx{
+	msgTx := &zecutil.MsgTx{
 		MsgTx:        wire.NewMsgTx(ZecVersion),
 		ExpiryHeight: ZecExpiryHeight,
 	}
@@ -293,7 +293,7 @@ func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 		}
 		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
 	}
-	return btctx.NewUnsignedZecTx(network, utxos, &msgTx)
+	return btctx.NewUnsignedZecTx(network, utxos, msgTx)
 }
 
 func btcCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {

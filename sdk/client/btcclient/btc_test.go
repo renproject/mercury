@@ -69,21 +69,43 @@ var _ = Describe("btc client", func() {
 		go server.Run()
 	})
 
+	testCases := []struct {
+		Network btctypes.Network
+
+		TxHash       types.TxHash
+		Vout         uint32
+		ScriptPubKey string
+		Amount       btctypes.Amount
+	}{
+		{
+			btctypes.BtcLocalnet,
+			"bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c",
+			0,
+			"76a9142d2b683141de54613e7c6648afdb454fa3b4126d88ac",
+			100000,
+		},
+		{
+			btctypes.ZecLocalnet,
+			"e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65",
+			0,
+			"76a914d125189e1002f3f1c948e2e123dc2926db2efb5188ac",
+			30000000,
+		},
+	}
+
 	Context("when fetching UTXOs", func() {
-		It("should return the UTXO for a transaction with unspent outputs", func() {
-			client, err := New(logger, btctypes.BtcLocalnet)
-			Expect(err).NotTo(HaveOccurred())
-
-			txHash := types.TxHash("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c")
-			index := uint32(0)
-			utxo, err := client.UTXO(txHash, index)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(utxo.TxHash()).To(Equal(txHash))
-			Expect(utxo.Amount()).To(Equal(btctypes.Amount(100000)))
-			Expect(utxo.ScriptPubKey()).To(Equal("76a9142d2b683141de54613e7c6648afdb454fa3b4126d88ac"))
-			Expect(utxo.Vout()).To(Equal(index))
-		})
+		for _, testCase := range testCases {
+			It("should return the UTXO for a transaction with unspent outputs", func() {
+				client, err := New(logger, testCase.Network)
+				Expect(err).NotTo(HaveOccurred())
+				utxo, err := client.UTXO(testCase.TxHash, testCase.Vout)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(utxo.TxHash()).To(Equal(testCase.TxHash))
+				Expect(utxo.Amount()).To(Equal(testCase.Amount))
+				Expect(utxo.ScriptPubKey()).To(Equal(testCase.ScriptPubKey))
+				Expect(utxo.Vout()).To(Equal(testCase.Vout))
+			})
+		}
 
 		It("should return an error for an invalid UTXO index", func() {
 			client, err := New(logger, btctypes.BtcLocalnet)
@@ -186,15 +208,8 @@ var _ = Describe("btc client", func() {
 			txBytes, err := tx.Serialize()
 			Expect(err).NotTo(HaveOccurred())
 			serializedTx := hex.EncodeToString(txBytes)
-
-			// Validate serialized transaction. We expect it to be one of the following two due to some non-determinism
-			// with Golang maps in the recipient ordering. This can be removed if we stop relying on the
-			// `rpcclient.CreateRawTransaction` function.
-			expectedTxs := []string{
-				"0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff0208e80000000000001976a9142b075b01d5dd314a902357617ed67f16e4e0591388ac409c0000000000001976a914a4cfcb06f8f41446c9142a2c1f494014563aafd788ac00000000",
-				"0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a914a4cfcb06f8f41446c9142a2c1f494014563aafd788ac08e80000000000001976a9142b075b01d5dd314a902357617ed67f16e4e0591388ac00000000",
-			}
-			Expect(expectedTxs).To(ContainElement(serializedTx))
+			expectedTx := "0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff0208e80000000000001976a9142b075b01d5dd314a902357617ed67f16e4e0591388ac409c0000000000001976a914a4cfcb06f8f41446c9142a2c1f494014563aafd788ac00000000"
+			Expect(expectedTx).To(Equal(serializedTx))
 		})
 	})
 
@@ -214,7 +229,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for an invalid UTXO index", func() {
-			client, err := New(logger,btctypes.ZecLocalnet)
+			client, err := New(logger, btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65", 3)
@@ -222,7 +237,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for a UTXO that has been spent", func() {
-			client, err := New(logger,btctypes.ZecLocalnet)
+			client, err := New(logger, btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("d16e32d5e7b5442c8aaffe687ed0db7c2b4a7221a8607620902c06b214f8c4b1", 0)
@@ -230,7 +245,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for an invalid transaction hash", func() {
-			client, err := New(logger,btctypes.ZecLocalnet)
+			client, err := New(logger, btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("abcdefg", 0)
@@ -238,7 +253,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return an error for a non-existent transaction hash", func() {
-			client, err := New(logger,btctypes.ZecLocalnet)
+			client, err := New(logger, btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = client.UTXO("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0)
@@ -246,7 +261,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return a non-zero number of UTXOs for a funded address that has been imported", func() {
-			client, err := New(logger,btctypes.ZecLocalnet)
+			client, err := New(logger, btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 			address, err := loadTestAccounts(btctypes.ZecLocalnet).ZECAddress(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
@@ -257,7 +272,7 @@ var _ = Describe("btc client", func() {
 		})
 
 		It("should return zero UTXOs for a randomly generated address", func() {
-			client, err := New(logger,btctypes.ZecLocalnet)
+			client, err := New(logger, btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 			address, err := testutil.RandomZECAddress(btctypes.ZecLocalnet)
 			Expect(err).NotTo(HaveOccurred())
@@ -265,22 +280,6 @@ var _ = Describe("btc client", func() {
 			utxos, err := client.UTXOsFromAddress(address)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(utxos)).Should(Equal(0))
-		})
-	})
-
-	Context("when building a utx", func() {
-		PIt("should have the correct inputs", func() {
-			// TODO: write the test
-		})
-
-		PIt("should have the correct outputs", func() {
-			// TODO: write the test
-		})
-	})
-
-	Context("when submitting stx to bitcoin", func() {
-		PIt("should be able to submit a stx", func() {
-			// TODO: write the test
 		})
 	})
 })

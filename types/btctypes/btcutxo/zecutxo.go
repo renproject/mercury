@@ -54,16 +54,12 @@ func (u StandardZecUTXO) Vout() uint32 {
 	return u.vout
 }
 
-func (u StandardZecUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	tx := new(zecutil.MsgTx)
-	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
-		return nil, err
-	}
+func (u StandardZecUTXO) SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error) {
 	scriptPubKey, err := hex.DecodeString(u.scriptPubKey)
 	if err != nil {
 		return nil, err
 	}
-	return calcSignatureHash(scriptPubKey, hashType, tx, idx, u.amount)
+	return calcSignatureHash(scriptPubKey, hashType, tx.(ZecMsgTx).MsgTx, idx, u.amount)
 }
 
 func (StandardZecUTXO) AddData(*txscript.ScriptBuilder) {
@@ -92,16 +88,23 @@ func (u ScriptZecUTXO) Vout() uint32 {
 	return u.vout
 }
 
-func (u ScriptZecUTXO) SigHash(hashType txscript.SigHashType, txBytes []byte, idx int) ([]byte, error) {
-	tx := new(zecutil.MsgTx)
-	if err := tx.Deserialize(bytes.NewBuffer(txBytes)); err != nil {
-		return nil, err
-	}
-	return calcSignatureHash(u.Script, hashType, tx, idx, u.amount)
+func (u ScriptZecUTXO) SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error) {
+	return calcSignatureHash(u.Script, hashType, tx.(ZecMsgTx).MsgTx, idx, u.amount)
 }
 
 func (u ScriptZecUTXO) AddData(builder *txscript.ScriptBuilder) {
 	u.UpdateSigScript(builder)
+}
+
+type ZecMsgTx struct {
+	*zecutil.MsgTx
+}
+
+func (ZecMsgTx) IsMsgTx() {
+}
+
+func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
+	return ZecMsgTx{msgTx}
 }
 
 type upgradeParam struct {
