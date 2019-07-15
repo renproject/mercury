@@ -16,6 +16,7 @@ import (
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc/btcrpc"
+	"github.com/renproject/mercury/rpc/zecrpc"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/testutil/btcaccount"
@@ -33,14 +34,26 @@ var _ = Describe("btc gateway", func() {
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
-		wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
-		Expect(err).NotTo(HaveOccurred())
-		return wallet
+		switch network.Chain() {
+		case types.Bitcoin:
+			wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
+			Expect(err).NotTo(HaveOccurred())
+			return wallet
+		case types.ZCash:
+			wallet, err := testutil.LoadHdWalletFromEnv("ZEC_TEST_MNEMONIC", "ZEC_TEST_PASSPHRASE", network)
+			Expect(err).NotTo(HaveOccurred())
+			return wallet
+		default:
+			panic(types.ErrUnknownChain)
+		}
 	}
 
 	BeforeSuite(func() {
-		store := kv.NewJSON(kv.NewMemDB())
-		cache := cache.New(store, logger)
+		btcStore := kv.NewJSON(kv.NewMemDB())
+		btcCache := cache.New(btcStore, logger)
+
+		zecStore := kv.NewJSON(kv.NewMemDB())
+		zecCache := cache.New(zecStore, logger)
 
 		btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
 		btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USERNAME")
@@ -48,17 +61,24 @@ var _ = Describe("btc gateway", func() {
 		btcTestnetNodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 		Expect(err).ToNot(HaveOccurred())
 
-		btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
-		btcTestnetAPI := api.NewBtcApi(btctypes.Testnet, btcTestnetProxy, cache, logger)
-		server := api.NewServer(logger, "5000", btcTestnetAPI)
+		zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
+		zecTestnetUser := os.Getenv("ZCASH_TESTNET_RPC_USERNAME")
+		zecTestnetPassword := os.Getenv("ZCASH_TESTNET_RPC_PASSWORD")
+		zecTestnetNodeClient, err := zecrpc.NewNodeClient(zecTestnetURL, zecTestnetUser, zecTestnetPassword)
+		Expect(err).ToNot(HaveOccurred())
+
+		btcTestnetAPI := api.NewBtcApi(btctypes.BtcTestnet, proxy.NewProxy(btcTestnetNodeClient), btcCache, logger)
+		zecTestnetAPI := api.NewZecApi(btctypes.ZecTestnet, proxy.NewProxy(zecTestnetNodeClient), zecCache, logger)
+
+		server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI)
 		go server.Run()
 	})
 
 	Context("when generating gateways", func() {
-		It("should be able to generate a gateway", func() {
-			client, err := btcclient.New(logger, btctypes.Localnet)
+		It("should be able to generate a btc gateway", func() {
+			client, err := btcclient.New(logger, btctypes.BtcLocalnet)
 			Expect(err).NotTo(HaveOccurred())
-			key, err := loadTestAccounts(btctypes.Localnet).EcdsaKey(44, 1, 0, 0, 1)
+			key, err := loadTestAccounts(btctypes.BtcLocalnet).EcdsaKey(44, 1, 0, 0, 1)
 			gateway := New(client, &key.PublicKey, []byte{})
 			account, err := btcaccount.NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
@@ -67,6 +87,58 @@ var _ = Describe("btc gateway", func() {
 			amount := 20000 * btctypes.SAT
 
 			// Fund mjSUANWKvokgHo6mxoHdq27aBgdCJ39uNA if the following transfer fails with not enough balance.
+			txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
+			// Sleep for a small period of time in hopes that the transaction will go through
+			time.Sleep(5 * time.Second)
+
+			// Fetch the UTXOs for the transaction hash
+			gatewayUTXO, err := gateway.UTXO(txHash, 1)
+			Expect(err).NotTo(HaveOccurred())
+			// fmt.Printf("utxo: %v", gatewayUTXO)
+			gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
+			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
+			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
+			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
+			fmt.Printf("gas amount=%v", gasAmount)
+			recipients := btcaddress.Recipients{{
+				Address: account.Address(),
+				Amount:  gatewayUTXOs.Sum() - gasAmount,
+			}}
+			tx, err := client.BuildUnsignedTx(gatewayUTXOs, recipients, account.Address(), gasAmount)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Sign the transaction
+			subScripts := tx.SignatureHashes()
+			sigs := make([]*btcec.Signature, len(subScripts))
+			for i, subScript := range subScripts {
+				sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			serializedPK := btcaddress.SerializePublicKey(&key.PublicKey, client.Network())
+			err = tx.InjectSignatures(sigs, serializedPK)
+
+			Expect(err).NotTo(HaveOccurred())
+			newTxHash, err := client.SubmitSignedTx(tx)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
+		})
+
+		FIt("should be able to generate a btc gateway", func() {
+			client, err := btcclient.New(logger, btctypes.ZecLocalnet)
+			Expect(err).NotTo(HaveOccurred())
+			key, err := loadTestAccounts(btctypes.ZecLocalnet).EcdsaKey(44, 1, 0, 0, 1)
+			gateway := New(client, &key.PublicKey, []byte{})
+			account, err := btcaccount.NewAccount(client, key)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Transfer some funds to the gateway address
+			amount := 20000 * btctypes.ZAT
+
+			fmt.Println(account.Address())
+
+			// Fund tmUnCzkVXfEn1gbRA7BCUiyMNkb7tjJYuhQ if the following transfer fails with not enough balance.
 			txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
