@@ -34,8 +34,14 @@ type Tx struct {
 	signed  bool
 }
 
-func (tx *Tx) Hash() Hash {
-	return Hash(tx.tx.Hash())
+type TxHash common.Hash
+
+func NewTxHashFromHex(hexString string) TxHash {
+	return TxHash(common.HexToHash(hexString))
+}
+
+func (tx *Tx) Hash() TxHash {
+	return TxHash(tx.tx.Hash())
 }
 
 func (tx *Tx) IsSigned() bool {
@@ -72,7 +78,6 @@ func NewUnsignedTx(chainID *big.Int, nonce uint64, to Address, value Amount, gas
 }
 
 type Address common.Address
-type Hash common.Hash
 
 func AddressFromPublicKey(publicKeyECDSA *ecdsa.PublicKey) Address {
 	address := crypto.PubkeyToAddress(*publicKeyECDSA)

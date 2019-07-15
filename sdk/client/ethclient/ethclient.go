@@ -20,8 +20,9 @@ type Client interface {
 	SuggestGasPrice(context.Context, types.TxSpeed) ethtypes.Amount
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
-	PublishSignedTx(context.Context, ethtypes.Tx) error
+	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
+	Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error)
 }
 
 type client struct {
@@ -107,12 +108,25 @@ func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress et
 }
 
 // PublishSTX publishes a signed transaction
-func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) error {
+func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) (ethtypes.TxHash, error) {
 	// Pre-condition checks
 	if !tx.IsSigned() {
 		panic("pre-condition violation: cannot publish unsigned transaction")
 	}
-	return c.client.SendTransaction(ctx, tx.ToTransaction())
+	return tx.Hash(), c.client.SendTransaction(ctx, tx.ToTransaction())
+}
+
+func (c *client) Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error) {
+	currentBlockNumber, err := c.BlockNumber(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching current block number: %v", err)
+	}
+	receipt, err := c.client.TransactionReceipt(ctx, common.Hash(hash))
+	if err != nil {
+		return nil, fmt.Errorf("error fetching tx hash=%v receipt: %v", hash, err)
+	}
+	confs := big.NewInt(0).Sub(currentBlockNumber, receipt.BlockNumber)
+	return confs, nil
 }
 
 // BlockNumber returns the gas limit of the latest block.
