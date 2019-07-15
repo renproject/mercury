@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
@@ -26,9 +27,9 @@ type Recipients []Recipient
 // SerializePublicKey serializes the public key to bytes.
 func SerializePublicKey(pubkey *ecdsa.PublicKey, network btctypes.Network) []byte {
 	switch network {
-	case btctypes.Mainnet:
+	case btctypes.BtcMainnet, btctypes.ZecMainnet:
 		return (*btcec.PublicKey)(pubkey).SerializeCompressed()
-	case btctypes.Testnet, btctypes.Localnet:
+	case btctypes.BtcTestnet, btctypes.BtcLocalnet, btctypes.ZecTestnet, btctypes.ZecLocalnet:
 		return (*btcec.PublicKey)(pubkey).SerializeUncompressed()
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -36,45 +37,57 @@ func SerializePublicKey(pubkey *ecdsa.PublicKey, network btctypes.Network) []byt
 }
 
 // AddressFromBase58 decodes the base58 encoded address to an `Address`.
-func AddressFromBase58(addr string, chain btctypes.Chain, network btctypes.Network) (Address, error) {
-	switch chain {
-	case btctypes.Bitcoin:
+func AddressFromBase58(addr string, network btctypes.Network) (Address, error) {
+	switch network.Chain() {
+	case types.Bitcoin:
 		return btcutil.DecodeAddress(addr, network.Params())
-	case btctypes.ZCash:
+	case types.ZCash:
 		return zecutil.DecodeAddress(addr, network.Params().Name)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %v", chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
 }
 
 // AddressFromPubKey gets the `Address` from a public key.
-func AddressFromPubKey(pubkey *ecdsa.PublicKey, chain btctypes.Chain, network btctypes.Network) (Address, error) {
-	switch chain {
-	case btctypes.Bitcoin:
+func AddressFromPubKey(pubkey *ecdsa.PublicKey, network btctypes.Network) (Address, error) {
+	switch network.Chain() {
+	case types.Bitcoin:
 		addr, err := btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
 		if err != nil {
 			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
 		}
 		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
-	case btctypes.ZCash:
+	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %v", chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
 }
 
 // AddressFromScript gets the `Address` from a script.
-func AddressFromScript(script []byte, chain btctypes.Chain, network btctypes.Network) (Address, error) {
-	switch chain {
-	case btctypes.Bitcoin:
+func AddressFromScript(script []byte, network btctypes.Network) (Address, error) {
+	switch network.Chain() {
+	case types.Bitcoin:
 		addr, err := btcutil.NewAddressScriptHash(script, network.Params())
 		if err != nil {
 			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
 		}
 		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
-	case btctypes.ZCash:
+	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
 	default:
-		return nil, fmt.Errorf("unsupported blockchain: %v", chain)
+		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
+	}
+}
+
+// PayToAddrScript gets the PayToAddrScript for an address on the given blockchain
+func PayToAddrScript(address Address, network btctypes.Network) ([]byte, error) {
+	switch network.Chain() {
+	case types.Bitcoin:
+		return txscript.PayToAddrScript(address)
+	case types.ZCash:
+		return zecutil.PayToAddrScript(address)
+	default:
+		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
 }
