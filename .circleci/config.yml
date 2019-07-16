@@ -36,6 +36,7 @@ jobs:
             CI=true /go/bin/ginkgo -v --race --cover --coverprofile coverprofile.out ./...
             /go/bin/covermerge \
               sdk/client/coverprofile.out \
+              sdk/gateway/btcgateway/coverprofile.out \
               sdk/client/btcclient/coverprofile.out \
               sdk/client/ethclient/coverprofile.out > coverprofile.out
             goveralls -coverprofile=coverprofile.out -service=circleci
