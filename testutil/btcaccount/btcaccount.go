@@ -41,7 +41,7 @@ func NewAccount(client btcclient.Client, key *ecdsa.PrivateKey) (Account, error)
 	if key == nil {
 		panic("cannot create account with nil key")
 	}
-	address, err := btcaddress.AddressFromPubKey(&key.PublicKey, client.Network())
+	address, err := btcaddress.AddressFromPubKey(key.PublicKey, client.Network())
 	if err != nil {
 		return &account{}, err
 	}

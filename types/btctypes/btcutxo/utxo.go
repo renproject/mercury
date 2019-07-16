@@ -2,10 +2,21 @@ package btcutxo
 
 import (
 	"fmt"
+	"io"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
+)
+
+const (
+	BtcVersion = 2
+
+	ZecExpiryHeight = uint32(10000000)
+	ZecVersion      = 4
 )
 
 type UTXO interface {
@@ -42,18 +53,22 @@ func NewStandardUTXO(chain types.Chain, txhash types.TxHash, amount btctypes.Amo
 	switch chain {
 	case types.Bitcoin:
 		return StandardBtcUTXO{
-			txhash,
+			outPoint{
+				txhash,
+				vout,
+			},
 			amount,
 			scriptPubKey,
-			vout,
 			confirmations,
 		}
 	case types.ZCash:
 		return StandardZecUTXO{
-			txhash,
+			outPoint{
+				txhash,
+				vout,
+			},
 			amount,
 			scriptPubKey,
-			vout,
 			confirmations,
 		}
 	default:
@@ -81,5 +96,49 @@ func NewScriptUTXO(utxo UTXO, script []byte, updateSigScript func(builder *txscr
 }
 
 type MsgTx interface {
-	IsMsgTx()
+	Serialize(buffer io.Writer) error
+	TxHash() chainhash.Hash
+	InCount() int
+	AddTxIn(txIn *wire.TxIn)
+	AddTxOut(txOut *wire.TxOut)
+	AddSigScript(i int, sigScript []byte)
+}
+
+type OutPoint interface {
+	TxHash() types.TxHash
+	Vout() uint32
+}
+
+type outPoint struct {
+	txHash types.TxHash
+	vout   uint32
+}
+
+func NewOutPoint(txHash types.TxHash, vout uint32) OutPoint {
+	return outPoint{
+		txHash: txHash,
+		vout:   vout,
+	}
+}
+
+func (op outPoint) TxHash() types.TxHash {
+	return op.txHash
+}
+
+func (op outPoint) Vout() uint32 {
+	return op.vout
+}
+
+func NewMsgTx(network btctypes.Network) MsgTx {
+	switch network.Chain() {
+	case types.Bitcoin:
+		return NewBtcMsgTx(wire.NewMsgTx(BtcVersion))
+	case types.ZCash:
+		return NewZecMsgTx(&zecutil.MsgTx{
+			MsgTx:        wire.NewMsgTx(ZecVersion),
+			ExpiryHeight: ZecExpiryHeight,
+		})
+	default:
+		panic(types.ErrUnknownChain)
+	}
 }

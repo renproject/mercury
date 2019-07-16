@@ -18,7 +18,7 @@ import (
 var _ = Describe("eth account", func() {
 	logger := logrus.StandardLogger()
 
-	Context("can sign", func() {
+	XContext("can sign", func() {
 
 		It("can create a random account", func() {
 			account, err := RandomAccount(Client)
@@ -96,38 +96,38 @@ var _ = Describe("eth account", func() {
 			fmt.Printf("balance of %v: %v", acc.Address().Hex(), bal)
 		})
 
-		It("can send kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")
-			Expect(err).NotTo(HaveOccurred())
-			mnemonic := os.Getenv("MNEMONIC_KOVAN")
-			path := "m/44'/60'/0'/0/0"
-			acc, err := NewAccountFromMnemonic(kovanClient, mnemonic, path)
-			Expect(err).NotTo(HaveOccurred())
-			ctx := context.Background()
-			amount := ethtypes.Ether(1)
-			gasLimit := uint64(30000)
-			gasPrice := kovanClient.SuggestGasPrice(ctx, types.Standard)
-			addr := ethtypes.AddressFromHex("0xdF9dEfE40a4E3B2CfF85b51CfcBf87876C7Af902")
-			bal, err := kovanClient.Balance(ctx, addr)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("original balance: %v", bal)
-			// Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
-			var data []byte
-			tx, err := acc.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
-			fmt.Println(tx.Hash())
-			Expect(err).NotTo(HaveOccurred())
-			err = acc.SignUnsignedTx(ctx, &tx)
-			fmt.Println(tx.Hash())
-			Expect(err).NotTo(HaveOccurred())
-			_, err = kovanClient.PublishSignedTx(ctx, tx)
-			Expect(err).NotTo(HaveOccurred())
-			// check new balance
-			newBal, err := kovanClient.Balance(ctx, addr)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("new balance: %v", newBal)
-			fmt.Printf("total balance: %v", bal.Add(amount))
-			// Expect(newBal.Eq(bal.Add(amount))).Should(BeTrue())
-		})
+		// It("can send kovan funds", func() {
+		// 	kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	mnemonic := os.Getenv("MNEMONIC_KOVAN")
+		// 	path := "m/44'/60'/0'/0/0"
+		// 	acc, err := NewAccountFromMnemonic(kovanClient, mnemonic, path)
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	ctx := context.Background()
+		// 	amount := ethtypes.Ether(1)
+		// 	gasLimit := uint64(30000)
+		// 	gasPrice := kovanClient.SuggestGasPrice(ctx, types.Standard)
+		// 	addr := ethtypes.AddressFromHex("0xdF9dEfE40a4E3B2CfF85b51CfcBf87876C7Af902")
+		// 	bal, err := kovanClient.Balance(ctx, addr)
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	fmt.Printf("original balance: %v", bal)
+		// 	// Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
+		// 	var data []byte
+		// 	tx, err := acc.BuildUnsignedTx(ctx, addr, amount, gasLimit, gasPrice, data)
+		// 	fmt.Println(tx.Hash())
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	err = acc.SignUnsignedTx(ctx, &tx)
+		// 	fmt.Println(tx.Hash())
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	_, err = kovanClient.PublishSignedTx(ctx, tx)
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	// check new balance
+		// 	newBal, err := kovanClient.Balance(ctx, addr)
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	fmt.Printf("new balance: %v", newBal)
+		// 	fmt.Printf("total balance: %v", bal.Add(amount))
+		// 	// Expect(newBal.Eq(bal.Add(amount))).Should(BeTrue())
+		// })
 
 	})
 

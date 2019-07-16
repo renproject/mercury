@@ -61,7 +61,7 @@ func (hdkey HdKey) Address(path ...uint32) (btcaddress.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, hdkey.network)
+	return btcaddress.AddressFromPubKey(key.PublicKey, hdkey.network)
 }
 
 func RandomAddress(network btctypes.Network) (btcaddress.Address, error) {
@@ -69,7 +69,7 @@ func RandomAddress(network btctypes.Network) (btcaddress.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(&key.PublicKey, network)
+	return btcaddress.AddressFromPubKey(key.PublicKey, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.

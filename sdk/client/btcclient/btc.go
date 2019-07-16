@@ -13,7 +13,6 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/rpcclient"
 	"github.com/renproject/mercury/rpcclient/btcrpcclient"
 	"github.com/renproject/mercury/types"
@@ -25,10 +24,7 @@ import (
 )
 
 const (
-	Dust            = btctypes.Amount(600)
-	ZecExpiryHeight = uint32(10000000)
-	ZecVersion      = 4
-	BtcVersion      = 2
+	Dust = btctypes.Amount(600)
 )
 
 var (
@@ -90,17 +86,17 @@ func (c *client) Network() btctypes.Network {
 }
 
 // UTXO returns the UTXO for the given transaction hash and index.
-func (c *client) UTXO(txHash types.TxHash, index uint32) (btcutxo.UTXO, error) {
-	if len(txHash) != 64 {
+func (c *client) UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error) {
+	if len(op.TxHash()) != 64 {
 		return nil, ErrInvalidTxHash
 	}
 
-	tx, err := c.client.GetRawTransactionVerbose(string(txHash))
+	tx, err := c.client.GetRawTransactionVerbose(string(op.TxHash()))
 	if err != nil {
 		return nil, ErrTxHashNotFound
 	}
 
-	txOut, err := c.client.GetTxOut(string(txHash), index)
+	txOut, err := c.client.GetTxOut(string(op.TxHash()), op.Vout())
 	if err != nil {
 		if err == rpcclient.ErrNullResult {
 			return nil, ErrUTXOSpent
@@ -117,7 +113,7 @@ func (c *client) UTXO(txHash types.TxHash, index uint32) (btcutxo.UTXO, error) {
 		types.TxHash(tx.TxID),
 		btctypes.Amount(amount),
 		txOut.ScriptPubKey.Hex,
-		index,
+		op.Vout(),
 		types.Confirmations(txOut.Confirmations),
 	), nil
 }
@@ -185,12 +181,7 @@ func (c *client) BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Reci
 	// Add an output to refund the difference between the amount being transferred to recipients and the total amount
 	// from the UTXOs.
 	if amountToRefund > 0 {
-		recipients = append(btcaddress.Recipients{
-			{
-				Address: refundTo,
-				Amount:  amountToRefund,
-			},
-		}, recipients...)
+		recipients = append(recipients, btcaddress.NewRecipient(refundTo, amountToRefund))
 	}
 
 	// Get the signature hashes we need to sign.
@@ -264,21 +255,8 @@ func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSiz
 }
 
 func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
-	switch c.network.Chain() {
-	case types.Bitcoin:
-		return btcCreateUnsignedTx(c.network, utxos, recipients)
-	case types.ZCash:
-		return zecCreateUnsignedTx(c.network, utxos, recipients)
-	default:
-		return nil, fmt.Errorf("unsupported blockchain: %v", c.network.Chain())
-	}
-}
-
-func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
-	msgTx := &zecutil.MsgTx{
-		MsgTx:        wire.NewMsgTx(ZecVersion),
-		ExpiryHeight: ZecExpiryHeight,
-	}
+	recipientIndices := map[btcaddress.Address]uint32{}
+	msgTx := btcutxo.NewMsgTx(c.network)
 	for _, utxo := range utxos {
 		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
 		if err != nil {
@@ -286,31 +264,13 @@ func zecCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipien
 		}
 		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
 	}
-	for _, recipient := range recipients {
-		script, err := btcaddress.PayToAddrScript(recipient.Address, network)
+	for i, recipient := range recipients {
+		script, err := btcaddress.PayToAddrScript(recipient.Address, c.network)
 		if err != nil {
 			return nil, err
 		}
 		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
+		recipientIndices[recipient.Address] = uint32(i)
 	}
-	return btctx.NewUnsignedZecTx(network, utxos, msgTx)
-}
-
-func btcCreateUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
-	msgTx := wire.NewMsgTx(BtcVersion)
-	for _, utxo := range utxos {
-		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
-		if err != nil {
-			return nil, err
-		}
-		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
-	}
-	for _, recipient := range recipients {
-		script, err := btcaddress.PayToAddrScript(recipient.Address, network)
-		if err != nil {
-			return nil, err
-		}
-		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
-	}
-	return btctx.NewUnsignedBtcTx(network, utxos, msgTx)
+	return btctx.NewUnsignedTx(c.network, utxos, msgTx, recipientIndices)
 }

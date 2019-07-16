@@ -22,15 +22,20 @@ type Recipient struct {
 	Amount  btctypes.Amount
 }
 
+// NewRecipient creates a new recipient
+func NewRecipient(address Address, amount btctypes.Amount) Recipient {
+	return Recipient{address, amount}
+}
+
 type Recipients []Recipient
 
 // SerializePublicKey serializes the public key to bytes.
-func SerializePublicKey(pubkey *ecdsa.PublicKey, network btctypes.Network) []byte {
+func SerializePublicKey(pubkey ecdsa.PublicKey, network btctypes.Network) []byte {
 	switch network {
 	case btctypes.BtcMainnet, btctypes.ZecMainnet:
-		return (*btcec.PublicKey)(pubkey).SerializeCompressed()
+		return (*btcec.PublicKey)(&pubkey).SerializeCompressed()
 	case btctypes.BtcTestnet, btctypes.BtcLocalnet, btctypes.ZecTestnet, btctypes.ZecLocalnet:
-		return (*btcec.PublicKey)(pubkey).SerializeUncompressed()
+		return (*btcec.PublicKey)(&pubkey).SerializeUncompressed()
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
@@ -49,7 +54,7 @@ func AddressFromBase58(addr string, network btctypes.Network) (Address, error) {
 }
 
 // AddressFromPubKey gets the `Address` from a public key.
-func AddressFromPubKey(pubkey *ecdsa.PublicKey, network btctypes.Network) (Address, error) {
+func AddressFromPubKey(pubkey ecdsa.PublicKey, network btctypes.Network) (Address, error) {
 	switch network.Chain() {
 	case types.Bitcoin:
 		addr, err := btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())

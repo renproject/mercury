@@ -48,7 +48,7 @@ var _ = Describe("btc types ", func() {
 				test := func() bool {
 					randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 					Expect(err).NotTo(HaveOccurred())
-					address, err := btcaddress.AddressFromPubKey(&randKey.PublicKey, network)
+					address, err := btcaddress.AddressFromPubKey(randKey.PublicKey, network)
 					if network == BtcMainnet {
 						return strings.HasPrefix(address.EncodeAddress(), "1")
 					} else {

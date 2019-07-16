@@ -39,15 +39,11 @@ var _ = Describe("btc client", func() {
 	testCases := []struct {
 		Network btctypes.Network
 
-		// Unspent UTXO
-		UnspentTxHash types.TxHash
-		UnspentVout   uint32
-
-		// Spent UTXO
-		SpentTxHash types.TxHash
-		SpentVout   uint32
-
-		NonExistentTxHash types.TxHash
+		UnspentOutPoint           btcutxo.OutPoint
+		InvalidOutPoint           btcutxo.OutPoint
+		SpentOutPoint             btcutxo.OutPoint
+		InvalidTxHashOutPoint     btcutxo.OutPoint
+		NonExistentTxHashOutPoint btcutxo.OutPoint
 
 		ScriptPubKey string
 		Amount       btctypes.Amount
@@ -56,25 +52,25 @@ var _ = Describe("btc client", func() {
 	}{
 		{
 			btctypes.BtcTestnet,
-			"bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c",
-			0,
-			"7e65d34373491653934d32cc992211b14b9e0e80d4bb9380e97aaa05fa872df5",
-			0,
-			"4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1",
+			btcutxo.NewOutPoint("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c", 0),
+			btcutxo.NewOutPoint("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c", 10),
+			btcutxo.NewOutPoint("7e65d34373491653934d32cc992211b14b9e0e80d4bb9380e97aaa05fa872df5", 0),
+			btcutxo.NewOutPoint("abcdefg", 0),
+			btcutxo.NewOutPoint("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0),
 			"76a9142d2b683141de54613e7c6648afdb454fa3b4126d88ac",
 			100000,
-			"0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff0208e80000000000001976a9142b075b01d5dd314a902357617ed67f16e4e0591388ac409c0000000000001976a914a4cfcb06f8f41446c9142a2c1f494014563aafd788ac00000000",
+			"0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a914a4cfcb06f8f41446c9142a2c1f494014563aafd788ac08e80000000000001976a9142b075b01d5dd314a902357617ed67f16e4e0591388ac00000000",
 		},
 		{
 			btctypes.ZecTestnet,
-			"41ec71582bc44fb9abc2c5d2009d1352e7df118def521b3b17c5bff86e5cfb46",
-			1,
-			"e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65",
-			0,
-			"4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1",
+			btcutxo.NewOutPoint("41ec71582bc44fb9abc2c5d2009d1352e7df118def521b3b17c5bff86e5cfb46", 1),
+			btcutxo.NewOutPoint("41ec71582bc44fb9abc2c5d2009d1352e7df118def521b3b17c5bff86e5cfb46", 10),
+			btcutxo.NewOutPoint("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65", 0),
+			btcutxo.NewOutPoint("abcdefg", 0),
+			btcutxo.NewOutPoint("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0),
 			"76a9143735df7c4d831491ce9dc462e6f606f6faffb5ca88ac",
 			100000000,
-			"0400008085202f8902b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff0208e80000000000001976a914d125189e1002f3f1c948e2e123dc2926db2efb5188ac409c0000000000001976a9143735df7c4d831491ce9dc462e6f606f6faffb5ca88ac00000000809698000000000000000000000000",
+			"0400008085202f8902b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a9143735df7c4d831491ce9dc462e6f606f6faffb5ca88ac08e80000000000001976a914d125189e1002f3f1c948e2e123dc2926db2efb5188ac00000000809698000000000000000000000000",
 		},
 	}
 
@@ -119,19 +115,19 @@ var _ = Describe("btc client", func() {
 			It("should return the UTXO for a transaction with unspent outputs", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
-				utxo, err := client.UTXO(testCase.UnspentTxHash, testCase.UnspentVout)
+				utxo, err := client.UTXO(testCase.UnspentOutPoint)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(utxo.TxHash()).To(Equal(testCase.UnspentTxHash))
+				Expect(utxo.TxHash()).To(Equal(testCase.UnspentOutPoint.TxHash()))
 				Expect(utxo.Amount()).To(Equal(testCase.Amount))
 				Expect(utxo.ScriptPubKey()).To(Equal(testCase.ScriptPubKey))
-				Expect(utxo.Vout()).To(Equal(testCase.UnspentVout))
+				Expect(utxo.Vout()).To(Equal(testCase.UnspentOutPoint.Vout()))
 			})
 
 			It("should return an error for an invalid UTXO index", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO(testCase.UnspentTxHash, 10)
+				_, err = client.UTXO(testCase.InvalidOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
@@ -139,7 +135,7 @@ var _ = Describe("btc client", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO(testCase.SpentTxHash, testCase.SpentVout)
+				_, err = client.UTXO(testCase.SpentOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
@@ -147,7 +143,7 @@ var _ = Describe("btc client", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO("abcdefg", 0)
+				_, err = client.UTXO(testCase.InvalidTxHashOutPoint)
 				Expect(err).To(Equal(ErrInvalidTxHash))
 			})
 
@@ -155,7 +151,7 @@ var _ = Describe("btc client", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO(testCase.NonExistentTxHash, 0)
+				_, err = client.UTXO(testCase.NonExistentTxHashOutPoint)
 				Expect(err).To(Equal(ErrTxHashNotFound))
 			})
 

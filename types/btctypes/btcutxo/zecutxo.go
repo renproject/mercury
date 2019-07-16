@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"math"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -17,19 +18,20 @@ import (
 )
 
 type StandardZecUTXO struct {
-	txHash        types.TxHash
+	outPoint
 	amount        btctypes.Amount
 	scriptPubKey  string
-	vout          uint32
 	confirmations types.Confirmations
 }
 
 func NewStandardZecUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) StandardZecUTXO {
 	return StandardZecUTXO{
-		txHash:        txHash,
+		outPoint: outPoint{
+			txHash: txHash,
+			vout:   vout,
+		},
 		amount:        amount,
 		scriptPubKey:  scriptPubKey,
-		vout:          vout,
 		confirmations: confirmations,
 	}
 }
@@ -100,7 +102,16 @@ type ZecMsgTx struct {
 	*zecutil.MsgTx
 }
 
-func (ZecMsgTx) IsMsgTx() {
+func (msgTx ZecMsgTx) Serialize(buf io.Writer) error {
+	return msgTx.ZecEncode(buf, 0, wire.BaseEncoding)
+}
+
+func (msgTx ZecMsgTx) InCount() int {
+	return len(msgTx.TxIn)
+}
+
+func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
+	msgTx.TxIn[i].SignatureScript = sigScript
 }
 
 func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {

@@ -10,19 +10,20 @@ import (
 )
 
 type StandardBtcUTXO struct {
-	txHash        types.TxHash
+	outPoint
 	amount        btctypes.Amount
 	scriptPubKey  string
-	vout          uint32
 	confirmations types.Confirmations
 }
 
 func NewStandardBtcUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) StandardBtcUTXO {
 	return StandardBtcUTXO{
-		txHash:        txHash,
+		outPoint: outPoint{
+			txHash: txHash,
+			vout:   vout,
+		},
 		amount:        amount,
 		scriptPubKey:  scriptPubKey,
-		vout:          vout,
 		confirmations: confirmations,
 	}
 }
@@ -97,5 +98,10 @@ func NewBtcMsgTx(msgTx *wire.MsgTx) BtcMsgTx {
 	return BtcMsgTx{msgTx}
 }
 
-func (BtcMsgTx) IsMsgTx() {
+func (msgTx BtcMsgTx) InCount() int {
+	return len(msgTx.TxIn)
+}
+
+func (msgTx BtcMsgTx) AddSigScript(i int, sigScript []byte) {
+	msgTx.TxIn[i].SignatureScript = sigScript
 }

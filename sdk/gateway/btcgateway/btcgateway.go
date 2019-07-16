@@ -6,14 +6,13 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/sdk/client/btcclient"
-	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes/btcaddress"
 	"github.com/renproject/mercury/types/btctypes/btcutxo"
 )
 
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
-	UTXO(hash types.TxHash, i uint32) (btcutxo.UTXO, error)
+	UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error)
 	Address() btcaddress.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
 	Script() []byte
@@ -27,7 +26,7 @@ type gateway struct {
 }
 
 // New returns a new Gateway
-func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) Gateway {
+func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) Gateway {
 	pubKeyBytes := btcaddress.SerializePublicKey(spenderPubKey, client.Network())
 	pubKeyHash160 := btcutil.Hash160(pubKeyBytes)
 	b := txscript.NewScriptBuilder()
@@ -58,8 +57,8 @@ func New(client btcclient.Client, spenderPubKey *ecdsa.PublicKey, ghash []byte) 
 	}
 }
 
-func (gw *gateway) UTXO(hash types.TxHash, i uint32) (btcutxo.UTXO, error) {
-	utxo, err := gw.client.UTXO(hash, i)
+func (gw *gateway) UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error) {
+	utxo, err := gw.client.UTXO(op)
 	if err != nil {
 		return nil, err
 	}

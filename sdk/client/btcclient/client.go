@@ -12,7 +12,7 @@ import (
 
 type Client interface {
 	Network() btctypes.Network
-	UTXO(txHash types.TxHash, index uint32) (btcutxo.UTXO, error)
+	UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error)
 	UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, error)
 	Confirmations(txHash types.TxHash) (types.Confirmations, error)
 	BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients, refundTo btcaddress.Address, gas btctypes.Amount) (btctx.BtcTx, error)
