@@ -17,22 +17,24 @@ import (
 )
 
 var _ = Describe("eth client", func() {
+	var localClient Client
 	var client Client
 	var err error
 	logger := logrus.StandardLogger()
 
 	BeforeSuite(func() {
-		client, err = NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+		localClient, err = NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:%v", os.Getenv("GANACHE_PORT")))
+		Expect(err).NotTo(HaveOccurred())
+		client, err = NewCustomClient(logger, fmt.Sprintf("http://127.0.0.1:5000/eth/testnet"))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("when fetching confirmations", func() {
 		It("can fetch the confirmations of a Kovan transaction", func() {
-			kovanClient, err := New(logger, ethtypes.Kovan)
 			Expect(err).NotTo(HaveOccurred())
 			hash := ethtypes.NewTxHashFromHex("0x288a0fe0cb305195bac6fefa6b16df576f0180c229fe5b4a453d57b0dcb42673")
 			ctx := context.Background()
-			confs, err := kovanClient.Confirmations(ctx, hash)
+			confs, err := client.Confirmations(ctx, hash)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(confs.Cmp(big.NewInt(0))).Should(BeEquivalentTo(1))
 		})
@@ -40,17 +42,17 @@ var _ = Describe("eth client", func() {
 
 	Context("when fetching balances", func() {
 		It("can fetch a zero balance address", func() {
-			account, err := ethaccount.RandomAccount(client)
+			account, err := ethaccount.RandomAccount(localClient)
 			Expect(err).NotTo(HaveOccurred())
 			ctx := context.Background()
-			balance, err := client.Balance(ctx, account.Address())
+			balance, err := localClient.Balance(ctx, account.Address())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(balance.Eq(ethtypes.Wei(0))).Should(BeTrue())
 		})
 
 		It("can check the gas limit", func() {
 			ctx := context.Background()
-			gl, err := client.GasLimit(ctx)
+			gl, err := localClient.GasLimit(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("gas limit: %v", gl)
 		})
@@ -60,11 +62,11 @@ var _ = Describe("eth client", func() {
 			amount := ethtypes.Ether(3)
 			nonce := uint64(1)
 			gasLimit := uint64(1000)
-			gasPrice := client.SuggestGasPrice(ctx, types.Standard)
-			account, err := ethaccount.RandomAccount(client)
+			gasPrice := localClient.SuggestGasPrice(ctx, types.Standard)
+			account, err := ethaccount.RandomAccount(localClient)
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			_, err = client.BuildUnsignedTx(ctx, nonce, account.Address(), amount, gasLimit, gasPrice, data)
+			_, err = localClient.BuildUnsignedTx(ctx, nonce, account.Address(), amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
