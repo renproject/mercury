@@ -15,6 +15,7 @@ import (
 
 // Client is a client which is used to interact with the Ethereum network using the Mercury server.
 type Client interface {
+	EthClient() *ethclient.Client
 	Balance(context.Context, ethtypes.Address) (ethtypes.Amount, error)
 	BlockNumber(context.Context) (*big.Int, error)
 	SuggestGasPrice(context.Context, types.TxSpeed) ethtypes.Amount
@@ -59,6 +60,11 @@ func NewCustomClient(logger logrus.FieldLogger, url string) (Client, error) {
 		logger:     logger,
 		gasStation: NewEthGasStation(logger, 30*time.Minute),
 	}, nil
+}
+
+// EthClient returns the eth client of the given ethereum address.
+func (c *client) EthClient() *ethclient.Client {
+	return c.client
 }
 
 // Balance returns the balance of the given ethereum address.
