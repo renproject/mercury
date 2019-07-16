@@ -255,7 +255,7 @@ func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSiz
 }
 
 func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
-	recipientIndices := map[btcaddress.Address]uint32{}
+	outputUTXOs := map[btcaddress.Address]btcutxo.UTXO{}
 	msgTx := btcutxo.NewMsgTx(c.network)
 	for _, utxo := range utxos {
 		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
@@ -270,7 +270,7 @@ func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Rec
 			return nil, err
 		}
 		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
-		recipientIndices[recipient.Address] = uint32(i)
+		outputUTXOs[recipient.Address] = btcutxo.NewStandardUTXO(c.network.Chain(), "", recipient.Amount, hex.EncodeToString(script), uint32(i), 0)
 	}
-	return btctx.NewUnsignedTx(c.network, utxos, msgTx, recipientIndices)
+	return btctx.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
 }
