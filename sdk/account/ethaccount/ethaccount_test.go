@@ -84,7 +84,7 @@ var _ = Describe("eth account", func() {
 		})
 
 		It("can check kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomClient(logger, "http://139.59.221.34/eth-kovan")
+			kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
@@ -97,7 +97,7 @@ var _ = Describe("eth account", func() {
 		})
 
 		It("can send kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomClient(logger, "http://139.59.221.34/eth-kovan")
+			kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("MNEMONIC_KOVAN")
 			path := "m/44'/60'/0'/0/0"
