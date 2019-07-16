@@ -14,22 +14,22 @@ import (
 )
 
 type tx struct {
-	recipients map[btcaddress.Address]uint32
-	network    btctypes.Network
-	sigHashes  []types.SignatureHash
-	utxos      btcutxo.UTXOs
-	tx         btcutxo.MsgTx
-	signed     bool
+	outputUTXOs map[btcaddress.Address]btcutxo.UTXO
+	network     btctypes.Network
+	sigHashes   []types.SignatureHash
+	utxos       btcutxo.UTXOs
+	tx          btcutxo.MsgTx
+	signed      bool
 }
 
-func NewUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, msgTx btcutxo.MsgTx, recipients map[btcaddress.Address]uint32) (BtcTx, error) {
+func NewUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, msgTx btcutxo.MsgTx, outputUTXOs map[btcaddress.Address]btcutxo.UTXO) (BtcTx, error) {
 	t := tx{
-		recipients: recipients,
-		network:    network,
-		sigHashes:  []types.SignatureHash{},
-		tx:         msgTx,
-		utxos:      utxos,
-		signed:     false,
+		outputUTXOs: outputUTXOs,
+		network:     network,
+		sigHashes:   []types.SignatureHash{},
+		tx:          msgTx,
+		utxos:       utxos,
+		signed:      false,
 	}
 	for i, utxo := range utxos {
 		sigHash, err := utxo.SigHash(txscript.SigHashAll, msgTx, i)
@@ -65,15 +65,15 @@ func (t *tx) IsSigned() bool {
 
 // OutPoint returns the OutPoint that can is funding the given address, returns
 // nil if the address is not being funded.
-func (t *tx) OutPoint(address btcaddress.Address) btcutxo.OutPoint {
+func (t *tx) OutputUTXO(address btcaddress.Address) btcutxo.UTXO {
 	if !t.signed {
 		panic("OutPoint should only be called after signing the transaction")
 	}
-	vout, ok := t.recipients[address]
+	utxo, ok := t.outputUTXOs[address]
 	if !ok {
 		return nil
 	}
-	return btcutxo.NewOutPoint(t.Hash(), vout)
+	return btcutxo.NewStandardUTXO(t.network.Chain(), t.Hash(), utxo.Amount(), utxo.ScriptPubKey(), utxo.Vout(), 0)
 }
 
 // Serialize returns the serialized tx in bytes.

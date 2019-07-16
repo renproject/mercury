@@ -9,5 +9,5 @@ import (
 type BtcTx interface {
 	types.Tx
 	UTXOs() btcutxo.UTXOs
-	OutPoint(address btcaddress.Address) btcutxo.OutPoint
+	OutputUTXO(address btcaddress.Address) btcutxo.UTXO
 }
