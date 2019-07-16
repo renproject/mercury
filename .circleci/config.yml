@@ -28,6 +28,11 @@ jobs:
             ./start_ganache.sh
           background: true
       - run:
+          name: Start local Mercury server
+          command: |
+            go run cmd/mercury/main.go
+          background: true
+      - run:
           name: Run tests
           command: |
             # make sure all the tests pass

@@ -2,19 +2,12 @@ package btcclient_test
 
 import (
 	"encoding/hex"
-	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/types"
 
-	"github.com/renproject/kv"
-	"github.com/renproject/mercury/api"
-	"github.com/renproject/mercury/cache"
-	"github.com/renproject/mercury/proxy"
-	"github.com/renproject/mercury/rpc/btcrpc"
-	"github.com/renproject/mercury/rpc/zecrpc"
 	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/renproject/mercury/types/btctypes/btcaddress"
@@ -42,32 +35,6 @@ var _ = Describe("btc client", func() {
 			panic(types.ErrUnknownChain)
 		}
 	}
-
-	BeforeSuite(func() {
-		btcStore := kv.NewJSON(kv.NewMemDB())
-		btcCache := cache.New(btcStore, logger)
-
-		zecStore := kv.NewJSON(kv.NewMemDB())
-		zecCache := cache.New(zecStore, logger)
-
-		btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
-		btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USERNAME")
-		btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
-		btcTestnetNodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
-		Expect(err).ToNot(HaveOccurred())
-
-		zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
-		zecTestnetUser := os.Getenv("ZCASH_TESTNET_RPC_USERNAME")
-		zecTestnetPassword := os.Getenv("ZCASH_TESTNET_RPC_PASSWORD")
-		zecTestnetNodeClient, err := zecrpc.NewNodeClient(zecTestnetURL, zecTestnetUser, zecTestnetPassword)
-		Expect(err).ToNot(HaveOccurred())
-
-		btcTestnetAPI := api.NewBtcApi(btctypes.BtcTestnet, proxy.NewProxy(btcTestnetNodeClient), btcCache, logger)
-		zecTestnetAPI := api.NewZecApi(btctypes.ZecTestnet, proxy.NewProxy(zecTestnetNodeClient), zecCache, logger)
-
-		server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI)
-		go server.Run()
-	})
 
 	testCases := []struct {
 		Network btctypes.Network

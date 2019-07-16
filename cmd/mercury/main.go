@@ -19,9 +19,17 @@ func main() {
 	// Initialise logger.
 	logger := logrus.StandardLogger()
 
-	// Initialise store.
-	store := kv.NewJSON(kv.NewMemDB())
-	cache := cache.New(store, logger)
+	// Initialise stores.
+	ethKovanStore := kv.NewJSON(kv.NewMemDB())
+	ethKovanCache := cache.New(ethKovanStore, logger)
+	ethStore := kv.NewJSON(kv.NewMemDB())
+	ethCache := cache.New(ethStore, logger)
+
+	btcStore := kv.NewJSON(kv.NewMemDB())
+	btcCache := cache.New(btcStore, logger)
+
+	zecStore := kv.NewJSON(kv.NewMemDB())
+	zecCache := cache.New(zecStore, logger)
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
@@ -32,7 +40,7 @@ func main() {
 		logger.Fatalf("cannot construct btc client: %v", err)
 	}
 	btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
-	btcTestnetAPI := api.NewBtcApi(btctypes.BtcTestnet, btcTestnetProxy, cache, logger)
+	btcTestnetAPI := api.NewBtcApi(btctypes.BtcTestnet, btcTestnetProxy, btcCache, logger)
 
 	// Initialise ZCash API.
 	zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
@@ -43,7 +51,7 @@ func main() {
 		logger.Fatalf("cannot construct zec client: %v", err)
 	}
 	zecTestnetProxy := proxy.NewProxy(zecTestnetNodeClient)
-	zecTestnetAPI := api.NewZecApi(btctypes.ZecTestnet, zecTestnetProxy, cache, logger)
+	zecTestnetAPI := api.NewZecApi(btctypes.ZecTestnet, zecTestnetProxy, zecCache, logger)
 
 	// Initialize Ethereum API.
 	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
@@ -59,14 +67,14 @@ func main() {
 		logger.Fatalf("cannot construct infura mainnet client: %v", err)
 	}
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
-	ethMainnetAPI := api.NewEthApi(ethtypes.Mainnet, ethMainnetProxy, cache, logger)
+	ethMainnetAPI := api.NewEthApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
 	infuraTestnetClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
 	if err != nil {
 		logger.Fatalf("cannot construct infura testnet client: %v", err)
 	}
 	ethTestnetProxy := proxy.NewProxy(infuraTestnetClient)
-	ethTestnetAPI := api.NewEthApi(ethtypes.Kovan, ethTestnetProxy, cache, logger)
+	ethTestnetAPI := api.NewEthApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
 	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, ethMainnetAPI, ethTestnetAPI)
