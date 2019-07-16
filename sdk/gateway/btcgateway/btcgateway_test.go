@@ -44,8 +44,8 @@ var _ = Describe("btc gateway", func() {
 	Context("when generating gateways", func() {
 		networks := []btctypes.Network{btctypes.BtcTestnet, btctypes.ZecTestnet}
 		for _, network := range networks {
-			network := network
-			It("should be able to generate a btc gateway", func() {
+
+			It(fmt.Sprintf("should be able to generate a %v gateway", network), func() {
 				client, err := btcclient.New(logger, network)
 				Expect(err).NotTo(HaveOccurred())
 				key, err := loadTestAccounts(network).EcdsaKey(44, 1, 0, 0, 1)
