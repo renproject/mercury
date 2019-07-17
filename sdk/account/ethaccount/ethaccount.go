@@ -77,7 +77,7 @@ func (acc *account) Balance(ctx context.Context) (ethtypes.Amount, error) {
 	return acc.client.Balance(ctx, acc.Address())
 }
 
-func (acc *account) Client(ctx context.Context) ethclient.Client {
+func (acc *account) Client() ethclient.Client {
 	return acc.client
 }
 
