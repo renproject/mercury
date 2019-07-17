@@ -13,7 +13,7 @@ type StandardBtcUTXO struct {
 	outPoint
 	amount        btctypes.Amount
 	scriptPubKey  string
-	confirmations types.Confirmations
+	confirmations uint64
 }
 
 func NewStandardBtcUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) StandardBtcUTXO {

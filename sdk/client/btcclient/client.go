@@ -14,7 +14,7 @@ type Client interface {
 	Network() btctypes.Network
 	UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error)
 	UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, error)
-	Confirmations(txHash types.TxHash) (types.Confirmations, error)
+	Confirmations(txHash types.TxHash) (uint64, error)
 	BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients, refundTo btcaddress.Address, gas btctypes.Amount) (btctx.BtcTx, error)
 	SubmitSignedTx(stx btctx.BtcTx) (types.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int

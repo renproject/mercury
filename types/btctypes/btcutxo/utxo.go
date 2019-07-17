@@ -24,7 +24,7 @@ type UTXO interface {
 	TxHash() types.TxHash
 	ScriptPubKey() string
 	Vout() uint32
-	Confirmations() types.Confirmations
+	Confirmations() uint64
 	SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error)
 	AddData(builder *txscript.ScriptBuilder)
 }
@@ -39,7 +39,7 @@ func (utxos UTXOs) Sum() btctypes.Amount {
 	return total
 }
 
-func (utxos *UTXOs) Filter(confs types.Confirmations) UTXOs {
+func (utxos *UTXOs) Filter(confs uint64) UTXOs {
 	newList := UTXOs{}
 	for _, utxo := range *utxos {
 		if utxo.Confirmations() >= confs {
@@ -49,7 +49,7 @@ func (utxos *UTXOs) Filter(confs types.Confirmations) UTXOs {
 	return newList
 }
 
-func NewStandardUTXO(chain types.Chain, txhash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) UTXO {
+func NewStandardUTXO(chain types.Chain, txhash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations uint64) UTXO {
 	switch chain {
 	case types.Bitcoin:
 		return StandardBtcUTXO{

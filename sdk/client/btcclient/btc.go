@@ -114,7 +114,7 @@ func (c *client) UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error) {
 		btctypes.Amount(amount),
 		txOut.ScriptPubKey.Hex,
 		op.Vout(),
-		types.Confirmations(txOut.Confirmations),
+		uint64(txOut.Confirmations),
 	), nil
 }
 
@@ -139,7 +139,7 @@ func (c *client) UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, er
 			btctypes.Amount(amount),
 			output.ScriptPubKey,
 			output.Vout,
-			types.Confirmations(output.Confirmations),
+			uint64(output.Confirmations),
 		)
 	}
 
@@ -147,12 +147,12 @@ func (c *client) UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, er
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
-func (c *client) Confirmations(txHash types.TxHash) (types.Confirmations, error) {
+func (c *client) Confirmations(txHash types.TxHash) (uint64, error) {
 	tx, err := c.client.GetRawTransactionVerbose(string(txHash))
 	if err != nil {
 		return 0, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
-	return types.Confirmations(tx.Confirmations), nil
+	return uint64(tx.Confirmations), nil
 }
 
 func (c *client) BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients, refundTo btcaddress.Address, gas btctypes.Amount) (btctx.BtcTx, error) {
