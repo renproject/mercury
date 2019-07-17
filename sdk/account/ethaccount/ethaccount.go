@@ -12,6 +12,7 @@ import (
 )
 
 type Account interface {
+	Client() ethclient.Client
 	Address() ethtypes.Address
 	Balance(ctx context.Context) (ethtypes.Amount, error)
 	BuildUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
@@ -74,6 +75,10 @@ func (acc *account) BuildUnsignedTx(ctx context.Context, toAddress ethtypes.Addr
 
 func (acc *account) Balance(ctx context.Context) (ethtypes.Amount, error) {
 	return acc.client.Balance(ctx, acc.Address())
+}
+
+func (acc *account) Client(ctx context.Context) ethclient.Client {
+	return acc.client
 }
 
 func (acc *account) SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error {
