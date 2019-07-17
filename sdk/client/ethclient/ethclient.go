@@ -24,6 +24,7 @@ type Client interface {
 	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
 	Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error)
+	ERC20(tokenAddress ethtypes.Address) (ERC20, error)
 }
 
 type client struct {
@@ -65,6 +66,11 @@ func NewCustomClient(logger logrus.FieldLogger, url string) (Client, error) {
 // EthClient returns the eth client of the given ethereum address.
 func (c *client) EthClient() *ethclient.Client {
 	return c.client
+}
+
+// EthClient returns the eth client of the given ethereum address.
+func (c *client) ERC20(tokenAddress ethtypes.Address) (ERC20, error) {
+	return erc20Token(c.EthClient(), tokenAddress)
 }
 
 // Balance returns the balance of the given ethereum address.
