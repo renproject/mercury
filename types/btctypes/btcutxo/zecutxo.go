@@ -21,10 +21,10 @@ type StandardZecUTXO struct {
 	outPoint
 	amount        btctypes.Amount
 	scriptPubKey  string
-	confirmations types.Confirmations
+	confirmations uint64
 }
 
-func NewStandardZecUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) StandardZecUTXO {
+func NewStandardZecUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations uint64) StandardZecUTXO {
 	return StandardZecUTXO{
 		outPoint: outPoint{
 			txHash: txHash,
@@ -36,7 +36,7 @@ func NewStandardZecUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKe
 	}
 }
 
-func (u StandardZecUTXO) Confirmations() types.Confirmations {
+func (u StandardZecUTXO) Confirmations() uint64 {
 	return u.confirmations
 }
 

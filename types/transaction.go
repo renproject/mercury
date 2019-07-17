@@ -18,5 +18,3 @@ type Tx interface {
 	Hash() TxHash
 	InjectSignatures(sigs []*btcec.Signature, serializedPubKey []byte) error
 }
-
-type Confirmations int64

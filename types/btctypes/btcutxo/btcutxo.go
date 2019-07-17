@@ -16,7 +16,7 @@ type StandardBtcUTXO struct {
 	confirmations uint64
 }
 
-func NewStandardBtcUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations types.Confirmations) StandardBtcUTXO {
+func NewStandardBtcUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations uint64) StandardBtcUTXO {
 	return StandardBtcUTXO{
 		outPoint: outPoint{
 			txHash: txHash,
@@ -28,7 +28,7 @@ func NewStandardBtcUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKe
 	}
 }
 
-func (u StandardBtcUTXO) Confirmations() types.Confirmations {
+func (u StandardBtcUTXO) Confirmations() uint64 {
 	return u.confirmations
 }
 

@@ -77,6 +77,14 @@ func NewUnsignedTx(chainID *big.Int, nonce uint64, to Address, value Amount, gas
 	}
 }
 
+func NewSignedTx(chainID *big.Int, tx *coretypes.Transaction) Tx {
+	return Tx{
+		chainID: chainID,
+		tx:      tx,
+		signed:  true,
+	}
+}
+
 type Address common.Address
 
 func AddressFromPublicKey(publicKeyECDSA *ecdsa.PublicKey) Address {
