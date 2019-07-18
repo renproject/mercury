@@ -1,57 +1,10 @@
 package rpc
 
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-)
+import "net/http"
 
-type Response struct {
-	Result json.RawMessage `json:"result"`
-}
-
+// Client is a RPC client which can send and retrieve information from a blockchain through JSON-RPC. `data` is the
+// request data we want to send to the ZCash node, and `r` is the original request in case we need to access any query
+// parameters or other fields.
 type Client interface {
-	SendRequest(data []byte, response interface{}) error
-}
-
-type client struct {
-	host     string
-	user     string
-	password string
-}
-
-func NewClient(host, user, password string) Client {
-	return &client{
-		host, user, password,
-	}
-}
-
-func (client *client) SendRequest(data []byte, response interface{}) error {
-	request, err := http.NewRequest("POST", fmt.Sprintf("http://%s", client.host), bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-	request.SetBasicAuth(client.user, client.password)
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-
-	msg, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf(string(msg))
-	}
-
-	result := Response{}
-	if err := json.Unmarshal(msg, &result); err != nil {
-		return err
-	}
-
-	return json.Unmarshal(result.Result, response)
+	HandleRequest(r *http.Request, data []byte) (*http.Response, error)
 }
