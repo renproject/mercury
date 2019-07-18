@@ -116,7 +116,7 @@ var _ = Describe("btc client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(utxo.TxHash()).To(Equal(testCase.UnspentOutPoint.TxHash()))
 				Expect(utxo.Amount()).To(Equal(testCase.Amount))
-				Expect(utxo.ScriptPubKey()).To(Equal(testCase.ScriptPubKey))
+				Expect(hex.EncodeToString(utxo.ScriptPubKey())).To(Equal(testCase.ScriptPubKey))
 				Expect(utxo.Vout()).To(Equal(testCase.UnspentOutPoint.Vout()))
 			})
 
