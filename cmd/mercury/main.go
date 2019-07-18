@@ -21,15 +21,27 @@ func main() {
 	logger := logrus.StandardLogger()
 
 	// Initialise stores.
-	ethKovanStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	ethKovanStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	if err != nil {
+		logger.Fatalf("cannot instantiate ttl cache: %v", err)
+	}
 	ethKovanCache := cache.New(ethKovanStore, logger)
-	ethStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	ethStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	if err != nil {
+		logger.Fatalf("cannot instantiate ttl cache: %v", err)
+	}
 	ethCache := cache.New(ethStore, logger)
 
-	btcStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	btcStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	if err != nil {
+		logger.Fatalf("cannot instantiate ttl cache: %v", err)
+	}
 	btcCache := cache.New(btcStore, logger)
 
-	zecStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	zecStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
+	if err != nil {
+		logger.Fatalf("cannot instantiate ttl cache: %v", err)
+	}
 	zecCache := cache.New(zecStore, logger)
 
 	// Initialise Bitcoin API.
