@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -20,15 +21,15 @@ func main() {
 	logger := logrus.StandardLogger()
 
 	// Initialise stores.
-	ethKovanStore := kv.NewJSON(kv.NewMemDB())
+	ethKovanStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
 	ethKovanCache := cache.New(ethKovanStore, logger)
-	ethStore := kv.NewJSON(kv.NewMemDB())
+	ethStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
 	ethCache := cache.New(ethStore, logger)
 
-	btcStore := kv.NewJSON(kv.NewMemDB())
+	btcStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
 	btcCache := cache.New(btcStore, logger)
 
-	zecStore := kv.NewJSON(kv.NewMemDB())
+	zecStore := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
 	zecCache := cache.New(zecStore, logger)
 
 	// Initialise Bitcoin API.
