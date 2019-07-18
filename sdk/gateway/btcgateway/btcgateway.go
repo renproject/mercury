@@ -6,14 +6,13 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/sdk/client/btcclient"
-	"github.com/renproject/mercury/types/btctypes/btcaddress"
-	"github.com/renproject/mercury/types/btctypes/btcutxo"
+	"github.com/renproject/mercury/types/btctypes"
 )
 
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
-	UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error)
-	Address() btcaddress.Address
+	UTXO(op btctypes.OutPoint) (btctypes.UTXO, error)
+	Address() btctypes.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
 	Script() []byte
 }
@@ -21,13 +20,13 @@ type Gateway interface {
 type gateway struct {
 	client      btcclient.Client
 	script      []byte
-	gwAddr      btcaddress.Address
-	spenderAddr btcaddress.Address
+	gwAddr      btctypes.Address
+	spenderAddr btctypes.Address
 }
 
 // New returns a new Gateway
 func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) Gateway {
-	pubKeyBytes := btcaddress.SerializePublicKey(spenderPubKey, client.Network())
+	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey, client.Network())
 	pubKeyHash160 := btcutil.Hash160(pubKeyBytes)
 	b := txscript.NewScriptBuilder()
 	b.AddData(ghash)
@@ -41,11 +40,11 @@ func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) G
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script")
 	}
-	gwAddr, err := btcaddress.AddressFromScript(script, client.Network())
+	gwAddr, err := btctypes.AddressFromScript(script, client.Network())
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script address")
 	}
-	spenderAddr, err := btcaddress.AddressFromPubKey(spenderPubKey, client.Network())
+	spenderAddr, err := btctypes.AddressFromPubKey(spenderPubKey, client.Network())
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway spender address")
 	}
@@ -57,14 +56,17 @@ func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) G
 	}
 }
 
-func (gw *gateway) UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error) {
+func (gw *gateway) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
 	utxo, err := gw.client.UTXO(op)
 	if err != nil {
 		return nil, err
 	}
 
-	return btcutxo.NewScriptUTXO(
-		utxo,
+	return btctypes.NewUTXO(
+		op,
+		utxo.Amount(),
+		utxo.ScriptPubKey(),
+		utxo.Confirmations(),
 		gw.Script(),
 		func(builder *txscript.ScriptBuilder) {
 			builder.AddData(gw.Script())
@@ -72,7 +74,7 @@ func (gw *gateway) UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error) {
 	), nil
 }
 
-func (gw *gateway) Address() btcaddress.Address {
+func (gw *gateway) Address() btctypes.Address {
 	return gw.gwAddr
 }
 
