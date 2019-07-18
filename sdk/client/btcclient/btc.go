@@ -17,9 +17,6 @@ import (
 	"github.com/renproject/mercury/rpcclient/btcrpcclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
-	"github.com/renproject/mercury/types/btctypes/btcaddress"
-	"github.com/renproject/mercury/types/btctypes/btctx"
-	"github.com/renproject/mercury/types/btctypes/btcutxo"
 	"github.com/sirupsen/logrus"
 )
 
@@ -86,7 +83,7 @@ func (c *client) Network() btctypes.Network {
 }
 
 // UTXO returns the UTXO for the given transaction hash and index.
-func (c *client) UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error) {
+func (c *client) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
 	if len(op.TxHash()) != 64 {
 		return nil, ErrInvalidTxHash
 	}
@@ -108,38 +105,47 @@ func (c *client) UTXO(op btcutxo.OutPoint) (btcutxo.UTXO, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 	}
-	return btcutxo.NewStandardUTXO(
-		c.network.Chain(),
-		types.TxHash(tx.TxID),
+
+	scriptPubKey, err := hex.DecodeString(txOut.ScriptPubKey.Hex)
+	if err != nil {
+		return nil, fmt.Errorf("cannot decode script pubkey")
+	}
+
+	return btctypes.NewUTXO(
+		btctypes.NewOutPoint(types.TxHash(tx.TxID), op.Vout()),
 		btctypes.Amount(amount),
-		txOut.ScriptPubKey.Hex,
-		op.Vout(),
+		scriptPubKey,
 		uint64(txOut.Confirmations),
+		nil, nil,
 	), nil
 }
 
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
 // addresses that have not been imported into the Bitcoin node.
-func (c *client) UTXOsFromAddress(address btcaddress.Address) (btcutxo.UTXOs, error) {
+func (c *client) UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error) {
 	outputs, err := c.client.ListUnspent(0, 999999, []string{address.EncodeAddress()})
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve utxos from btc client: %v", err)
 	}
 
-	utxos := make(btcutxo.UTXOs, len(outputs))
+	utxos := make(btctypes.UTXOs, len(outputs))
 	for i, output := range outputs {
 		amount, err := btcutil.NewAmount(output.Amount)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse amount received from btc client: %v", err)
 		}
 
-		utxos[i] = btcutxo.NewStandardUTXO(
-			c.network.Chain(),
-			types.TxHash(output.TxID),
+		scriptPubKey, err := hex.DecodeString(output.ScriptPubKey)
+		if err != nil {
+			return nil, fmt.Errorf("cannot decode script pubkey")
+		}
+
+		utxos[i] = btctypes.NewUTXO(
+			btctypes.NewOutPoint(types.TxHash(output.TxID), output.Vout),
 			btctypes.Amount(amount),
-			output.ScriptPubKey,
-			output.Vout,
+			scriptPubKey,
 			uint64(output.Confirmations),
+			nil, nil,
 		)
 	}
 
@@ -155,7 +161,7 @@ func (c *client) Confirmations(txHash types.TxHash) (uint64, error) {
 	return uint64(tx.Confirmations), nil
 }
 
-func (c *client) BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients, refundTo btcaddress.Address, gas btctypes.Amount) (btctx.BtcTx, error) {
+func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients, refundTo btctypes.Address, gas btctypes.Amount) (btctypes.BtcTx, error) {
 	// Pre-condition checks.
 	if gas < Dust {
 		return nil, fmt.Errorf("pre-condition violation: gas = %v is too low", gas)
@@ -181,7 +187,7 @@ func (c *client) BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Reci
 	// Add an output to refund the difference between the amount being transferred to recipients and the total amount
 	// from the UTXOs.
 	if amountToRefund > 0 {
-		recipients = append(recipients, btcaddress.NewRecipient(refundTo, amountToRefund))
+		recipients = append(recipients, btctypes.NewRecipient(refundTo, amountToRefund))
 	}
 
 	// Get the signature hashes we need to sign.
@@ -189,7 +195,7 @@ func (c *client) BuildUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Reci
 }
 
 // SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.
-func (c *client) SubmitSignedTx(stx btctx.BtcTx) (types.TxHash, error) {
+func (c *client) SubmitSignedTx(stx btctypes.BtcTx) (types.TxHash, error) {
 	// Pre-condition checks
 	if !stx.IsSigned() {
 		return "", errors.New("pre-condition violation: cannot submit unsigned transaction")
@@ -214,7 +220,7 @@ func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
 	return 146*numUTXOs + 33*numRecipients + 10
 }
 
-func (c *client) VerifyTx(tx btctx.BtcTx) error {
+func (c *client) VerifyTx(tx btctypes.BtcTx) error {
 	if c.network.Chain() != types.Bitcoin {
 		return nil
 	}
@@ -227,11 +233,7 @@ func (c *client) VerifyTx(tx btctx.BtcTx) error {
 	msgTx.Deserialize(bytes.NewBuffer(data))
 
 	for i, utxo := range tx.UTXOs() {
-		scriptPubKey, err := hex.DecodeString(utxo.ScriptPubKey())
-		if err != nil {
-			return err
-		}
-		engine, err := txscript.NewEngine(scriptPubKey, msgTx, i,
+		engine, err := txscript.NewEngine(utxo.ScriptPubKey(), msgTx, i,
 			txscript.StandardVerifyFlags, txscript.NewSigCache(10),
 			txscript.NewTxSigHashes(msgTx), int64(utxo.Amount()))
 		if err != nil {
@@ -254,9 +256,9 @@ func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSiz
 	return 10000 * btctypes.SAT
 }
 
-func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Recipients) (btctx.BtcTx, error) {
-	outputUTXOs := map[btcaddress.Address]btcutxo.UTXO{}
-	msgTx := btcutxo.NewMsgTx(c.network)
+func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients) (btctypes.BtcTx, error) {
+	outputUTXOs := map[btctypes.Address]btctypes.UTXO{}
+	msgTx := btctypes.NewMsgTx(c.network)
 	for _, utxo := range utxos {
 		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
 		if err != nil {
@@ -265,12 +267,12 @@ func (c *client) createUnsignedTx(utxos btcutxo.UTXOs, recipients btcaddress.Rec
 		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
 	}
 	for i, recipient := range recipients {
-		script, err := btcaddress.PayToAddrScript(recipient.Address, c.network)
+		script, err := btctypes.PayToAddrScript(recipient.Address, c.network)
 		if err != nil {
 			return nil, err
 		}
 		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
-		outputUTXOs[recipient.Address] = btcutxo.NewStandardUTXO(c.network.Chain(), "", recipient.Amount, hex.EncodeToString(script), uint32(i), 0)
+		outputUTXOs[recipient.Address] = btctypes.NewUTXO(btctypes.NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil, nil)
 	}
-	return btctx.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
+	return btctypes.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
 }
