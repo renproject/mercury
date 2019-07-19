@@ -4,23 +4,23 @@ import (
 	"fmt"
 )
 
-type Chain uint8 
+type Chain uint8
 
 const (
-	Bitcoin Chain = 0
+	Bitcoin  Chain = 0
 	Ethereum Chain = 1
-	ZCash Chain = 2
+	ZCash    Chain = 2
 )
 
 // String implements the `Stringer` interface.
 func (chain Chain) String() string {
 	switch chain {
 	case Bitcoin:
-		return "bitcoin"
+		return "btc"
 	case Ethereum:
-		return "ethereum"
+		return "eth"
 	case ZCash:
-		return "zcash"
+		return "zec"
 	default:
 		panic(ErrUnknownChain)
 	}

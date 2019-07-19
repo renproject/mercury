@@ -3,6 +3,7 @@
 package proxy
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/renproject/mercury/rpc"
@@ -21,15 +22,21 @@ func NewProxy(clients ...rpc.Client) *Proxy {
 	}
 }
 
-func (proxy *Proxy) ProxyRequest(r *http.Request, data []byte) (*http.Response, error) {
+func (proxy *Proxy) ProxyRequest(ctx context.Context, r *http.Request, data []byte) (*http.Response, error) {
 	errs := types.NewErrList(len(proxy.Clients))
-	for i, client := range proxy.Clients {
-		response, err := client.HandleRequest(r, data)
-		if err != nil {
-			errs[i] = err
-			continue
+	for {
+		for i, client := range proxy.Clients {
+			select {
+			case <-ctx.Done():
+				return nil, errs
+			default:
+				response, err := client.HandleRequest(r, data)
+				if err != nil {
+					errs[i] = err
+					continue
+				}
+				return response, nil
+			}
 		}
-		return response, nil
 	}
-	return nil, errs
 }

@@ -36,35 +36,35 @@ var _ = Describe("Cache", func() {
 			numRequests := 0
 			phi.ParBegin(func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				_, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				_, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -86,42 +86,42 @@ var _ = Describe("Cache", func() {
 			numRequests := 0
 			phi.ParBegin(func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			}, func() {
 				time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
-				resp, err := cache.Get("hash", getResponse(server.URL, &numRequests))
+				resp, err := cache.Get(1, "hash", getResponse(server.URL, &numRequests))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp).To(Equal(response))
 			})
