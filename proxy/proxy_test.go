@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -59,7 +60,10 @@ var _ = Describe("Proxies", func() {
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(context.Background(), req, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			resp, err := proxy.ProxyRequest(ctx, req, nil)
 			Expect(resp).To(BeNil())
 			Expect(err).To(HaveOccurred())
 		})
