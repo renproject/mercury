@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	Mainnet Network = 1
-	Kovan   Network = 42
+	Mainnet network = 1
+	Kovan   network = 42
 )
 
-func (network Network) String() string {
+func (network network) String() string {
 	switch network {
 	case Mainnet:
 		return "mainnet"
@@ -26,7 +26,15 @@ func (network Network) String() string {
 	}
 }
 
-type Network uint8
+func (network network) Chain() types.Chain {
+	return types.Ethereum
+}
+
+type Network interface {
+	types.Network
+}
+
+type network uint8
 
 type Tx struct {
 	chainID *big.Int

@@ -2,7 +2,6 @@ package rpcclient
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +12,7 @@ import (
 // request represents a JSON-RPC request sent by a client.
 type request struct {
 	Version string            `json:"jsonrpc"`
-	ID      string            `json:"id"`
+	ID      int64             `json:"id"`
 	Method  string            `json:"method"`
 	Params  []json.RawMessage `json:"params"`
 }
@@ -22,7 +21,7 @@ type request struct {
 type response struct {
 	Result *json.RawMessage `json:"result"`
 	Error  interface{}      `json:"error"`
-	ID     string           `json:"id"`
+	ID     int64            `json:"id"`
 }
 
 // errObj is a wrapper for a JSON interface value.
@@ -81,11 +80,9 @@ func encodeRequest(method string, params []interface{}) ([]byte, error) {
 		}
 	}
 
-	data := [16]byte{}
-	rand.Read(data[:])
 	req := &request{
-		Version: "1.0",
-		ID:      base64.StdEncoding.EncodeToString(data[:]),
+		Version: "2.0",
+		ID:      rand.Int63(),
 		Method:  method,
 		Params:  ps,
 	}

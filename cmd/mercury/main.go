@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"time"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -21,27 +20,13 @@ func main() {
 	logger := logrus.StandardLogger()
 
 	// Initialise stores.
-	ethKovanStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
-	if err != nil {
-		logger.Fatalf("cannot instantiate ttl cache: %v", err)
-	}
+	ethKovanStore := kv.NewJSON(kv.NewMemDB())
 	ethKovanCache := cache.New(ethKovanStore, logger)
-	ethStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
-	if err != nil {
-		logger.Fatalf("cannot instantiate ttl cache: %v", err)
-	}
+	ethStore := kv.NewJSON(kv.NewMemDB())
 	ethCache := cache.New(ethStore, logger)
-
-	btcStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
-	if err != nil {
-		logger.Fatalf("cannot instantiate ttl cache: %v", err)
-	}
+	btcStore := kv.NewJSON(kv.NewMemDB())
 	btcCache := cache.New(btcStore, logger)
-
-	zecStore, err := kv.NewTTLCache(kv.NewJSON(kv.NewMemDB()), 10*time.Second)
-	if err != nil {
-		logger.Fatalf("cannot instantiate ttl cache: %v", err)
-	}
+	zecStore := kv.NewJSON(kv.NewMemDB())
 	zecCache := cache.New(zecStore, logger)
 
 	// Initialise Bitcoin API.
@@ -53,7 +38,7 @@ func main() {
 		logger.Fatalf("cannot construct btc client: %v", err)
 	}
 	btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
-	btcTestnetAPI := api.NewBtcApi(btctypes.BtcTestnet, btcTestnetProxy, btcCache, logger)
+	btcTestnetAPI := api.NewApi(btctypes.BtcTestnet, btcTestnetProxy, btcCache, logger)
 
 	// Initialise ZCash API.
 	zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
@@ -64,7 +49,7 @@ func main() {
 		logger.Fatalf("cannot construct zec client: %v", err)
 	}
 	zecTestnetProxy := proxy.NewProxy(zecTestnetNodeClient)
-	zecTestnetAPI := api.NewZecApi(btctypes.ZecTestnet, zecTestnetProxy, zecCache, logger)
+	zecTestnetAPI := api.NewApi(btctypes.ZecTestnet, zecTestnetProxy, zecCache, logger)
 
 	// Initialize Ethereum API.
 	infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
@@ -80,14 +65,15 @@ func main() {
 		logger.Fatalf("cannot construct infura mainnet client: %v", err)
 	}
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
-	ethMainnetAPI := api.NewEthApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
+	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
-	infuraTestnetClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
+	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
+	testnetClient, err := ethrpc.New(ethKovanRPCURL)
 	if err != nil {
 		logger.Fatalf("cannot construct infura testnet client: %v", err)
 	}
-	ethTestnetProxy := proxy.NewProxy(infuraTestnetClient)
-	ethTestnetAPI := api.NewEthApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
+	ethTestnetProxy := proxy.NewProxy(testnetClient)
+	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
 	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, ethMainnetAPI, ethTestnetAPI)
