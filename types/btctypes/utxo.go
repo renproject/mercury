@@ -1,11 +1,9 @@
-package btcutxo
+package btctypes
 
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"math"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -14,108 +12,124 @@ import (
 	"github.com/codahale/blake2"
 	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
-	"github.com/renproject/mercury/types/btctypes"
 )
 
-type StandardZecUTXO struct {
-	outPoint
-	amount        btctypes.Amount
-	scriptPubKey  string
-	confirmations uint64
+const (
+	BtcVersion = 2
+
+	ZecExpiryHeight = uint32(10000000)
+	ZecVersion      = 4
+)
+
+type UTXO interface {
+	OutPoint
+
+	Confirmations() uint64
+	Amount() Amount
+	ScriptPubKey() []byte
+	SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error)
+	AddData(builder *txscript.ScriptBuilder)
 }
 
-func NewStandardZecUTXO(txHash types.TxHash, amount btctypes.Amount, scriptPubKey string, vout uint32, confirmations uint64) StandardZecUTXO {
-	return StandardZecUTXO{
-		outPoint: outPoint{
-			txHash: txHash,
-			vout:   vout,
-		},
-		amount:        amount,
-		scriptPubKey:  scriptPubKey,
-		confirmations: confirmations,
+type UTXOs []UTXO
+
+func (utxos UTXOs) Sum() Amount {
+	total := Amount(0)
+	for _, utxo := range utxos {
+		total += utxo.Amount()
 	}
+	return total
 }
 
-func (u StandardZecUTXO) Confirmations() uint64 {
-	return u.confirmations
-}
-
-func (u StandardZecUTXO) Amount() btctypes.Amount {
-	return u.amount
-}
-
-func (u StandardZecUTXO) TxHash() types.TxHash {
-	return u.txHash
-}
-
-func (u StandardZecUTXO) ScriptPubKey() string {
-	return u.scriptPubKey
-}
-
-func (u StandardZecUTXO) Vout() uint32 {
-	return u.vout
-}
-
-func (u StandardZecUTXO) SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error) {
-	scriptPubKey, err := hex.DecodeString(u.scriptPubKey)
-	if err != nil {
-		return nil, err
+func (utxos UTXOs) Filter(confs uint64) UTXOs {
+	newList := UTXOs{}
+	for _, utxo := range utxos {
+		if utxo.Confirmations() >= confs {
+			newList = append(newList, utxo)
+		}
 	}
-	return calcSignatureHash(scriptPubKey, hashType, tx.(ZecMsgTx).MsgTx, idx, u.amount)
+	return newList
 }
 
-func (StandardZecUTXO) AddData(*txscript.ScriptBuilder) {
-}
+type utxo struct {
+	OutPoint
 
-type ScriptZecUTXO struct {
-	StandardZecUTXO
-
+	amount          Amount
+	scriptPubKey    []byte
+	confirmations   uint64
 	Script          []byte
 	UpdateSigScript func(builder *txscript.ScriptBuilder)
 }
 
-func (u ScriptZecUTXO) Amount() btctypes.Amount {
+func (u utxo) Confirmations() uint64 {
+	return u.confirmations
+}
+
+func (u utxo) Amount() Amount {
 	return u.amount
 }
 
-func (u ScriptZecUTXO) TxHash() types.TxHash {
-	return u.txHash
-}
-
-func (u ScriptZecUTXO) ScriptPubKey() string {
+func (u utxo) ScriptPubKey() []byte {
 	return u.scriptPubKey
 }
 
-func (u ScriptZecUTXO) Vout() uint32 {
-	return u.vout
+func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]byte, error) {
+	switch msgTx := msgTx.(type) {
+	case BtcMsgTx:
+		if u.Script == nil {
+			return txscript.CalcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx)
+		}
+		return txscript.CalcSignatureHash(u.Script, hashType, msgTx.MsgTx, idx)
+	case ZecMsgTx:
+		if u.Script == nil {
+			return calcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx, u.Amount())
+		}
+		return calcSignatureHash(u.Script, hashType, msgTx.MsgTx, idx, u.Amount())
+	default:
+		return nil, fmt.Errorf("unknown msgTx type: %T", msgTx)
+	}
 }
 
-func (u ScriptZecUTXO) SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error) {
-	return calcSignatureHash(u.Script, hashType, tx.(ZecMsgTx).MsgTx, idx, u.amount)
+func (u utxo) AddData(builder *txscript.ScriptBuilder) {
+	if u.UpdateSigScript != nil {
+		u.UpdateSigScript(builder)
+	}
 }
 
-func (u ScriptZecUTXO) AddData(builder *txscript.ScriptBuilder) {
-	u.UpdateSigScript(builder)
+func NewUTXO(op OutPoint, amount Amount, scriptPubKey []byte, confirmations uint64, script []byte, updateSigScript func(builder *txscript.ScriptBuilder)) UTXO {
+	return utxo{
+		OutPoint:        op,
+		amount:          amount,
+		scriptPubKey:    scriptPubKey,
+		confirmations:   confirmations,
+		UpdateSigScript: updateSigScript,
+		Script:          script,
+	}
 }
 
-type ZecMsgTx struct {
-	*zecutil.MsgTx
+type OutPoint interface {
+	TxHash() types.TxHash
+	Vout() uint32
 }
 
-func (msgTx ZecMsgTx) Serialize(buf io.Writer) error {
-	return msgTx.ZecEncode(buf, 0, wire.BaseEncoding)
+type outPoint struct {
+	txHash types.TxHash
+	vout   uint32
 }
 
-func (msgTx ZecMsgTx) InCount() int {
-	return len(msgTx.TxIn)
+func NewOutPoint(txHash types.TxHash, vout uint32) OutPoint {
+	return outPoint{
+		txHash: txHash,
+		vout:   vout,
+	}
 }
 
-func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
-	msgTx.TxIn[i].SignatureScript = sigScript
+func (op outPoint) TxHash() types.TxHash {
+	return op.txHash
 }
 
-func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
-	return ZecMsgTx{msgTx}
+func (op outPoint) Vout() uint32 {
+	return op.vout
 }
 
 type upgradeParam struct {
@@ -145,7 +159,7 @@ func calcSignatureHash(
 	hashType txscript.SigHashType,
 	tx *zecutil.MsgTx,
 	idx int,
-	amt btctypes.Amount,
+	amt Amount,
 ) ([]byte, error) {
 	sigHashes, err := zecutil.NewTxSigHashes(tx)
 	if err != nil {

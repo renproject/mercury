@@ -9,12 +9,11 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/renproject/mercury/types"
 	. "github.com/renproject/mercury/types/btctypes"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/renproject/mercury/testutil"
-	"github.com/renproject/mercury/types/btctypes/btcaddress"
+	"github.com/renproject/mercury/types"
 )
 
 var _ = Describe("btc types ", func() {
@@ -39,7 +38,7 @@ var _ = Describe("btc types ", func() {
 			It("should be able to decode an address from string", func() {
 				randAddr, err := testutil.RandomAddress(network)
 				Expect(err).NotTo(HaveOccurred())
-				address, err := btcaddress.AddressFromBase58(randAddr.EncodeAddress(), network)
+				address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(address.EncodeAddress()).Should(Equal(randAddr.EncodeAddress()))
 			})
@@ -48,7 +47,7 @@ var _ = Describe("btc types ", func() {
 				test := func() bool {
 					randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 					Expect(err).NotTo(HaveOccurred())
-					address, err := btcaddress.AddressFromPubKey(randKey.PublicKey, network)
+					address, err := AddressFromPubKey(randKey.PublicKey, network)
 					if network == BtcMainnet {
 						return strings.HasPrefix(address.EncodeAddress(), "1")
 					} else {

@@ -5,19 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/gateway/btcgateway"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/renproject/mercury/sdk/client/btcclient"
 	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/testutil/btcaccount"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
-	"github.com/renproject/mercury/types/btctypes/btcaddress"
-	"github.com/renproject/mercury/types/btctypes/btcutxo"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,33 +41,33 @@ var _ = Describe("btc gateway", func() {
 	// TODO: finish writing these tests
 	// testCases := []struct {
 	// 	Network btctypes.Network
-	// 	UTXOs   btcutxo.UTXOs
+	// 	UTXOs   btctypes.UTXOs
 
-	// 	GatewayAddress btcaddress.Address
+	// 	GatewayAddress btctypes.Address
 	// 	GatewayScript  []byte
-	// 	GatewayUTXO    btcutxo.UTXO
+	// 	GatewayUTXO    btctypes.UTXO
 
 	// 	FundingTx  string
 	// 	SpendingTx string
 	// }{
 	// 	{
 	// 		btctypes.BtcTestnet,
-	// 		btcutxo.UTXOs{},
+	// 		btctypes.UTXOs{},
 
-	// 		btcaddress.Address{},
+	// 		btctypes.Address{},
 	// 		nil,
-	// 		btcutxo.UTXO{},
+	// 		btctypes.UTXO{},
 
 	// 		"",
 	// 		"",
 	// 	},
 	// 	{
 	// 		btctypes.ZecTestnet,
-	// 		btcutxo.UTXOs{},
+	// 		btctypes.UTXOs{},
 
-	// 		btcaddress.Address{},
+	// 		btctypes.Address{},
 	// 		nil,
-	// 		btcutxo.UTXO{},
+	// 		btctypes.UTXO{},
 
 	// 		"",
 	// 		"",
@@ -94,11 +91,11 @@ var _ = Describe("btc gateway", func() {
 	// 			key, err := loadTestAccounts(client.Network()).EcdsaKey(44, 1, 0, 0, 1)
 	// 			gateway := New(client, key.PublicKey, []byte{})
 
-	// 			address, err := btcaddress.AddressFromPubKey(key.PublicKey, client.Network())
+	// 			address, err := btctypes.AddressFromPubKey(key.PublicKey, client.Network())
 	// 			Expect(err).NotTo(HaveOccurred())
 
 	// 			// send to gateway
-	// 			recipients := btcaddress.Recipients{
+	// 			recipients := btctypes.Recipients{
 	// 				{
 	// 					Address: gateway.Address(),
 	// 					Amount:  20000 * btctypes.SAT,
@@ -120,12 +117,12 @@ var _ = Describe("btc gateway", func() {
 	// 			gatewayUTXO, err := gateway.UTXO(tx.OutPoint(gateway.Address()))
 	// 			Expect(err).NotTo(HaveOccurred())
 	// 			// fmt.Printf("utxo: %v", gatewayUTXO)
-	// 			gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
+	// 			gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
 	// 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 	// 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 	// 			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
 	// 			fmt.Printf("gas amount=%v", gasAmount)
-	// 			recipients = btcaddress.Recipients{{
+	// 			recipients = btctypes.Recipients{{
 	// 				Address: address,
 	// 				Amount:  gatewayUTXOs.Sum() - gasAmount,
 	// 			}}
@@ -139,7 +136,7 @@ var _ = Describe("btc gateway", func() {
 	// 				sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
 	// 				Expect(err).NotTo(HaveOccurred())
 	// 			}
-	// 			serializedPK := btcaddress.SerializePublicKey(key.PublicKey, client.Network())
+	// 			serializedPK := btctypes.SerializePublicKey(key.PublicKey, client.Network())
 	// 			err = tx.InjectSignatures(sigs, serializedPK)
 
 	// 			Expect(err).NotTo(HaveOccurred())
@@ -174,15 +171,15 @@ var _ = Describe("btc gateway", func() {
 				time.Sleep(5 * time.Second)
 
 				// Fetch the UTXOs for the transaction hash
-				gatewayUTXO, err := gateway.UTXO(btcutxo.NewOutPoint(txHash, 0))
+				gatewayUTXO, err := gateway.UTXO(btctypes.NewOutPoint(txHash, 0))
 				Expect(err).NotTo(HaveOccurred())
 				// fmt.Printf("utxo: %v", gatewayUTXO)
-				gatewayUTXOs := btcutxo.UTXOs{gatewayUTXO}
+				gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
 				Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 				txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 				gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
 				fmt.Printf("gas amount=%v", gasAmount)
-				recipients := btcaddress.Recipients{{
+				recipients := btctypes.Recipients{{
 					Address: account.Address(),
 					Amount:  gatewayUTXOs.Sum() - gasAmount,
 				}}
@@ -196,7 +193,7 @@ var _ = Describe("btc gateway", func() {
 					sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
 					Expect(err).NotTo(HaveOccurred())
 				}
-				serializedPK := btcaddress.SerializePublicKey(key.PublicKey, client.Network())
+				serializedPK := btctypes.SerializePublicKey(key.PublicKey, client.Network())
 				err = tx.InjectSignatures(sigs, serializedPK)
 
 				Expect(err).NotTo(HaveOccurred())

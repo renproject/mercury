@@ -1,28 +1,35 @@
-package btctx
+package btctypes
 
 import (
 	"bytes"
 	"crypto/ecdsa"
 	"fmt"
+	"io"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
-	"github.com/renproject/mercury/types/btctypes"
-	"github.com/renproject/mercury/types/btctypes/btcaddress"
-	"github.com/renproject/mercury/types/btctypes/btcutxo"
 )
 
+type BtcTx interface {
+	types.Tx
+	UTXOs() UTXOs
+	OutputUTXO(address Address) UTXO
+}
+
 type tx struct {
-	outputUTXOs map[btcaddress.Address]btcutxo.UTXO
-	network     btctypes.Network
+	outputUTXOs map[Address]UTXO
+	network     Network
 	sigHashes   []types.SignatureHash
-	utxos       btcutxo.UTXOs
-	tx          btcutxo.MsgTx
+	utxos       UTXOs
+	tx          MsgTx
 	signed      bool
 }
 
-func NewUnsignedTx(network btctypes.Network, utxos btcutxo.UTXOs, msgTx btcutxo.MsgTx, outputUTXOs map[btcaddress.Address]btcutxo.UTXO) (BtcTx, error) {
+func NewUnsignedTx(network Network, utxos UTXOs, msgTx MsgTx, outputUTXOs map[Address]UTXO) (BtcTx, error) {
 	t := tx{
 		outputUTXOs: outputUTXOs,
 		network:     network,
@@ -55,7 +62,7 @@ func (t *tx) Sign(key *ecdsa.PrivateKey) (err error) {
 			return err
 		}
 	}
-	serializedPK := btcaddress.SerializePublicKey(key.PublicKey, t.network)
+	serializedPK := SerializePublicKey(key.PublicKey, t.network)
 	return t.InjectSignatures(sigs, serializedPK)
 }
 
@@ -65,7 +72,7 @@ func (t *tx) IsSigned() bool {
 
 // OutPoint returns the OutPoint that can is funding the given address, returns
 // nil if the address is not being funded.
-func (t *tx) OutputUTXO(address btcaddress.Address) btcutxo.UTXO {
+func (t *tx) OutputUTXO(address Address) UTXO {
 	if !t.signed {
 		panic("OutPoint should only be called after signing the transaction")
 	}
@@ -73,7 +80,7 @@ func (t *tx) OutputUTXO(address btcaddress.Address) btcutxo.UTXO {
 	if !ok {
 		return nil
 	}
-	return btcutxo.NewStandardUTXO(t.network.Chain(), t.Hash(), utxo.Amount(), utxo.ScriptPubKey(), utxo.Vout(), 0)
+	return NewUTXO(NewOutPoint(t.Hash(), utxo.Vout()), utxo.Amount(), utxo.ScriptPubKey(), 0, nil, nil)
 }
 
 // Serialize returns the serialized tx in bytes.
@@ -135,6 +142,65 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey []byte) 
 	return nil
 }
 
-func (t *tx) UTXOs() btcutxo.UTXOs {
+func (t *tx) UTXOs() UTXOs {
 	return t.utxos
+}
+
+type MsgTx interface {
+	Serialize(buffer io.Writer) error
+	TxHash() chainhash.Hash
+	InCount() int
+	AddTxIn(txIn *wire.TxIn)
+	AddTxOut(txOut *wire.TxOut)
+	AddSigScript(i int, sigScript []byte)
+}
+
+func NewMsgTx(network Network) MsgTx {
+	switch network.Chain() {
+	case types.Bitcoin:
+		return NewBtcMsgTx(wire.NewMsgTx(BtcVersion))
+	case types.ZCash:
+		return NewZecMsgTx(&zecutil.MsgTx{
+			MsgTx:        wire.NewMsgTx(ZecVersion),
+			ExpiryHeight: ZecExpiryHeight,
+		})
+	default:
+		panic(types.ErrUnknownChain)
+	}
+}
+
+type BtcMsgTx struct {
+	*wire.MsgTx
+}
+
+func NewBtcMsgTx(msgTx *wire.MsgTx) BtcMsgTx {
+	return BtcMsgTx{msgTx}
+}
+
+func (msgTx BtcMsgTx) InCount() int {
+	return len(msgTx.TxIn)
+}
+
+func (msgTx BtcMsgTx) AddSigScript(i int, sigScript []byte) {
+	msgTx.TxIn[i].SignatureScript = sigScript
+}
+
+type ZecMsgTx struct {
+	*zecutil.MsgTx
+}
+
+func (msgTx ZecMsgTx) Serialize(buf io.Writer) error {
+	return msgTx.ZecEncode(buf, 0, wire.BaseEncoding)
+}
+
+func (msgTx ZecMsgTx) InCount() int {
+	return len(msgTx.TxIn)
+}
+
+func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
+	msgTx.TxIn[i].SignatureScript = sigScript
+}
+
+func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
+	return ZecMsgTx{msgTx}
 }

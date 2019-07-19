@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/renproject/mercury/testutil/hdutil"
 	"github.com/renproject/mercury/types/btctypes"
-	"github.com/renproject/mercury/types/btctypes/btcaddress"
 )
 
 // ErrInvalidMnemonic is returned when the mnemonic is invalid.
@@ -56,20 +55,20 @@ func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 }
 
 // EcdsaKey return the ECDSA key on the given path of the HD key.
-func (hdkey HdKey) Address(path ...uint32) (btcaddress.Address, error) {
+func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
 	key, err := hdkey.EcdsaKey(path...)
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(key.PublicKey, hdkey.network)
+	return btctypes.AddressFromPubKey(key.PublicKey, hdkey.network)
 }
 
-func RandomAddress(network btctypes.Network) (btcaddress.Address, error) {
+func RandomAddress(network btctypes.Network) (btctypes.Address, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return btcaddress.AddressFromPubKey(key.PublicKey, network)
+	return btctypes.AddressFromPubKey(key.PublicKey, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.
