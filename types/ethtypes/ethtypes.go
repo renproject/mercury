@@ -26,6 +26,10 @@ func (network network) String() string {
 	}
 }
 
+func (network network) Chain() types.Chain {
+	return types.Ethereum
+}
+
 type Network interface {
 	types.Network
 }
