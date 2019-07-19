@@ -67,11 +67,12 @@ func main() {
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
 	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
-	infuraTestnetClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
+	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
+	testnetClient, err := ethrpc.New(ethKovanRPCURL)
 	if err != nil {
 		logger.Fatalf("cannot construct infura testnet client: %v", err)
 	}
-	ethTestnetProxy := proxy.NewProxy(infuraTestnetClient)
+	ethTestnetProxy := proxy.NewProxy(testnetClient)
 	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
