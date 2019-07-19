@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/renproject/mercury/cache"
@@ -109,8 +111,12 @@ func GetMethodAndID(data []byte) (string, int, error) {
 
 func FetchResponse(proxy *proxy.Proxy, r *http.Request, data []byte) func() ([]byte, error) {
 	return func() ([]byte, error) {
+		// TODO: Update the timeout as per requirements.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
 		// Fetch the response from the API.
-		resp, err := proxy.ProxyRequest(r, data)
+		resp, err := proxy.ProxyRequest(ctx, r, data)
 		if err != nil {
 			return nil, err
 		}

@@ -1,6 +1,7 @@
 package proxy_test
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -20,7 +21,7 @@ var _ = Describe("Proxies", func() {
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req, nil)
+			resp, err := proxy.ProxyRequest(context.Background(), req, nil)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -33,7 +34,7 @@ var _ = Describe("Proxies", func() {
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req, nil)
+			resp, err := proxy.ProxyRequest(context.Background(), req, nil)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -46,7 +47,7 @@ var _ = Describe("Proxies", func() {
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req, nil)
+			resp, err := proxy.ProxyRequest(context.Background(), req, nil)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -58,7 +59,7 @@ var _ = Describe("Proxies", func() {
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := proxy.ProxyRequest(req, nil)
+			resp, err := proxy.ProxyRequest(context.Background(), req, nil)
 			Expect(resp).To(BeNil())
 			Expect(err).To(HaveOccurred())
 		})
