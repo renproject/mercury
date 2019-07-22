@@ -19,6 +19,7 @@ type Client interface {
 	BlockNumber(context.Context) (*big.Int, error)
 	Contract(address ethtypes.Address, abi []byte) (ethtypes.Contract, error)
 	Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error)
+	EthClient() *ethclient.Client
 	SuggestGasPrice(context.Context, types.TxSpeed) ethtypes.Amount
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
@@ -140,4 +141,8 @@ func (c *client) GasLimit(ctx context.Context) (uint64, error) {
 
 func (c *client) Contract(address ethtypes.Address, abi []byte) (ethtypes.Contract, error) {
 	return ethtypes.NewContract(c.client, address, abi)
+}
+
+func (c *client) EthClient() *ethclient.Client {
+	return c.client
 }
