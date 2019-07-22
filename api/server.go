@@ -43,9 +43,8 @@ func (server *Server) Run() {
 	// Use recovery handler and provide cross-origin support.
 	r.Use(server.recoveryHandler)
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowCredentials: true,
-		AllowedMethods:   []string{"GET", "POST"},
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"POST"},
 	}).Handler(r)
 
 	// Set-up request timeout and header size limit for the server.
