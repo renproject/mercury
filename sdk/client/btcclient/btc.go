@@ -185,8 +185,8 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	}
 
 	// Add an output to refund the difference between the amount being transferred to recipients and the total amount
-	// from the UTXOs.
-	if amountToRefund > 0 {
+	// from the UTXOs, if it is greater than the Dust amount.
+	if amountToRefund > Dust {
 		recipients = append(recipients, btctypes.NewRecipient(refundTo, amountToRefund))
 	}
 
