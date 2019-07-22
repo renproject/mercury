@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/renproject/kv"
+	"github.com/renproject/mercury/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,7 +36,7 @@ func New(store kv.Store, logger logrus.FieldLogger) *Cache {
 // Get checks if the data for a given hash exists in the store, and if not, uses f() to retrieve the result. Any
 // requests that are sent while the result is being retrieved, wait until the first function call returns. This prevents
 // the function f() from being called multiple times for the same request.
-func (cache *Cache) Get(level int64, hash string, f func() ([]byte, error)) ([]byte, error) {
+func (cache *Cache) Get(level types.AccessLevel, hash string, f func() ([]byte, error)) ([]byte, error) {
 	if level == 2 {
 		return f()
 	}
