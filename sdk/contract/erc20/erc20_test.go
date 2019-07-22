@@ -2,6 +2,8 @@ package erc20_test
 
 import (
 	"context"
+	"fmt"
+	"math/big"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -39,6 +41,22 @@ var _ = Describe("ERC20 contract", func() {
 				decimals, err := erc20.Decimals(context.Background())
 				Expect(err).Should(BeNil())
 				Expect(decimals).Should(Equal(uint8(18)))
+			})
+
+			It("should be able to watch for events on an ERC20 contract", func() {
+				client, err := ethclient.New(logrus.StandardLogger(), ethtypes.Kovan)
+				Expect(err).Should(BeNil())
+				erc20, err := New(client, testcase.ContractAddress)
+				Expect(err).Should(BeNil())
+				events := make(chan ethtypes.Event, 10)
+
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				go erc20.Watch(ctx, events, nil)
+				for event := range events {
+					fmt.Println(event.Args["value"].(*big.Int))
+				}
 			})
 		})
 	}

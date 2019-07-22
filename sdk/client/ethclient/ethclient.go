@@ -15,15 +15,15 @@ import (
 
 // Client is a client which is used to interact with the Ethereum network using the Mercury server.
 type Client interface {
-	EthClient() *ethclient.Client
 	Balance(context.Context, ethtypes.Address) (ethtypes.Amount, error)
 	BlockNumber(context.Context) (*big.Int, error)
+	Contract(address ethtypes.Address, abi []byte) (ethtypes.Contract, error)
+	Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error)
 	SuggestGasPrice(context.Context, types.TxSpeed) ethtypes.Amount
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
 	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
-	Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error)
 }
 
 type client struct {
@@ -37,7 +37,6 @@ type client struct {
 func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 	var url string
 	switch network {
-
 	case ethtypes.Mainnet:
 		url = "http://206.189.83.88:5000/eth/mainnet"
 	case ethtypes.Kovan:
@@ -60,11 +59,6 @@ func NewCustomClient(logger logrus.FieldLogger, url string) (Client, error) {
 		logger:     logger,
 		gasStation: NewEthGasStation(logger, 30*time.Minute),
 	}, nil
-}
-
-// EthClient returns the eth client of the given ethereum address.
-func (c *client) EthClient() *ethclient.Client {
-	return c.client
 }
 
 // Balance returns the balance of the given ethereum address.
@@ -142,4 +136,8 @@ func (c *client) GasLimit(ctx context.Context) (uint64, error) {
 		return 0, err
 	}
 	return value.GasLimit, nil
+}
+
+func (c *client) Contract(address ethtypes.Address, abi []byte) (ethtypes.Contract, error) {
+	return ethtypes.NewContract(c.client, address, abi)
 }
