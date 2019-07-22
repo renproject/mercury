@@ -107,3 +107,11 @@ func AddressFromHex(addr string) Address {
 func (addr Address) Hex() string {
 	return common.Address(addr).Hex()
 }
+
+type Hash common.Hash
+
+type Event struct {
+	Name        string
+	Args        map[string]interface{}
+	IndexedArgs []Hash
+}
