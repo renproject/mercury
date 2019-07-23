@@ -60,7 +60,7 @@ func (api *Api) jsonRPCHandler() http.HandlerFunc {
 
 		level := WhitelistLevel(api.network, method)
 		if level == 0 {
-			writeError(w, r, api.logger, http.StatusMethodNotAllowed, id, err)
+			writeError(w, r, api.logger, http.StatusMethodNotAllowed, id, fmt.Errorf("method unavailable: %s", method))
 			return
 		}
 
