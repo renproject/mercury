@@ -16,7 +16,7 @@ type ERC20 interface {
 	Decimals(ctx context.Context) (uint8, error)
 
 	Transfer(ctx context.Context, signer, to ethtypes.Address, amount ethtypes.Amount) (ethtypes.Tx, error)
-	Approve(ctx context.Context, signer, from, to ethtypes.Address) (ethtypes.Tx, error)
+	Approve(ctx context.Context, signer, to ethtypes.Address, amount ethtypes.Amount) (ethtypes.Tx, error)
 	TransferFrom(ctx context.Context, signer, from, to ethtypes.Address, amount ethtypes.Amount) (ethtypes.Tx, error)
 
 	Watch(ctx context.Context, events chan<- ethtypes.Event, beginBlockNum *big.Int) error
@@ -69,8 +69,8 @@ func (e *erc20) Transfer(ctx context.Context, signer, to ethtypes.Address, amoun
 }
 
 // Approve the given amount of ERC20 to the `to` address from the `from` address
-func (e *erc20) Approve(ctx context.Context, signer, from, to ethtypes.Address) (ethtypes.Tx, error) {
-	return e.contract.BuildTx(ctx, signer, "approve", nil, from, to)
+func (e *erc20) Approve(ctx context.Context, signer, to ethtypes.Address, amount ethtypes.Amount) (ethtypes.Tx, error) {
+	return e.contract.BuildTx(ctx, signer, "approve", nil, to, amount)
 }
 
 // TransferFrom the given amount of ERC20 to the `to` address from the `from` address
