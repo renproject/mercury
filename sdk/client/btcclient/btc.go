@@ -3,6 +3,7 @@ package btcclient
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -216,6 +217,8 @@ func (c *client) SubmitSignedTx(stx btctypes.BtcTx) (types.TxHash, error) {
 	return types.TxHash(txHash), nil
 }
 
+// EstimateTxSize estimates the tx size depending on number of utxos used and recipients. DEPRICATED use
+// btctypes.EstimateTxSize() instead.
 func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
 	return 146*numUTXOs + 33*numRecipients + 10
 }
@@ -275,4 +278,20 @@ func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Reci
 		outputUTXOs[recipient.Address] = btctypes.NewUTXO(btctypes.NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil, nil)
 	}
 	return btctypes.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
+}
+
+func (c *client) SerializePublicKey(pubkey ecdsa.PublicKey) []byte {
+	return btctypes.SerializePublicKey(pubkey, c.network)
+}
+func (c *client) AddressFromBase58(addr string) (btctypes.Address, error) {
+	return btctypes.AddressFromBase58(addr, c.network)
+}
+func (c *client) AddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error) {
+	return btctypes.AddressFromPubKey(pubkey, c.network)
+}
+func (c *client) AddressFromScript(script []byte) (btctypes.Address, error) {
+	return btctypes.AddressFromScript(script, c.network)
+}
+func (c *client) PayToAddrScript(address btctypes.Address) ([]byte, error) {
+	return btctypes.PayToAddrScript(address, c.network)
 }
