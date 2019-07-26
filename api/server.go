@@ -39,12 +39,13 @@ func (server *Server) Run() {
 	for _, api := range server.apis {
 		api.AddHandler(r)
 	}
+	r.HandleFunc("/health", server.health()).Methods("GET")
 
 	// Use recovery handler and provide cross-origin support.
 	r.Use(server.recoveryHandler)
 	handler := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"POST"},
+		AllowedMethods: []string{"GET", "POST"},
 	}).Handler(r)
 
 	// Set-up request timeout and header size limit for the server.
@@ -61,6 +62,12 @@ func (server *Server) Run() {
 	// Start running the server.
 	server.logger.Infof("mercury listening on 0.0.0.0:%v...", server.port)
 	httpServer.ListenAndServe()
+}
+
+func (server *Server) health() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 func (server *Server) recoveryHandler(h http.Handler) http.Handler {
