@@ -16,6 +16,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/rpcclient"
 	"github.com/renproject/mercury/rpcclient/btcrpcclient"
+	mclient "github.com/renproject/mercury/sdk/client"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
@@ -55,9 +56,9 @@ func MercuryURL(network btctypes.Network) string {
 
 	switch network {
 	case btctypes.BtcMainnet, btctypes.ZecMainnet:
-		return fmt.Sprintf("http://139.59.217.120:5000/%s/mainnet", chainStr)
+		return fmt.Sprintf("%s/%s/mainnet", mclient.MercuryURL, chainStr)
 	case btctypes.BtcTestnet, btctypes.ZecTestnet:
-		return fmt.Sprintf("http://139.59.217.120:5000/%s/testnet", chainStr)
+		return fmt.Sprintf("%s/%s/testnet", mclient.MercuryURL, chainStr)
 	case btctypes.BtcLocalnet, btctypes.ZecLocalnet:
 		return fmt.Sprintf("http://0.0.0.0:5000/%s/testnet", chainStr)
 	default:

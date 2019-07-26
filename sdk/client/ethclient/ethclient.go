@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	mclient "github.com/renproject/mercury/sdk/client"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
 	"github.com/sirupsen/logrus"
@@ -39,9 +40,9 @@ func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 	var url string
 	switch network {
 	case ethtypes.Mainnet:
-		url = "http://139.59.217.120:5000/eth/mainnet"
+		url = fmt.Sprintf("%s/eth/mainnet", mclient.MercuryURL)
 	case ethtypes.Kovan:
-		url = "http://139.59.217.120:5000/eth/kovan"
+		url = fmt.Sprintf("%s/eth/kovan", mclient.MercuryURL)
 	default:
 		return nil, types.ErrUnknownNetwork
 	}
