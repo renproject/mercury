@@ -55,9 +55,9 @@ func MercuryURL(network btctypes.Network) string {
 
 	switch network {
 	case btctypes.BtcMainnet, btctypes.ZecMainnet:
-		return fmt.Sprintf("http://206.189.83.88:5000/%s/mainnet", chainStr)
+		return fmt.Sprintf("http://139.59.217.120:5000/%s/mainnet", chainStr)
 	case btctypes.BtcTestnet, btctypes.ZecTestnet:
-		return fmt.Sprintf("http://206.189.83.88:5000/%s/testnet", chainStr)
+		return fmt.Sprintf("http://139.59.217.120:5000/%s/testnet", chainStr)
 	case btctypes.BtcLocalnet, btctypes.ZecLocalnet:
 		return fmt.Sprintf("http://0.0.0.0:5000/%s/testnet", chainStr)
 	default:

@@ -39,9 +39,9 @@ func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 	var url string
 	switch network {
 	case ethtypes.Mainnet:
-		url = "http://206.189.83.88:5000/eth/mainnet"
+		url = "http://139.59.217.120:5000/eth/mainnet"
 	case ethtypes.Kovan:
-		url = "http://206.189.83.88:5000/eth/kovan"
+		url = "http://139.59.217.120:5000/eth/kovan"
 	default:
 		return nil, types.ErrUnknownNetwork
 	}
