@@ -21,7 +21,7 @@ type BtcTx interface {
 }
 
 type tx struct {
-	outputUTXOs map[Address]UTXO
+	outputUTXOs map[string]UTXO
 	network     Network
 	sigHashes   []types.SignatureHash
 	utxos       UTXOs
@@ -29,7 +29,7 @@ type tx struct {
 	signed      bool
 }
 
-func NewUnsignedTx(network Network, utxos UTXOs, msgTx MsgTx, outputUTXOs map[Address]UTXO) (BtcTx, error) {
+func NewUnsignedTx(network Network, utxos UTXOs, msgTx MsgTx, outputUTXOs map[string]UTXO) (BtcTx, error) {
 	t := tx{
 		outputUTXOs: outputUTXOs,
 		network:     network,
@@ -76,7 +76,7 @@ func (t *tx) OutputUTXO(address Address) UTXO {
 	if !t.signed {
 		panic("OutPoint should only be called after signing the transaction")
 	}
-	utxo, ok := t.outputUTXOs[address]
+	utxo, ok := t.outputUTXOs[address.EncodeAddress()]
 	if !ok {
 		return nil
 	}
