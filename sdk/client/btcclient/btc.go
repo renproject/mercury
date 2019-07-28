@@ -3,6 +3,7 @@ package btcclient
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/mercury/rpcclient"
 	"github.com/renproject/mercury/rpcclient/btcrpcclient"
+	mclient "github.com/renproject/mercury/sdk/client"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/sirupsen/logrus"
@@ -54,9 +56,9 @@ func MercuryURL(network btctypes.Network) string {
 
 	switch network {
 	case btctypes.BtcMainnet, btctypes.ZecMainnet:
-		return fmt.Sprintf("http://206.189.83.88:5000/%s/mainnet", chainStr)
+		return fmt.Sprintf("%s/%s/mainnet", mclient.MercuryURL, chainStr)
 	case btctypes.BtcTestnet, btctypes.ZecTestnet:
-		return fmt.Sprintf("http://206.189.83.88:5000/%s/testnet", chainStr)
+		return fmt.Sprintf("%s/%s/testnet", mclient.MercuryURL, chainStr)
 	case btctypes.BtcLocalnet, btctypes.ZecLocalnet:
 		return fmt.Sprintf("http://0.0.0.0:5000/%s/testnet", chainStr)
 	default:
@@ -185,8 +187,8 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	}
 
 	// Add an output to refund the difference between the amount being transferred to recipients and the total amount
-	// from the UTXOs.
-	if amountToRefund > 0 {
+	// from the UTXOs, if it is greater than the Dust amount.
+	if amountToRefund > Dust {
 		recipients = append(recipients, btctypes.NewRecipient(refundTo, amountToRefund))
 	}
 
@@ -216,6 +218,8 @@ func (c *client) SubmitSignedTx(stx btctypes.BtcTx) (types.TxHash, error) {
 	return types.TxHash(txHash), nil
 }
 
+// EstimateTxSize estimates the tx size depending on number of utxos used and recipients. DEPRICATED use
+// btctypes.EstimateTxSize() instead.
 func (c *client) EstimateTxSize(numUTXOs, numRecipients int) int {
 	return 146*numUTXOs + 33*numRecipients + 10
 }
@@ -275,4 +279,20 @@ func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Reci
 		outputUTXOs[recipient.Address.EncodeAddress()] = btctypes.NewUTXO(btctypes.NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil, nil)
 	}
 	return btctypes.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
+}
+
+func (c *client) SerializePublicKey(pubkey ecdsa.PublicKey) []byte {
+	return btctypes.SerializePublicKey(pubkey, c.network)
+}
+func (c *client) AddressFromBase58(addr string) (btctypes.Address, error) {
+	return btctypes.AddressFromBase58(addr, c.network)
+}
+func (c *client) AddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error) {
+	return btctypes.AddressFromPubKey(pubkey, c.network)
+}
+func (c *client) AddressFromScript(script []byte) (btctypes.Address, error) {
+	return btctypes.AddressFromScript(script, c.network)
+}
+func (c *client) PayToAddrScript(address btctypes.Address) ([]byte, error) {
+	return btctypes.PayToAddrScript(address, c.network)
 }

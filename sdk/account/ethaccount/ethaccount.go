@@ -15,6 +15,7 @@ type Account interface {
 	Client() ethclient.Client
 	Address() ethtypes.Address
 	Balance(ctx context.Context) (ethtypes.Amount, error)
+	Transfer(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasPrice ethtypes.Amount) (ethtypes.TxHash, error)
 	BuildUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error)
 	PrivateKey() *ecdsa.PrivateKey
 	SignUnsignedTx(ctx context.Context, utx *ethtypes.Tx) error
@@ -64,11 +65,27 @@ func RandomAccount(client ethclient.Client) (Account, error) {
 	return NewAccountFromPrivateKey(client, privateKey)
 }
 
+func (acc *account) Transfer(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasPrice ethtypes.Amount) (ethtypes.TxHash, error) {
+	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
+	// fmt.Printf("nonce fetched back from infura: %v", nonce)
+	if err != nil {
+		return ethtypes.TxHash{}, fmt.Errorf("failed to get pending nonce: %v", err)
+	}
+	tx, err := acc.client.BuildUnsignedTx(ctx, nonce, toAddress, value, 21000, gasPrice, nil)
+	if err != nil {
+		return ethtypes.TxHash{}, err
+	}
+	if err := tx.Sign(acc.key); err != nil {
+		return ethtypes.TxHash{}, err
+	}
+	return acc.client.PublishSignedTx(ctx, tx)
+}
+
 func (acc *account) BuildUnsignedTx(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
 	nonce, err := acc.client.PendingNonceAt(ctx, acc.address)
-	fmt.Printf("nonce fetched back from infura: %v", nonce)
+	// fmt.Printf("nonce fetched back from infura: %v", nonce)
 	if err != nil {
-		return ethtypes.Tx{}, err
+		return ethtypes.Tx{}, fmt.Errorf("failed to get pending nonce: %v", err)
 	}
 	return acc.client.BuildUnsignedTx(ctx, nonce, toAddress, value, gasLimit, gasPrice, data)
 }

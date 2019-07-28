@@ -204,3 +204,7 @@ func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
 func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
 	return ZecMsgTx{msgTx}
 }
+
+func EstimateTxSize(numUTXOs, numRecipients int) int {
+	return 146*numUTXOs + 33*numRecipients + 10
+}

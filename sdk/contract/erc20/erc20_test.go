@@ -40,6 +40,22 @@ var _ = Describe("ERC20 contract", func() {
 				Expect(err).Should(BeNil())
 				Expect(decimals).Should(Equal(uint8(18)))
 			})
+
+			// It("should be able to watch for events on an ERC20 contract", func() {
+			// 	client, err := ethclient.New(logrus.StandardLogger(), ethtypes.Kovan)
+			// 	Expect(err).Should(BeNil())
+			// 	erc20, err := New(client, testcase.ContractAddress)
+			// 	Expect(err).Should(BeNil())
+			// 	events := make(chan ethtypes.Event, 10)
+
+			// 	ctx, cancel := context.WithCancel(context.Background())
+			// 	defer cancel()
+
+			// 	go erc20.Watch(ctx, events, nil)
+			// 	for event := range events {
+			// 		fmt.Println(event.Args["value"].(*big.Int))
+			// 	}
+			// })
 		})
 	}
 })

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -22,8 +23,10 @@ const (
 )
 
 type UTXO interface {
-	OutPoint
+	OutPoint() OutPoint
 
+	TxHash() types.TxHash
+	Vout() uint32
 	Confirmations() uint64
 	Amount() Amount
 	ScriptPubKey() []byte
@@ -52,13 +55,23 @@ func (utxos UTXOs) Filter(confs uint64) UTXOs {
 }
 
 type utxo struct {
-	OutPoint
-
+	op              OutPoint
 	amount          Amount
 	scriptPubKey    []byte
 	confirmations   uint64
-	Script          []byte
-	UpdateSigScript func(builder *txscript.ScriptBuilder)
+	script          []byte
+	updateSigScript func(builder *txscript.ScriptBuilder)
+}
+
+func NewUTXO(op OutPoint, amount Amount, scriptPubKey []byte, confirmations uint64, script []byte, updateSigScript func(builder *txscript.ScriptBuilder)) UTXO {
+	return utxo{
+		op:              op,
+		amount:          amount,
+		scriptPubKey:    scriptPubKey,
+		confirmations:   confirmations,
+		script:          script,
+		updateSigScript: updateSigScript,
+	}
 }
 
 func (u utxo) Confirmations() uint64 {
@@ -73,41 +86,44 @@ func (u utxo) ScriptPubKey() []byte {
 	return u.scriptPubKey
 }
 
+func (u utxo) TxHash() types.TxHash {
+	return u.op.TxHash()
+}
+
+func (u utxo) Vout() uint32 {
+	return u.op.Vout()
+}
+
+func (u utxo) OutPoint() OutPoint {
+	return u.op
+}
+
 func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]byte, error) {
 	switch msgTx := msgTx.(type) {
 	case BtcMsgTx:
-		if u.Script == nil {
+		if u.script == nil {
 			return txscript.CalcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx)
 		}
-		return txscript.CalcSignatureHash(u.Script, hashType, msgTx.MsgTx, idx)
+		return txscript.CalcSignatureHash(u.script, hashType, msgTx.MsgTx, idx)
 	case ZecMsgTx:
-		if u.Script == nil {
+		if u.script == nil {
 			return calcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx, u.Amount())
 		}
-		return calcSignatureHash(u.Script, hashType, msgTx.MsgTx, idx, u.Amount())
+		return calcSignatureHash(u.script, hashType, msgTx.MsgTx, idx, u.Amount())
 	default:
 		return nil, fmt.Errorf("unknown msgTx type: %T", msgTx)
 	}
 }
 
 func (u utxo) AddData(builder *txscript.ScriptBuilder) {
-	if u.UpdateSigScript != nil {
-		u.UpdateSigScript(builder)
-	}
-}
-
-func NewUTXO(op OutPoint, amount Amount, scriptPubKey []byte, confirmations uint64, script []byte, updateSigScript func(builder *txscript.ScriptBuilder)) UTXO {
-	return utxo{
-		OutPoint:        op,
-		amount:          amount,
-		scriptPubKey:    scriptPubKey,
-		confirmations:   confirmations,
-		UpdateSigScript: updateSigScript,
-		Script:          script,
+	if u.updateSigScript != nil {
+		u.updateSigScript(builder)
 	}
 }
 
 type OutPoint interface {
+	Write(io.Writer) error
+
 	TxHash() types.TxHash
 	Vout() uint32
 }
@@ -124,12 +140,33 @@ func NewOutPoint(txHash types.TxHash, vout uint32) OutPoint {
 	}
 }
 
+func ReadOutPoint(r io.Reader) (OutPoint, error) {
+	op := outPoint{}
+	if err := binary.Read(r, binary.LittleEndian, &op.txHash); err != nil {
+		return op, err
+	}
+	if err := binary.Read(r, binary.LittleEndian, &op.vout); err != nil {
+		return op, err
+	}
+	return op, nil
+}
+
 func (op outPoint) TxHash() types.TxHash {
 	return op.txHash
 }
 
 func (op outPoint) Vout() uint32 {
 	return op.vout
+}
+
+func (op outPoint) Write(w io.Writer) error {
+	if err := binary.Write(w, binary.LittleEndian, op.txHash); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, op.vout); err != nil {
+		return err
+	}
+	return nil
 }
 
 type upgradeParam struct {

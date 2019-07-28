@@ -17,6 +17,11 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+const (
+	ErrorCodeInvalidJSON    = -32700
+	ErrorCodeInvalidRequest = -32600
+)
+
 type Api struct {
 	network types.Network
 	proxy   *proxy.Proxy
@@ -43,21 +48,19 @@ func (api *Api) jsonRPCHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			// TODO: return a jsonrpc standard id
-			writeError(w, r, api.logger, http.StatusBadRequest, -1, err)
+			writeError(w, r, api.logger, http.StatusBadRequest, ErrorCodeInvalidJSON, err)
 			return
 		}
 
 		method, id, err := GetMethodAndID(data)
 		if err != nil {
-			// TODO: return a jsonrpc standard id
-			writeError(w, r, api.logger, http.StatusBadRequest, -1, fmt.Errorf("cannot get the method: %v", err))
+			writeError(w, r, api.logger, http.StatusBadRequest, ErrorCodeInvalidRequest, fmt.Errorf("cannot get the method: %v", err))
 			return
 		}
 
 		level := WhitelistLevel(api.network, method)
 		if level == 0 {
-			writeError(w, r, api.logger, http.StatusMethodNotAllowed, id, err)
+			writeError(w, r, api.logger, http.StatusMethodNotAllowed, id, fmt.Errorf("method unavailable: %s", method))
 			return
 		}
 

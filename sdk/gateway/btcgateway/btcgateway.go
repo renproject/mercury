@@ -13,15 +13,16 @@ import (
 type Gateway interface {
 	UTXO(op btctypes.OutPoint) (btctypes.UTXO, error)
 	Address() btctypes.Address
+	Spender() btctypes.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
 	Script() []byte
 }
 
 type gateway struct {
-	client      btcclient.Client
-	script      []byte
-	gwAddr      btctypes.Address
-	spenderAddr btctypes.Address
+	addr    btctypes.Address
+	spender btctypes.Address
+	client  btcclient.Client
+	script  btctypes.Script
 }
 
 // New returns a new Gateway
@@ -40,7 +41,7 @@ func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) G
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script")
 	}
-	gwAddr, err := btctypes.AddressFromScript(script, client.Network())
+	scriptAddr, err := btctypes.AddressFromScript(script, client.Network())
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway script address")
 	}
@@ -48,12 +49,7 @@ func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) G
 	if err != nil {
 		panic("invariant violation: invalid bitcoin gateway spender address")
 	}
-	return &gateway{
-		client:      client,
-		script:      script,
-		gwAddr:      gwAddr,
-		spenderAddr: spenderAddr,
-	}
+	return &gateway{scriptAddr, spenderAddr, client, btctypes.NewScript(script, nil)}
 }
 
 func (gw *gateway) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
@@ -61,27 +57,19 @@ func (gw *gateway) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return btctypes.NewUTXO(
-		op,
-		utxo.Amount(),
-		utxo.ScriptPubKey(),
-		utxo.Confirmations(),
-		gw.Script(),
-		func(builder *txscript.ScriptBuilder) {
-			builder.AddData(gw.Script())
-		},
-	), nil
+	return gw.script.Update(utxo), nil
 }
 
 func (gw *gateway) Address() btctypes.Address {
-	return gw.gwAddr
+	return gw.addr
+}
+
+func (gw *gateway) Spender() btctypes.Address {
+	return gw.spender
 }
 
 func (gw *gateway) Script() []byte {
-	script := make([]byte, len(gw.script))
-	copy(script, gw.script)
-	return script
+	return gw.script.Bytes()
 }
 
 func (gw *gateway) EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int {

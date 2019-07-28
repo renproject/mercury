@@ -22,6 +22,7 @@ type contract struct {
 type Contract interface {
 	BuildTx(ctx context.Context, from Address, method string, value *big.Int, params ...interface{}) (Tx, error)
 	Call(ctx context.Context, caller Address, result interface{}, method string, params ...interface{}) error
+	Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, topics ...[]Hash) error
 }
 
 func NewContract(client *ethclient.Client, address Address, contractABI []byte) (Contract, error) {
@@ -108,4 +109,62 @@ func (c *contract) Call(ctx context.Context, caller Address, result interface{},
 	}
 
 	return c.abi.Unpack(result, method, output)
+}
+
+func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, topics ...[]Hash) error {
+	if beginBlockNum == nil {
+		beginBlockNum = big.NewInt(0)
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			logs, err := c.client.FilterLogs(ctx, ethereum.FilterQuery{
+				FromBlock: beginBlockNum,
+				Addresses: []common.Address{
+					common.Address(c.address),
+				},
+				Topics: encodeHashMatrix(topics),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to filter logs")
+			}
+			for _, log := range logs {
+				beginBlockNum.SetUint64(log.BlockNumber)
+				event, err := c.abi.EventByID(log.Topics[0])
+				if err != nil {
+					return fmt.Errorf("failed to get event by id: %s", err)
+				}
+				eventArgs := map[string]interface{}{}
+				if err := event.Inputs.UnpackIntoMap(eventArgs, log.Data); err != nil {
+					return fmt.Errorf("failed to unpack an event: %v", err)
+				}
+				events <- Event{
+					Name:        event.Name,
+					IndexedArgs: decodeHashes(log.Topics[1:]),
+					Args:        eventArgs,
+				}
+			}
+		}
+	}
+}
+
+func encodeHashMatrix(hashMatrix [][]Hash) [][]common.Hash {
+	commonHashes := make([][]common.Hash, len(hashMatrix))
+	for i, hashRow := range hashMatrix {
+		commonHashes[i] = make([]common.Hash, len(hashRow))
+		for j, hashColumn := range hashRow {
+			commonHashes[i][j] = common.Hash(hashColumn)
+		}
+	}
+	return commonHashes
+}
+
+func decodeHashes(chashes []common.Hash) []Hash {
+	hashes := make([]Hash, len(chashes))
+	for i, chash := range chashes {
+		hashes[i] = Hash(chash)
+	}
+	return hashes
 }
