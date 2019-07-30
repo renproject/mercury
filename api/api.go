@@ -141,10 +141,10 @@ func FetchResponse(proxy *proxy.Proxy, r *http.Request, data []byte) func() ([]b
 
 func writeError(w http.ResponseWriter, r *http.Request, logger logrus.FieldLogger, statusCode, id int, err error) {
 	resp := struct {
-		Error interface{} `json:"error"`
-		ID    int         `json:"id"`
+		Error string `json:"error"`
+		ID    int    `json:"id"`
 	}{
-		Error: err,
+		Error: err.Error(),
 		ID:    id,
 	}
 
