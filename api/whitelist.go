@@ -19,7 +19,7 @@ func EthWhitelistLevel(method string) types.AccessLevel {
 		"eth_call", "eth_estimateGas", "eth_pendingTransactions", "eth_getFilterChanges", "eth_getFilterLogs",
 		"eth_getLogs", "eth_getWork", "eth_getProof":
 		return types.FullAccess
-	case "net_version", "eth_getBlockTransactionCountByHash", "eth_getBlockTransactionCountByNumber", "eth_getStorageAt",
+	case "net_version", "eth_chainId", "eth_getBlockTransactionCountByHash", "eth_getBlockTransactionCountByNumber", "eth_getStorageAt",
 		"eth_getUncleCountByBlockHash", "eth_getUncleCountByBlockNumber", "eth_getUncleByBlockHashAndIndex",
 		"eth_getUncleByBlockNumberAndIndex", "eth_sign", "eth_getCode", "eth_sendTransaction", "eth_sendRawTransaction",
 		"eth_getBlockByHash", "eth_getTransactionByHash", "eth_getTransactionByBlockHashAndIndex",
