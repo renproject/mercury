@@ -41,7 +41,7 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 
 	data, err := c.abi.Pack(method, params...)
 	if err != nil {
-		return Tx{}, err
+		return Tx{}, fmt.Errorf("failed to pack data: %v", err)
 	}
 
 	// Ensure a valid value field and resolve the account nonce
@@ -78,7 +78,7 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 
 	chainID, err := c.client.ChainID(ctx)
 	if err != nil {
-		return Tx{}, err
+		return Tx{}, fmt.Errorf("failed to get chain id: %v", err)
 	}
 
 	return Tx{
