@@ -11,6 +11,7 @@ import (
 
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
+	Update(utxo btctypes.UTXO) btctypes.UTXO
 	UTXO(op btctypes.OutPoint) (btctypes.UTXO, error)
 	Address() btctypes.Address
 	Spender() btctypes.Address
@@ -58,6 +59,10 @@ func (gw *gateway) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
 		return nil, err
 	}
 	return gw.script.Update(utxo), nil
+}
+
+func (gw *gateway) Update(utxo btctypes.UTXO) btctypes.UTXO {
+	return gw.script.Update(utxo)
 }
 
 func (gw *gateway) Address() btctypes.Address {
