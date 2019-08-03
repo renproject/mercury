@@ -92,10 +92,11 @@ func encodeRequest(method string, params []interface{}) ([]byte, error) {
 // decodeResponse decodes the response body of a client request into the interface reply.
 func decodeResponse(r io.Reader, reply interface{}) error {
 	var c response
-	if err := json.NewDecoder(r).Decode(&c); err != nil {
-		return err
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	if err := json.Unmarshal(buf.Bytes(), &c); err != nil {
+		return fmt.Errorf("cannot decode response body = %s, err = %v", buf.String(), err)
 	}
-
 	if c.Error != nil {
 		return &errObj{Data: c.Error}
 	}
