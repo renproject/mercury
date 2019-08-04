@@ -126,6 +126,7 @@ type OutPoint interface {
 
 	TxHash() types.TxHash
 	Vout() uint32
+	fmt.Stringer
 }
 
 type outPoint struct {
@@ -167,6 +168,10 @@ func (op outPoint) Write(w io.Writer) error {
 		return err
 	}
 	return nil
+}
+
+func (op outPoint) String() string {
+	return fmt.Sprintf("%x:%d", op.txHash, op.vout)
 }
 
 type upgradeParam struct {
