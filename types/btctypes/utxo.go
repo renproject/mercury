@@ -171,7 +171,7 @@ func (op outPoint) Write(w io.Writer) error {
 }
 
 func (op outPoint) String() string {
-	return fmt.Sprintf("%x:%d", op.txHash, op.vout)
+	return fmt.Sprintf("%s:%d", op.txHash, op.vout)
 }
 
 type upgradeParam struct {
