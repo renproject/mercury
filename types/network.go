@@ -10,6 +10,7 @@ const (
 	Bitcoin  Chain = 0
 	Ethereum Chain = 1
 	ZCash    Chain = 2
+	Binance  Chain = 3
 )
 
 // String implements the `Stringer` interface.
