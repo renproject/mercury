@@ -3,6 +3,7 @@ package btcrpcclient
 import (
 	"context"
 	"encoding/hex"
+	"io"
 	"time"
 
 	"github.com/renproject/mercury/rpcclient"
@@ -57,7 +58,7 @@ func NewRPCClient(host, user, password string, retryDelay time.Duration) Client 
 
 func (client *rpcClient) ListUnspent(ctx context.Context, minConf, maxConf int64, addresses []string) (ListUnspentResponse, error) {
 	resp := ListUnspentResponse{}
-	if err := client.client.SendRequest(ctx, "listunspent", &resp, minConf, maxConf, addresses); err != nil {
+	if err := client.client.SendRequest(ctx, "listunspent", &resp, minConf, maxConf, addresses); err != nil && err != io.EOF {
 		return resp, err
 	}
 	return resp, nil
