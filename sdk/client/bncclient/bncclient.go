@@ -13,6 +13,7 @@ import (
 )
 
 type Client interface {
+	PrintTime()
 }
 
 type client struct {
@@ -26,9 +27,9 @@ func New(network bnctypes.Network) Client {
 	var baseURL string
 	switch network {
 	case bnctypes.Testnet:
-		baseURL = "dex.binance.org/api"
+		baseURL = "dex.binance.org"
 	case bnctypes.Mainnet:
-		baseURL = "testnet-dex.binance.org/api"
+		baseURL = "testnet-dex.binance.org"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
