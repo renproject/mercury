@@ -164,14 +164,14 @@ var _ = Describe("btc gateway", func() {
 				amount := 20000 * btctypes.SAT
 
 				// Fund mjSUANWKvokgHo6mxoHdq27aBgdCJ39uNA if the following transfer fails with not enough balance.
-				txHash, err := account.Transfer(gateway.Address(), amount, types.Standard)
+				txHash, err := account.Transfer(context.Background(), gateway.Address(), amount, types.Standard)
 				Expect(err).NotTo(HaveOccurred())
 				fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
 				// Sleep for a small period of time in hopes that the transaction will go through
 				time.Sleep(5 * time.Second)
 
 				// Fetch the UTXOs for the transaction hash
-				gatewayUTXO, err := gateway.UTXO(btctypes.NewOutPoint(txHash, 0))
+				gatewayUTXO, err := gateway.UTXO(context.Background(), btctypes.NewOutPoint(txHash, 0))
 				Expect(err).NotTo(HaveOccurred())
 				// fmt.Printf("utxo: %v", gatewayUTXO)
 				gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
@@ -197,7 +197,7 @@ var _ = Describe("btc gateway", func() {
 				err = tx.InjectSignatures(sigs, serializedPK)
 
 				Expect(err).NotTo(HaveOccurred())
-				newTxHash, err := client.SubmitSignedTx(tx)
+				newTxHash, err := client.SubmitSignedTx(context.Background(), tx)
 				Expect(err).NotTo(HaveOccurred())
 				fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
 			})

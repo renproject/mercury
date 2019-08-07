@@ -1,6 +1,8 @@
 package btcaccount_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/testutil/btcaccount"
@@ -25,7 +27,7 @@ var _ = Describe("btc account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			account, err := NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
-			utxos, err := account.UTXOs()
+			utxos, err := account.UTXOs(context.Background())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(utxos)).Should(BeNumerically(">", 0))
 		})
@@ -35,7 +37,7 @@ var _ = Describe("btc account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			account, err := RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
-			utxos, err := account.UTXOs()
+			utxos, err := account.UTXOs(context.Background())
 			Expect(err).NotTo(HaveOccurred())
 			// fmt.Printf("address: %v has balance: %v\n", account.Address().EncodeAddress(), balance)
 			Expect(len(utxos)).Should(Equal(0))

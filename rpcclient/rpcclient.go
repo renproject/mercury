@@ -2,11 +2,13 @@ package rpcclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
+	"time"
 )
 
 // request represents a JSON-RPC request sent by a client.
@@ -34,38 +36,41 @@ func (e *errObj) Error() string {
 }
 
 type Client interface {
-	SendRequest(method string, response interface{}, params ...interface{}) error
+	SendRequest(ctx context.Context, method string, response interface{}, params ...interface{}) error
 }
 
 type client struct {
 	host     string
 	user     string
 	password string
+
+	retryDelay time.Duration
 }
 
-func NewClient(host, user, password string) Client {
+func NewClient(host, user, password string, retryDelay time.Duration) Client {
 	return &client{
-		host, user, password,
+		host, user, password, retryDelay,
 	}
 }
 
-func (client *client) SendRequest(method string, response interface{}, params ...interface{}) error {
+func (client *client) SendRequest(ctx context.Context, method string, response interface{}, params ...interface{}) error {
 	data, err := encodeRequest(method, params)
 	if err != nil {
 		return err
 	}
 
-	request, err := http.NewRequest("POST", client.host, bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-	request.SetBasicAuth(client.user, client.password)
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-
-	return decodeResponse(resp.Body, response)
+	return retry(ctx, client.retryDelay, func() error {
+		request, err := http.NewRequest("POST", client.host, bytes.NewBuffer(data))
+		if err != nil {
+			return err
+		}
+		request.SetBasicAuth(client.user, client.password)
+		resp, err := http.DefaultClient.Do(request)
+		if err != nil {
+			return err
+		}
+		return decodeResponse(resp.Body, response)
+	})
 }
 
 // encodeRequest encodes parameters for a JSON-RPC client request.
@@ -107,3 +112,20 @@ func decodeResponse(r io.Reader, reply interface{}) error {
 }
 
 var ErrNullResult = fmt.Errorf("unexpected null result")
+
+func retry(ctx context.Context, delay time.Duration, fn func() error) error {
+	ticker := time.NewTicker(delay)
+	if err := fn(); err == nil {
+		return nil
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			if err := fn(); err == nil {
+				return nil
+			}
+		}
+	}
+}
