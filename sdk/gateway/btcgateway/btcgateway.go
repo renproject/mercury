@@ -1,6 +1,7 @@
 package btcgateway
 
 import (
+	"context"
 	"crypto/ecdsa"
 
 	"github.com/btcsuite/btcd/txscript"
@@ -12,7 +13,7 @@ import (
 // Gateway is an interface for interacting with Gateways
 type Gateway interface {
 	Update(utxo btctypes.UTXO) btctypes.UTXO
-	UTXO(op btctypes.OutPoint) (btctypes.UTXO, error)
+	UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO, error)
 	Address() btctypes.Address
 	Spender() btctypes.Address
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
@@ -53,8 +54,8 @@ func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) G
 	return &gateway{scriptAddr, spenderAddr, client, btctypes.NewScript(script, nil)}
 }
 
-func (gw *gateway) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
-	utxo, err := gw.client.UTXO(op)
+func (gw *gateway) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO, error) {
+	utxo, err := gw.client.UTXO(ctx, op)
 	if err != nil {
 		return nil, err
 	}
