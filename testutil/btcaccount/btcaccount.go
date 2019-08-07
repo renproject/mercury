@@ -22,8 +22,8 @@ func ErrInsufficientBalance(expect, have string) error {
 type Account interface {
 	Address() btctypes.Address
 	PrivateKey() *ecdsa.PrivateKey
-	Transfer(to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error)
-	UTXOs() (utxos btctypes.UTXOs, err error)
+	Transfer(ctx context.Context, address btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error)
+	UTXOs(ctx context.Context) (utxos btctypes.UTXOs, err error)
 }
 
 // account is a bitcoin wallet which can transfer funds and building tx.
@@ -80,14 +80,14 @@ func (acc *account) PrivateKey() *ecdsa.PrivateKey {
 }
 
 // UTXOs returns the UTXOs for an imported account.
-func (acc *account) UTXOs() (utxos btctypes.UTXOs, err error) {
-	return acc.Client.UTXOsFromAddress(acc.address)
+func (acc *account) UTXOs(ctx context.Context) (utxos btctypes.UTXOs, err error) {
+	return acc.Client.UTXOsFromAddress(ctx, acc.address)
 }
 
 // Transfer transfer certain amount value to the target address. Important: this only works for accounts that have been
 // imported into the Bitcoin node.
-func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error) {
-	utxos, err := acc.UTXOs()
+func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error) {
+	utxos, err := acc.UTXOs(ctx)
 	if err != nil {
 		return "", fmt.Errorf("error fetching utxos: %v", err)
 	}
@@ -111,5 +111,5 @@ func (acc *account) Transfer(to btctypes.Address, value btctypes.Amount, speed t
 	}
 
 	// Submit the signed tx
-	return acc.Client.SubmitSignedTx(tx)
+	return acc.Client.SubmitSignedTx(ctx, tx)
 }

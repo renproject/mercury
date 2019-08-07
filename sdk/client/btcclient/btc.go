@@ -71,7 +71,7 @@ func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
 	host := MercuryURL(network)
 	gasStation := NewBtcGasStation(logger, 30*time.Minute)
 	return &client{
-		client:     btcrpcclient.NewRPCClient(host, "", ""),
+		client:     btcrpcclient.NewRPCClient(host, "", "", 5*time.Second),
 		network:    network,
 		config:     *network.Params(),
 		url:        host,
@@ -85,17 +85,17 @@ func (c *client) Network() btctypes.Network {
 }
 
 // UTXO returns the UTXO for the given transaction hash and index.
-func (c *client) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
+func (c *client) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO, error) {
 	if len(op.TxHash()) != 64 {
 		return nil, ErrInvalidTxHash
 	}
 
-	tx, err := c.client.GetRawTransactionVerbose(string(op.TxHash()))
+	tx, err := c.client.GetRawTransactionVerbose(ctx, string(op.TxHash()))
 	if err != nil {
 		return nil, ErrTxHashNotFound
 	}
 
-	txOut, err := c.client.GetTxOut(string(op.TxHash()), op.Vout())
+	txOut, err := c.client.GetTxOut(ctx, string(op.TxHash()), op.Vout())
 	if err != nil {
 		if err == rpcclient.ErrNullResult {
 			return nil, ErrUTXOSpent
@@ -124,8 +124,8 @@ func (c *client) UTXO(op btctypes.OutPoint) (btctypes.UTXO, error) {
 
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
 // addresses that have not been imported into the Bitcoin node.
-func (c *client) UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, error) {
-	outputs, err := c.client.ListUnspent(0, 999999, []string{address.EncodeAddress()})
+func (c *client) UTXOsFromAddress(ctx context.Context, address btctypes.Address) (btctypes.UTXOs, error) {
+	outputs, err := c.client.ListUnspent(ctx, 0, 999999, []string{address.EncodeAddress()})
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve utxos from btc client: %v", err)
 	}
@@ -155,8 +155,8 @@ func (c *client) UTXOsFromAddress(address btctypes.Address) (btctypes.UTXOs, err
 }
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
-func (c *client) Confirmations(txHash types.TxHash) (uint64, error) {
-	tx, err := c.client.GetRawTransactionVerbose(string(txHash))
+func (c *client) Confirmations(ctx context.Context, txHash types.TxHash) (uint64, error) {
+	tx, err := c.client.GetRawTransactionVerbose(ctx, string(txHash))
 	if err != nil {
 		return 0, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
@@ -197,7 +197,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 }
 
 // SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.
-func (c *client) SubmitSignedTx(stx btctypes.BtcTx) (types.TxHash, error) {
+func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.BtcTx) (types.TxHash, error) {
 	// Pre-condition checks
 	if !stx.IsSigned() {
 		return "", errors.New("pre-condition violation: cannot submit unsigned transaction")
@@ -211,7 +211,7 @@ func (c *client) SubmitSignedTx(stx btctypes.BtcTx) (types.TxHash, error) {
 		return "", fmt.Errorf("pre-condition violation: serialization failed: %v", err)
 	}
 
-	txHash, err := c.client.SendRawTransaction(data)
+	txHash, err := c.client.SendRawTransaction(ctx, data)
 	if err != nil {
 		return "", fmt.Errorf("cannot send raw transaction using btc client: %v", err)
 	}
