@@ -3,6 +3,7 @@ package btcclient_test
 import (
 	"context"
 	"encoding/hex"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -109,11 +110,17 @@ var _ = Describe("btc client", func() {
 	}
 	for _, testCase := range testCases {
 		testCase := testCase
+		timeout := 30 * time.Second
+
 		Context("when fetching UTXOs", func() {
 			It("should return the UTXO for a transaction with unspent outputs", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
-				utxo, err := client.UTXO(context.Background(), testCase.UnspentOutPoint)
+
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+
+				utxo, err := client.UTXO(ctx, testCase.UnspentOutPoint)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(utxo.TxHash()).To(Equal(testCase.UnspentOutPoint.TxHash()))
 				Expect(utxo.Amount()).To(Equal(testCase.Amount))
@@ -125,7 +132,10 @@ var _ = Describe("btc client", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO(context.Background(), testCase.InvalidOutPoint)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+
+				_, err = client.UTXO(ctx, testCase.InvalidOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
@@ -133,7 +143,10 @@ var _ = Describe("btc client", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO(context.Background(), testCase.SpentOutPoint)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+
+				_, err = client.UTXO(ctx, testCase.SpentOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
@@ -141,7 +154,10 @@ var _ = Describe("btc client", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO(context.Background(), testCase.InvalidTxHashOutPoint)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+
+				_, err = client.UTXO(ctx, testCase.InvalidTxHashOutPoint)
 				Expect(err).To(Equal(ErrInvalidTxHash))
 			})
 
@@ -149,7 +165,10 @@ var _ = Describe("btc client", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.UTXO(context.Background(), testCase.NonExistentTxHashOutPoint)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+
+				_, err = client.UTXO(ctx, testCase.NonExistentTxHashOutPoint)
 				Expect(err).To(Equal(ErrTxHashNotFound))
 			})
 
@@ -159,7 +178,10 @@ var _ = Describe("btc client", func() {
 				address, err := loadTestAccounts(testCase.Network).Address(44, 1, 0, 0, 1)
 				Expect(err).NotTo(HaveOccurred())
 
-				utxos, err := client.UTXOsFromAddress(context.Background(), address)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+
+				utxos, err := client.UTXOsFromAddress(ctx, address)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(BeNumerically(">", 0))
 			})
@@ -170,7 +192,10 @@ var _ = Describe("btc client", func() {
 				address, err := testutil.RandomAddress(testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
 
-				utxos, err := client.UTXOsFromAddress(context.Background(), address)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+
+				utxos, err := client.UTXOsFromAddress(ctx, address)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(Equal(0))
 			})
