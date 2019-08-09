@@ -125,7 +125,8 @@ func retry(ctx context.Context, delay time.Duration, fn func() error) error {
 		case <-ctx.Done():
 			return err
 		case <-ticker.C:
-			if err = fn(); err == nil {
+			err = fn()
+			if err == nil {
 				return nil
 			}
 		}
