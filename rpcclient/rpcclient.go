@@ -118,12 +118,14 @@ func retry(ctx context.Context, delay time.Duration, fn func() error) error {
 	if err := fn(); err == nil {
 		return nil
 	}
+
+	var err error
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return err
 		case <-ticker.C:
-			if err := fn(); err == nil {
+			if err = fn(); err == nil {
 				return nil
 			}
 		}
