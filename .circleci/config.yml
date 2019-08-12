@@ -19,14 +19,14 @@ jobs:
             go get -u github.com/loongy/covermerge
             go get -u github.com/mattn/goveralls
             # install ganache-cli
-            curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            sudo npm install -g ganache-cli
-      - run:
-          name: Start ganache server
-          command: |
-            ./start_ganache.sh
-          background: true
+            # curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+            # sudo apt-get install -y nodejs
+            # sudo npm install -g ganache-cli
+#     - run:
+#         name: Start ganache server
+#         command: |
+#           ./start_ganache.sh
+#         background: true
       - run:
           name: Start local Mercury server
           command: |
