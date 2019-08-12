@@ -3,7 +3,8 @@ version: 2.1
 executors:
   go_exec:
     docker:
-      - image: circleci/golang:1.12
+      - image: intabulas/go-node-bedrock:v1.0.44
+
 jobs:
   build:
     executor: go_exec
@@ -19,14 +20,12 @@ jobs:
             go get -u github.com/loongy/covermerge
             go get -u github.com/mattn/goveralls
             # install ganache-cli
-            # curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-            # sudo apt-get install -y nodejs
-            # sudo npm install -g ganache-cli
-#     - run:
-#         name: Start ganache server
-#         command: |
-#           ./start_ganache.sh
-#         background: true
+            npm install -g ganache-cli
+      - run:
+          name: Start ganache server
+          command: |
+            ./start_ganache.sh
+          background: true
       - run:
           name: Start local Mercury server
           command: |
