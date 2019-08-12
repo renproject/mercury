@@ -4,8 +4,6 @@ executors:
   go_exec:
     docker:
       - image: circleci/golang:1.12
-    resource_class: large
-
 jobs:
   build:
     executor: go_exec
