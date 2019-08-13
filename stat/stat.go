@@ -6,13 +6,15 @@ import (
 )
 
 type Stat struct {
-	// requests is a
+	// requestTimes is a map of hour -> method -> count
 	requestTimes map[int]map[string]int
-	initTimes    map[int]time.Time
-	requestsMu   *sync.Mutex
+	// initTimes is a map of hour -> time
+	initTimes  map[int]time.Time
+	requestsMu *sync.Mutex
 }
 
-var Day = 24 * time.Hour
+// Day is the number of nanoseconds in a day
+const Day = 24 * time.Hour
 
 func NewStat() Stat {
 	requestTimes := make(map[int]map[string]int)
