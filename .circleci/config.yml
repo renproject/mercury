@@ -4,7 +4,6 @@ executors:
   go_exec:
     docker:
       - image: intabulas/go-node-bedrock:v1.0.44
-
 jobs:
   build:
     executor: go_exec
@@ -19,8 +18,7 @@ jobs:
             go get -u github.com/onsi/ginkgo/ginkgo
             go get -u github.com/loongy/covermerge
             go get -u github.com/mattn/goveralls
-            # install ganache-cli
-            npm install -g ganache-cli
+            npm install -g --unsafe-perm --force ethnode
       - run:
           name: Start ganache server
           command: |
@@ -35,7 +33,7 @@ jobs:
           name: Run tests
           command: |
             # make sure all the tests pass
-            go test -v ./...
+            # go test -v ./...
             # all the tests passed so update coverage
             CI=true /go/bin/ginkgo -v --race --cover --coverprofile coverprofile.out ./...
             /go/bin/covermerge \
