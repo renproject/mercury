@@ -18,8 +18,10 @@ const Day = 24 * time.Hour
 
 func NewStat() Stat {
 	requestTimes := make(map[int]map[string]int)
+	initTimes := make(map[int]time.Time)
 	return Stat{
 		requestTimes: requestTimes,
+		initTimes:    initTimes,
 		requestsMu:   &sync.Mutex{},
 	}
 }
