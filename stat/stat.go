@@ -13,8 +13,8 @@ type Stat struct {
 	requestsMu *sync.Mutex
 }
 
-// Day is the number of nanoseconds in a day
-const Day = 24 * time.Hour
+// day is the number of nanoseconds in a day
+const day = 24 * time.Hour
 
 func NewStat() Stat {
 	requestTimes := make(map[int]map[string]int)
@@ -32,7 +32,7 @@ func (stat *Stat) Get() map[string]int {
 	stat.requestsMu.Lock()
 	for hour, methodTimestamps := range stat.requestTimes {
 		// only count the hour if it was within the past day
-		if t.Sub(stat.initTimes[hour]) > Day {
+		if t.Sub(stat.initTimes[hour]) > day {
 			continue
 		}
 
@@ -49,7 +49,7 @@ func (stat *Stat) Insert(method string) {
 	stat.requestsMu.Lock()
 
 	// initialise the secondary map if nil
-	if stat.requestTimes[t.Hour()] == nil || t.Sub(stat.initTimes[t.Hour()]) > Day {
+	if stat.requestTimes[t.Hour()] == nil || t.Sub(stat.initTimes[t.Hour()]) > day {
 		stat.requestTimes[t.Hour()] = make(map[string]int)
 		stat.initTimes[t.Hour()] = t
 	}
