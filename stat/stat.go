@@ -7,12 +7,15 @@ import (
 
 type Stat struct {
 	// requests is a
-	requestTimes map[string]map[int]int
+	requestTimes map[int]map[string]int
+	initTimes    map[int]time.Time
 	requestsMu   *sync.Mutex
 }
 
+var Day = 24 * time.Hour
+
 func NewStat() Stat {
-	requestTimes := make(map[string]map[int]int)
+	requestTimes := make(map[int]map[string]int)
 	return Stat{
 		requestTimes: requestTimes,
 		requestsMu:   &sync.Mutex{},
@@ -20,14 +23,18 @@ func NewStat() Stat {
 }
 
 func (stat *Stat) Get() map[string]int {
+	t := time.Now()
 	numRequests := make(map[string]int)
 	stat.requestsMu.Lock()
-	for method, hourTimestamps := range stat.requestTimes {
-		total := 0
-		for _, count := range hourTimestamps {
-			total += count
+	for hour, methodTimestamps := range stat.requestTimes {
+		// only count the hour if it was within the past day
+		if t.Sub(stat.initTimes[hour]) > Day {
+			continue
 		}
-		numRequests[method] = total
+
+		for method, count := range methodTimestamps {
+			numRequests[method] += count
+		}
 	}
 	stat.requestsMu.Unlock()
 	return numRequests
@@ -36,6 +43,13 @@ func (stat *Stat) Get() map[string]int {
 func (stat *Stat) Insert(method string) {
 	t := time.Now()
 	stat.requestsMu.Lock()
-	stat.requestTimes[method][t.Hour()]++
+
+	// initialise the secondary map if nil
+	if stat.requestTimes[t.Hour()] == nil || t.Sub(stat.initTimes[t.Hour()]) > Day {
+		stat.requestTimes[t.Hour()] = make(map[string]int)
+		stat.initTimes[t.Hour()] = t
+	}
+
+	stat.requestTimes[t.Hour()][method]++
 	stat.requestsMu.Unlock()
 }
