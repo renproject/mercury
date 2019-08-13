@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/renproject/mercury/stat"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 )
@@ -21,6 +22,7 @@ type Server struct {
 	apis   []BlockchainApi
 	port   string
 	logger logrus.FieldLogger
+	stat   *stat.Stat
 }
 
 // NewServer returns a server which supports the given blockchain APIs.
@@ -40,6 +42,7 @@ func (server *Server) Run() {
 		api.AddHandler(r)
 	}
 	r.HandleFunc("/health", server.health()).Methods("GET")
+	r.HandleFunc("/stats", server.stats()).Methods("GET")
 
 	// Use recovery handler and provide cross-origin support.
 	r.Use(server.recoveryHandler)
@@ -65,6 +68,12 @@ func (server *Server) Run() {
 }
 
 func (server *Server) health() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (server *Server) stats() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
