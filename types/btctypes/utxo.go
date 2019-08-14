@@ -99,15 +99,22 @@ func (u utxo) OutPoint() OutPoint {
 }
 
 func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]byte, error) {
+	scriptPubKey := u.ScriptPubKey()
 	switch msgTx := msgTx.(type) {
 	case BtcMsgTx:
 		if u.script == nil {
-			return txscript.CalcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx)
+			if txscript.IsPayToWitnessPubKeyHash(scriptPubKey) {
+				return txscript.CalcWitnessSigHash(scriptPubKey, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, int64(u.amount))
+			}
+			return txscript.CalcSignatureHash(scriptPubKey, hashType, msgTx.MsgTx, idx)
+		}
+		if txscript.IsPayToWitnessPubKeyHash(scriptPubKey) {
+			return txscript.CalcWitnessSigHash(u.script, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, int64(u.amount))
 		}
 		return txscript.CalcSignatureHash(u.script, hashType, msgTx.MsgTx, idx)
 	case ZecMsgTx:
 		if u.script == nil {
-			return calcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx, u.Amount())
+			return calcSignatureHash(scriptPubKey, hashType, msgTx.MsgTx, idx, u.Amount())
 		}
 		return calcSignatureHash(u.script, hashType, msgTx.MsgTx, idx, u.Amount())
 	default:

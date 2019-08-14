@@ -56,14 +56,13 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 }
 
 // AddressFromPubKey gets the `Address` from a public key.
-func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error) {
+func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network, segwit bool) (Address, error) {
 	switch network.Chain() {
 	case types.Bitcoin:
-		addr, err := btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
-		if err != nil {
-			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
+		if segwit {
+			return btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params())
 		}
-		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
+		return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
 	default:
@@ -72,14 +71,14 @@ func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error)
 }
 
 // AddressFromScript gets the `Address` from a script.
-func AddressFromScript(script []byte, network Network) (Address, error) {
+func AddressFromScript(script []byte, network Network, segwit bool) (Address, error) {
 	switch network.Chain() {
 	case types.Bitcoin:
-		addr, err := btcutil.NewAddressScriptHash(script, network.Params())
-		if err != nil {
-			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
+		if segwit {
+			scriptHash := sha256.Sum256(script)
+			return btcutil.NewAddressWitnessScriptHash(scriptHash[:], network.Params())
 		}
-		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
+		return btcutil.NewAddressScriptHash(script, network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
 	default:

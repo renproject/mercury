@@ -16,48 +16,58 @@ import (
 	"github.com/renproject/mercury/types"
 )
 
-var _ = Describe("btc types ", func() {
+var _ = Describe("btc types", func() {
+	validateAddress := func(address Address, network Network, segwit bool) bool {
+		if network == BtcMainnet {
+			if segwit {
+				return strings.HasPrefix(address.EncodeAddress(), "bc1")
+			}
+			return strings.HasPrefix(address.EncodeAddress(), "1")
+		}
+		addr := address.EncodeAddress()
+		if segwit {
+			return strings.HasPrefix(address.EncodeAddress(), "tb1")
+		}
+		return strings.HasPrefix(addr, "m") || strings.HasPrefix(addr, "n")
+	}
+
 	for _, network := range []Network{BtcTestnet, BtcMainnet} {
 		network := network
-		Context(fmt.Sprintf("when generate new btc addresses of %v", network), func() {
-			It("should be able to generate random address of given network", func() {
-				randAddr := func() bool {
-					address, err := testutil.RandomAddress(network)
-					Expect(err).NotTo(HaveOccurred())
-					if network == BtcMainnet {
-						return strings.HasPrefix(address.EncodeAddress(), "1")
-					} else {
-						addr := address.EncodeAddress()
-						return strings.HasPrefix(addr, "m") || strings.HasPrefix(addr, "n")
+		for _, segwit := range []bool{true, false} {
+			segwit := segwit
+			Context(fmt.Sprintf("when generate new btc addresses of %v", network), func() {
+				It("should be able to generate random address of given network", func() {
+					test := func() bool {
+						address, err := testutil.RandomAddress(network, segwit)
+						Expect(err).NotTo(HaveOccurred())
+						return validateAddress(address, network, segwit)
 					}
-				}
+					Expect(quick.Check(test, nil)).To(Succeed())
+				})
 
-				Expect(quick.Check(randAddr, nil)).To(Succeed())
-			})
-
-			It("should be able to decode an address from string", func() {
-				randAddr, err := testutil.RandomAddress(network)
-				Expect(err).NotTo(HaveOccurred())
-				address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(address.EncodeAddress()).Should(Equal(randAddr.EncodeAddress()))
-			})
-
-			It("should be able to decode an address from public key", func() {
-				test := func() bool {
-					randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-					Expect(err).NotTo(HaveOccurred())
-					address, err := AddressFromPubKey(randKey.PublicKey, network)
-					if network == BtcMainnet {
-						return strings.HasPrefix(address.EncodeAddress(), "1")
-					} else {
-						addr := address.EncodeAddress()
-						return strings.HasPrefix(addr, "m") || strings.HasPrefix(addr, "n")
+				It("should be able to decode an address from string", func() {
+					test := func() bool {
+						randAddr, err := testutil.RandomAddress(network, segwit)
+						Expect(err).NotTo(HaveOccurred())
+						address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
+						Expect(err).NotTo(HaveOccurred())
+						return validateAddress(address, network, segwit)
 					}
-				}
-				Expect(quick.Check(test, nil)).To(Succeed())
+					Expect(quick.Check(test, nil)).To(Succeed())
+				})
+
+				It("should be able to decode an address from public key", func() {
+					test := func() bool {
+						randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+						Expect(err).NotTo(HaveOccurred())
+						address, err := AddressFromPubKey(randKey.PublicKey, network, segwit)
+						return validateAddress(address, network, segwit)
+					}
+					Expect(quick.Check(test, nil)).To(Succeed())
+				})
+
 			})
-		})
+		}
 	}
 
 	Context("bitcoin amount ", func() {
