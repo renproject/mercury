@@ -67,20 +67,20 @@ func main() {
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
 	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
-	infuraKovanClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
-	if err != nil {
-		logger.Fatalf("cannot construct infura mainnet client: %v", err)
-	}
-	ethKovanProxy := proxy.NewProxy(infuraKovanClient)
-	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethKovanProxy, ethKovanCache, logger)
-
-	// ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
-	// testnetClient, err := ethrpc.New(ethKovanRPCURL)
+	// infuraKovanClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
 	// if err != nil {
-	// 	logger.Fatalf("cannot construct infura testnet client: %v", err)
+	// 	logger.Fatalf("cannot construct infura mainnet client: %v", err)
 	// }
-	// ethTestnetProxy := proxy.NewProxy(testnetClient)
-	// ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
+	// ethKovanProxy := proxy.NewProxy(infuraKovanClient)
+	// ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethKovanProxy, ethKovanCache, logger)
+
+	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
+	testnetClient, err := ethrpc.New(ethKovanRPCURL)
+	if err != nil {
+		logger.Fatalf("cannot construct infura testnet client: %v", err)
+	}
+	ethTestnetProxy := proxy.NewProxy(testnetClient)
+	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
 	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, ethMainnetAPI, ethTestnetAPI)
