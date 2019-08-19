@@ -16,5 +16,5 @@ type Tx interface {
 	IsSigned() bool
 	Serialize() ([]byte, error)
 	Hash() TxHash
-	InjectSignatures(sigs []*btcec.Signature, serializedPubKey []byte) error
+	InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) error
 }
