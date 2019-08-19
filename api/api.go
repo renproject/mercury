@@ -79,7 +79,7 @@ func (api *Api) jsonRPCHandler() http.HandlerFunc {
 
 		var result Result
 		if err := json.Unmarshal(resp, &result); err != nil {
-			writeError(w, r, api.logger, http.StatusInternalServerError, id, err)
+			writeError(w, r, api.logger, http.StatusInternalServerError, id, fmt.Errorf(string(resp)))
 			return
 		}
 

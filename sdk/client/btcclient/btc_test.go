@@ -181,6 +181,7 @@ var _ = Describe("btc client", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
+				logger.Infof("funded %s address: %v\n", testCase.Network.Chain(), address)
 				utxos, err := client.UTXOsFromAddress(ctx, address)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(BeNumerically(">", 0))
