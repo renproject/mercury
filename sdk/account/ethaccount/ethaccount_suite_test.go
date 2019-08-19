@@ -2,7 +2,6 @@ package ethaccount_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -26,7 +25,7 @@ var EthAccount Account
 var _ = BeforeSuite(func() {
 	var err error
 	logger := logrus.StandardLogger()
-	Client, err = ethclient.NewCustomClient(logger, fmt.Sprintf("http://localhost:%s", os.Getenv("GANACHE_PORT")))
+	Client, err = ethclient.NewCustomClient(logger, os.Getenv("ETH_KOVAN_RPC_URL"))
 	Expect(err).NotTo(HaveOccurred())
 	privateKey, err := crypto.HexToECDSA(os.Getenv("LOCAL_ETH_TESTNET_PRIVATE_KEY")[2:])
 	Expect(err).ToNot(HaveOccurred())

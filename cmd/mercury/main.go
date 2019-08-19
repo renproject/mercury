@@ -7,6 +7,7 @@ import (
 	"github.com/renproject/mercury/api"
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
+	mercrpc "github.com/renproject/mercury/rpc"
 	"github.com/renproject/mercury/rpc/btcrpc"
 	"github.com/renproject/mercury/rpc/ethrpc"
 	"github.com/renproject/mercury/rpc/zecrpc"
@@ -64,23 +65,27 @@ func main() {
 	if err != nil {
 		logger.Fatalf("cannot construct infura mainnet client: %v", err)
 	}
+
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
 	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
-	infuraKovanClient, err := ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
-	if err != nil {
-		logger.Fatalf("cannot construct infura mainnet client: %v", err)
+	var testnetClient mercrpc.Client
+	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
+	if ethKovanRPCURL == "" {
+		logger.Infof("Using Infura")
+		testnetClient, err = ethrpc.NewInfuraClient(ethtypes.Kovan, infuraAPIKey, taggedKeys)
+		if err != nil {
+			logger.Fatalf("cannot construct kovan infura testnet client: %v", err)
+		}
+	} else {
+		logger.Infof("Using local ETH node at: %s", ethKovanRPCURL)
+		testnetClient, err = ethrpc.New(ethKovanRPCURL)
+		if err != nil {
+			logger.Fatalf("cannot construct local eth node testnet client: %v", err)
+		}
 	}
-	ethKovanProxy := proxy.NewProxy(infuraKovanClient)
-	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethKovanProxy, ethKovanCache, logger)
-
-	// ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
-	// testnetClient, err := ethrpc.New(ethKovanRPCURL)
-	// if err != nil {
-	// 	logger.Fatalf("cannot construct infura testnet client: %v", err)
-	// }
-	// ethTestnetProxy := proxy.NewProxy(testnetClient)
-	// ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
+	ethTestnetProxy := proxy.NewProxy(testnetClient)
+	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
 	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, ethMainnetAPI, ethTestnetAPI)
