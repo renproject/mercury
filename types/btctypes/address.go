@@ -32,11 +32,16 @@ func NewRecipient(address Address, amount Amount) Recipient {
 type Recipients []Recipient
 
 // SerializePublicKey serializes the public key to bytes.
-func SerializePublicKey(pubkey ecdsa.PublicKey, network Network) []byte {
+func SerializePublicKey(pubkey ecdsa.PublicKey, network Network, segwit bool) []byte {
 	switch network {
 	case BtcMainnet, ZecMainnet:
 		return (*btcec.PublicKey)(&pubkey).SerializeCompressed()
-	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet:
+	case BtcTestnet, BtcLocalnet:
+		if segwit {
+			return (*btcec.PublicKey)(&pubkey).SerializeCompressed()
+		}
+		return (*btcec.PublicKey)(&pubkey).SerializeUncompressed()
+	case ZecTestnet, ZecLocalnet:
 		return (*btcec.PublicKey)(&pubkey).SerializeUncompressed()
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -60,11 +65,11 @@ func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network, segwit bool) (Ad
 	switch network.Chain() {
 	case types.Bitcoin:
 		if segwit {
-			return btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params())
+			return btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(SerializePublicKey(pubkey, network, segwit)), network.Params())
 		}
-		return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
+		return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network, segwit), network.Params())
 	case types.ZCash:
-		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
+		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network, false)), network.Params(), false)
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}

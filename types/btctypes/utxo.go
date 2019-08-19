@@ -25,6 +25,7 @@ const (
 type UTXO interface {
 	OutPoint() OutPoint
 
+	SegWit() bool
 	TxHash() types.TxHash
 	Vout() uint32
 	Confirmations() uint64
@@ -108,7 +109,7 @@ func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]by
 			}
 			return txscript.CalcSignatureHash(scriptPubKey, hashType, msgTx.MsgTx, idx)
 		}
-		if txscript.IsPayToWitnessPubKeyHash(scriptPubKey) {
+		if txscript.IsPayToWitnessScriptHash(scriptPubKey) {
 			return txscript.CalcWitnessSigHash(u.script, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, int64(u.amount))
 		}
 		return txscript.CalcSignatureHash(u.script, hashType, msgTx.MsgTx, idx)
@@ -120,6 +121,11 @@ func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]by
 	default:
 		return nil, fmt.Errorf("unknown msgTx type: %T", msgTx)
 	}
+}
+
+func (u utxo) SegWit() bool {
+	scriptPubKey := u.ScriptPubKey()
+	return txscript.IsPayToWitnessPubKeyHash(scriptPubKey) || txscript.IsPayToWitnessPubKeyHash(scriptPubKey)
 }
 
 func (u utxo) AddData(builder *txscript.ScriptBuilder) {

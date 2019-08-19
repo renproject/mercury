@@ -62,8 +62,7 @@ func (t *tx) Sign(key *ecdsa.PrivateKey) (err error) {
 			return err
 		}
 	}
-	serializedPK := SerializePublicKey(key.PublicKey, t.network)
-	return t.InjectSignatures(sigs, serializedPK)
+	return t.InjectSignatures(sigs, key.PublicKey)
 }
 
 func (t *tx) IsSigned() bool {
@@ -109,7 +108,7 @@ func (t *tx) Hash() types.TxHash {
 
 // InjectSignatures injects the signed signatureHashes into the Tx. You cannot use the USTX anymore. scriptData is
 // additional data to be appended to the signature script, it can be nil or an empty byte array.
-func (t *tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey []byte) error {
+func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) error {
 	// Pre-condition checks
 	if t.IsSigned() {
 		panic("pre-condition violation: cannot inject signatures into signed transaction")
@@ -123,20 +122,26 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey []byte) 
 	if len(sigs) != t.tx.InCount() {
 		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), t.tx.InCount()))
 	}
-	if len(serializedPubKey) <= 0 {
-		panic("pre-condition violation: cannot inject signatures with empty pubkey")
-	}
 
 	for i, sig := range sigs {
-		builder := txscript.NewScriptBuilder()
-		builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
-		builder.AddData(serializedPubKey)
-		t.utxos[i].AddData(builder)
-		sigScript, err := builder.Script()
-		if err != nil {
-			return err
+		serializedPubKey := SerializePublicKey(pubKey, t.network, t.utxos[i].SegWit())
+		if len(serializedPubKey) <= 0 {
+			panic("pre-condition violation: cannot inject signatures with empty pubkey")
 		}
-		t.tx.AddSigScript(i, sigScript)
+
+		if !t.utxos[i].SegWit() {
+			builder := txscript.NewScriptBuilder()
+			builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
+			builder.AddData(serializedPubKey)
+			t.utxos[i].AddData(builder)
+			sigScript, err := builder.Script()
+			if err != nil {
+				return err
+			}
+			t.tx.AddSigScript(i, sigScript)
+		} else {
+			t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey)
+		}
 	}
 	t.signed = true
 	return nil
@@ -153,6 +158,7 @@ type MsgTx interface {
 	AddTxIn(txIn *wire.TxIn)
 	AddTxOut(txOut *wire.TxOut)
 	AddSigScript(i int, sigScript []byte)
+	AddSegWit(i int, sig, pubKey []byte)
 }
 
 func NewMsgTx(network Network) MsgTx {
@@ -185,6 +191,11 @@ func (msgTx BtcMsgTx) AddSigScript(i int, sigScript []byte) {
 	msgTx.TxIn[i].SignatureScript = sigScript
 }
 
+func (msgTx BtcMsgTx) AddSegWit(i int, sig, pubKey []byte) {
+	op := msgTx.TxIn[i].PreviousOutPoint
+	msgTx.TxIn[i] = wire.NewTxIn(&op, nil, [][]byte{sig, pubKey})
+}
+
 type ZecMsgTx struct {
 	*zecutil.MsgTx
 }
@@ -199,6 +210,10 @@ func (msgTx ZecMsgTx) InCount() int {
 
 func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
 	msgTx.TxIn[i].SignatureScript = sigScript
+}
+
+func (msgTx ZecMsgTx) AddSegWit(i int, sig, pubKey []byte) {
+	panic("ZCash does not support SegWit")
 }
 
 func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
