@@ -17,9 +17,9 @@ type Client interface {
 	SubmitSignedTx(ctx context.Context, stx btctypes.BtcTx) (types.TxHash, error)
 	EstimateTxSize(numUTXOs, numRecipients int) int // Depricated
 	SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSizeInBytes int) btctypes.Amount
-	SerializePublicKey(pubkey ecdsa.PublicKey) []byte
+	SerializePublicKey(pubkey ecdsa.PublicKey, segwit bool) []byte
 	AddressFromBase58(addr string) (btctypes.Address, error)
-	AddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error)
-	AddressFromScript(script []byte) (btctypes.Address, error)
+	AddressFromPubKey(pubkey ecdsa.PublicKey, segwit bool) (btctypes.Address, error)
+	AddressFromScript(script []byte, segwit bool) (btctypes.Address, error)
 	PayToAddrScript(address btctypes.Address) ([]byte, error)
 }

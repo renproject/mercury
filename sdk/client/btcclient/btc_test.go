@@ -189,7 +189,7 @@ var _ = Describe("btc client", func() {
 			It("should return zero UTXOs for a randomly generated address", func() {
 				client, err := New(logger, testCase.Network)
 				Expect(err).NotTo(HaveOccurred())
-				address, err := testutil.RandomAddress(testCase.Network)
+				address, err := testutil.RandomAddress(testCase.Network, false)
 				Expect(err).NotTo(HaveOccurred())
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -199,7 +199,6 @@ var _ = Describe("btc client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(utxos)).Should(Equal(0))
 			})
-
 		})
 
 		Context("when building a utx", func() {
