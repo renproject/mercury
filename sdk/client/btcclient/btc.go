@@ -44,23 +44,13 @@ type client struct {
 }
 
 func MercuryURL(network btctypes.Network) string {
-	var chainStr string
-	switch network.Chain() {
-	case types.Bitcoin:
-		chainStr = "btc"
-	case types.ZCash:
-		chainStr = "zec"
-	default:
-		panic(types.ErrUnknownChain)
-	}
-
 	switch network {
-	case btctypes.BtcMainnet, btctypes.ZecMainnet:
-		return fmt.Sprintf("%s/%s/mainnet", mclient.MercuryURL, chainStr)
-	case btctypes.BtcTestnet, btctypes.ZecTestnet:
-		return fmt.Sprintf("%s/%s/testnet", mclient.MercuryURL, chainStr)
-	case btctypes.BtcLocalnet, btctypes.ZecLocalnet:
-		return fmt.Sprintf("http://0.0.0.0:5000/%s/testnet", chainStr)
+	case btctypes.BtcMainnet, btctypes.ZecMainnet, btctypes.BchMainnet:
+		return fmt.Sprintf("%s/%s/mainnet", mclient.MercuryURL, network.Chain().String())
+	case btctypes.BtcTestnet, btctypes.ZecTestnet, btctypes.BchTestnet:
+		return fmt.Sprintf("%s/%s/testnet", mclient.MercuryURL, network.Chain().String())
+	case btctypes.BtcLocalnet, btctypes.ZecLocalnet, btctypes.BchLocalnet:
+		return fmt.Sprintf("http://0.0.0.0:5000/%s/testnet", network.Chain().String())
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
