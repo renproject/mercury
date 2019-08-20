@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/cpacia/bchutil"
 	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
 )
@@ -34,9 +35,9 @@ type Recipients []Recipient
 // SerializePublicKey serializes the public key to bytes.
 func SerializePublicKey(pubkey ecdsa.PublicKey, network Network, segwit bool) []byte {
 	switch network {
-	case BtcMainnet, ZecMainnet:
+	case BtcMainnet, ZecMainnet, BchMainnet:
 		return (*btcec.PublicKey)(&pubkey).SerializeCompressed()
-	case BtcTestnet, BtcLocalnet:
+	case BtcTestnet, BtcLocalnet, BchTestnet, BchLocalnet:
 		if segwit {
 			return (*btcec.PublicKey)(&pubkey).SerializeCompressed()
 		}
@@ -55,6 +56,8 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 		return btcutil.DecodeAddress(addr, network.Params())
 	case types.ZCash:
 		return zecutil.DecodeAddress(addr, network.Params().Name)
+	case types.BitcoinCash:
+		return bchutil.DecodeAddress(addr, network.Params())
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -70,6 +73,8 @@ func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network, segwit bool) (Ad
 		return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network, segwit), network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network, false)), network.Params(), false)
+	case types.BitcoinCash:
+		return bchutil.NewCashAddressPubKeyHash(SerializePublicKey(pubkey, network, segwit), network.Params())
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -86,6 +91,8 @@ func AddressFromScript(script []byte, network Network, segwit bool) (Address, er
 		return btcutil.NewAddressScriptHash(script, network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
+	case types.BitcoinCash:
+		return bchutil.NewCashAddressScriptHash(script, network.Params())
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -98,6 +105,8 @@ func PayToAddrScript(address Address, network Network) ([]byte, error) {
 		return txscript.PayToAddrScript(address)
 	case types.ZCash:
 		return zecutil.PayToAddrScript(address)
+	case types.BitcoinCash:
+		return bchutil.PayToAddrScript(address)
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}

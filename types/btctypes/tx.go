@@ -170,6 +170,8 @@ func NewMsgTx(network Network) MsgTx {
 			MsgTx:        wire.NewMsgTx(ZecVersion),
 			ExpiryHeight: ZecExpiryHeight,
 		})
+	case types.BitcoinCash:
+		return NewBchMsgTx(wire.NewMsgTx(BchVersion))
 	default:
 		panic(types.ErrUnknownChain)
 	}
@@ -218,6 +220,26 @@ func (msgTx ZecMsgTx) AddSegWit(i int, sig, pubKey []byte) {
 
 func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
 	return ZecMsgTx{msgTx}
+}
+
+type BchMsgTx struct {
+	*wire.MsgTx
+}
+
+func (msgTx BchMsgTx) InCount() int {
+	return len(msgTx.TxIn)
+}
+
+func (msgTx BchMsgTx) AddSigScript(i int, sigScript []byte) {
+	msgTx.TxIn[i].SignatureScript = sigScript
+}
+
+func (msgTx BchMsgTx) AddSegWit(i int, sig, pubKey []byte) {
+	panic("BitcoinCash does not support SegWit")
+}
+
+func NewBchMsgTx(msgTx *wire.MsgTx) BchMsgTx {
+	return BchMsgTx{msgTx}
 }
 
 func EstimateTxSize(numUTXOs, numRecipients int) int {

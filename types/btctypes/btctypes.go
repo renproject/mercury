@@ -23,6 +23,10 @@ const (
 	ZecLocalnet network = 3
 	ZecMainnet  network = 4
 	ZecTestnet  network = 5
+
+	BchLocalnet network = 6
+	BchMainnet  network = 7
+	BchTestnet  network = 8
 )
 
 // NewNetwork parse the network from a string.
@@ -32,6 +36,8 @@ func NewNetwork(chain types.Chain, network string) Network {
 		return NewBtcNetwork(network)
 	case types.ZCash:
 		return NewZecNetwork(network)
+	case types.BitcoinCash:
+		return NewBchNetwork(network)
 	default:
 		panic(types.ErrUnknownChain)
 	}
@@ -62,6 +68,21 @@ func NewZecNetwork(network string) Network {
 		return ZecTestnet
 	case "localnet", "localhost":
 		return ZecLocalnet
+	default:
+		panic(types.ErrUnknownNetwork)
+	}
+}
+
+// NewBchNetwork parse the ltc network from a string.
+func NewBchNetwork(network string) Network {
+	network = strings.ToLower(strings.TrimSpace(network))
+	switch network {
+	case "mainnet":
+		return BchMainnet
+	case "testnet", "testnet3":
+		return BchTestnet
+	case "localnet", "localhost":
+		return BchLocalnet
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
@@ -99,6 +120,8 @@ func (network network) Chain() types.Chain {
 	case BtcMainnet, BtcTestnet, BtcLocalnet:
 		return types.Bitcoin
 	case ZecMainnet, ZecTestnet, ZecLocalnet:
+		return types.ZCash
+	case BchMainnet, BchTestnet, BchLocalnet:
 		return types.ZCash
 	default:
 		panic(types.ErrUnknownNetwork)
