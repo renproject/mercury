@@ -10,6 +10,7 @@ require (
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/codahale/blake2 v0.0.0-20150924215134-8d10d0420cbf
+	github.com/cpacia/bchutil v0.0.0-20181003130114-b126f6a35b6c
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
