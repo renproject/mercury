@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
-	"strings"
 	"testing/quick"
 
 	. "github.com/onsi/ginkgo"
@@ -17,57 +16,75 @@ import (
 )
 
 var _ = Describe("btc types", func() {
-	validateAddress := func(address Address, network Network, segwit bool) bool {
-		if network == BtcMainnet {
-			if segwit {
-				return strings.HasPrefix(address.EncodeAddress(), "bc1")
-			}
-			return strings.HasPrefix(address.EncodeAddress(), "1")
-		}
-		addr := address.EncodeAddress()
-		if segwit {
-			return strings.HasPrefix(address.EncodeAddress(), "tb1")
-		}
-		return strings.HasPrefix(addr, "m") || strings.HasPrefix(addr, "n")
+	validateAddress := func(address Address, network Network) bool {
+		return address.IsForNet(network.Params())
 	}
 
 	for _, network := range []Network{BtcTestnet, BtcMainnet} {
 		network := network
-		for _, segwit := range []bool{true, false} {
-			segwit := segwit
-			Context(fmt.Sprintf("when generate new btc addresses of %v", network), func() {
-				It("should be able to generate random address of given network", func() {
-					test := func() bool {
-						address, err := testutil.RandomAddress(network, segwit)
-						Expect(err).NotTo(HaveOccurred())
-						return validateAddress(address, network, segwit)
-					}
-					Expect(quick.Check(test, nil)).To(Succeed())
-				})
 
-				It("should be able to decode an address from string", func() {
-					test := func() bool {
-						randAddr, err := testutil.RandomAddress(network, segwit)
-						Expect(err).NotTo(HaveOccurred())
-						address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
-						Expect(err).NotTo(HaveOccurred())
-						return validateAddress(address, network, segwit)
-					}
-					Expect(quick.Check(test, nil)).To(Succeed())
-				})
-
-				It("should be able to decode an address from public key", func() {
-					test := func() bool {
-						randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-						Expect(err).NotTo(HaveOccurred())
-						address, err := AddressFromPubKey(randKey.PublicKey, network, segwit)
-						return validateAddress(address, network, segwit)
-					}
-					Expect(quick.Check(test, nil)).To(Succeed())
-				})
-
+		Context(fmt.Sprintf("when generating new %s addresses of %v", network.Chain(), network), func() {
+			It("should be able to generate an address for the given network", func() {
+				test := func() bool {
+					address, err := testutil.RandomAddress(network)
+					Expect(err).NotTo(HaveOccurred())
+					return validateAddress(address, network)
+				}
+				Expect(quick.Check(test, nil)).To(Succeed())
 			})
-		}
+
+			It("should be able to generate a SegWit address for the given network", func() {
+				test := func() bool {
+					address, err := testutil.RandomSegWitAddress(network)
+					Expect(err).NotTo(HaveOccurred())
+					return validateAddress(address, network)
+				}
+				Expect(quick.Check(test, nil)).To(Succeed())
+			})
+
+			It("should be able to decode an address from string", func() {
+				test := func() bool {
+					randAddr, err := testutil.RandomAddress(network)
+					Expect(err).NotTo(HaveOccurred())
+					address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
+					Expect(err).NotTo(HaveOccurred())
+					return validateAddress(address, network)
+				}
+				Expect(quick.Check(test, nil)).To(Succeed())
+			})
+
+			It("should be able to decode a SegWit address from string", func() {
+				test := func() bool {
+					randAddr, err := testutil.RandomSegWitAddress(network)
+					Expect(err).NotTo(HaveOccurred())
+					address, err := AddressFromBase58(randAddr.EncodeAddress(), network)
+					Expect(err).NotTo(HaveOccurred())
+					return validateAddress(address, network)
+				}
+				Expect(quick.Check(test, nil)).To(Succeed())
+			})
+
+			It("should be able to decode an address from public key", func() {
+				test := func() bool {
+					randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+					Expect(err).NotTo(HaveOccurred())
+					address, err := AddressFromPubKey(randKey.PublicKey, network)
+					return validateAddress(address, network)
+				}
+				Expect(quick.Check(test, nil)).To(Succeed())
+			})
+
+			It("should be able to decode a SegWit address from public key", func() {
+				test := func() bool {
+					randKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+					Expect(err).NotTo(HaveOccurred())
+					address, err := SegWitAddressFromPubKey(randKey.PublicKey, network)
+					return validateAddress(address, network)
+				}
+				Expect(quick.Check(test, nil)).To(Succeed())
+			})
+		})
+
 	}
 
 	Context("bitcoin amount ", func() {

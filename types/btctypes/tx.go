@@ -124,7 +124,8 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 	}
 
 	for i, sig := range sigs {
-		serializedPubKey := SerializePublicKey(pubKey, t.network, t.utxos[i].SegWit())
+		serializedPubKey := SerializePublicKey(pubKey, t.network)
+
 		if len(serializedPubKey) <= 0 {
 			panic("pre-condition violation: cannot inject signatures with empty pubkey")
 		}
@@ -140,6 +141,10 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 			}
 			t.tx.AddSigScript(i, sigScript)
 		} else {
+			// TODO: look into using compressed pubkeys on testnet
+			if t.network.String() == "testnet" {
+				serializedPubKey = (*btcec.PublicKey)(&pubKey).SerializeCompressed()
+			}
 			t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey)
 		}
 	}
