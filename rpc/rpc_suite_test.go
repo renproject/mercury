@@ -1,13 +1,13 @@
-package ethrpc_test
+package rpc_test
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
-func TestEthrpc(t *testing.T) {
+func TestRpc(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Ethrpc Suite")
+	RunSpecs(t, "Rpc Suite")
 }

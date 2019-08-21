@@ -18,7 +18,7 @@ import (
 var _ = Describe("eth account", func() {
 	logger := logrus.StandardLogger()
 
-	XContext("can sign", func() {
+	Context("can sign", func() {
 
 		It("can create a random account", func() {
 			account, err := RandomAccount(Client)
@@ -53,7 +53,7 @@ var _ = Describe("eth account", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("can transfer funds", func() {
+		XIt("can transfer funds", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
 			ownerBal, err := EthAccount.Balance(ctx)
@@ -83,7 +83,7 @@ var _ = Describe("eth account", func() {
 			Expect(newBal.Eq(amount)).Should(BeTrue())
 		})
 
-		It("can check kovan funds", func() {
+		XIt("can check kovan funds", func() {
 			kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")
 			Expect(err).NotTo(HaveOccurred())
 			mnemonic := os.Getenv("ETH_KOVAN_MNEMONIC")

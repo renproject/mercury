@@ -161,10 +161,10 @@ github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d/go.mod h1:c3At6R
 github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsTZCD3I8kEA=
 github.com/prometheus/tsdb v0.9.1 h1:IWaAmWkYlgG7/S4iw4IpAQt5Y35QaZM6/GsZ7GsjAuk=
 github.com/prometheus/tsdb v0.9.1/go.mod h1:oi49uRhEe9dPUTlS3JRZOwJuVi6tmh10QSgwXEyGCt4=
-github.com/renproject/kv v0.0.0-20190710041758-5f4eb2a837a8 h1:7uijJXktgaROJyw8BEH9qbS9y+/r7mycURjloPhPtT4=
-github.com/renproject/kv v0.0.0-20190710041758-5f4eb2a837a8/go.mod h1:nZKydcWRJJKIQ1tfw6vPTqcQd2o6IBSE+1gQZsLzakM=
-github.com/renproject/phi v0.0.0-20190713013721-51f586bc4816 h1:oC/97ZhV0qi2wKf/lBalU48TkvihPCmUkDVSCup+zZU=
-github.com/renproject/phi v0.0.0-20190713013721-51f586bc4816/go.mod h1:Hrxx2ONVpfByficRjyRd1trecalYr0lo7Z0akx8UXqg=
+github.com/renproject/kv v0.1.0 h1:i4XpBL2vkKMpZz7dhYhaPf/I3/3DNfSZkz9GY96UryE=
+github.com/renproject/kv v0.1.0/go.mod h1:1kC6F4r7jhMeyZtqc7Of047E/DpfHDphRg/bQHt08hA=
+github.com/renproject/phi v0.1.0 h1:ZOn7QeDribk/uV46OhQWcTLxyuLg7P+xR1Hfl5cOQuI=
+github.com/renproject/phi v0.1.0/go.mod h1:Hrxx2ONVpfByficRjyRd1trecalYr0lo7Z0akx8UXqg=
 github.com/rjeczalik/notify v0.9.2 h1:MiTWrPj55mNDHEiIX5YUSKefw/+lCQVoAFmD6oQm5w8=
 github.com/rjeczalik/notify v0.9.2/go.mod h1:aErll2f0sUX9PXZnVNyeiObbmTlk5jnMoCa4QEjJeqM=
 github.com/rs/cors v1.6.0 h1:G9tHG9lebljV9mfp9SNPDL36nCDxmo3zTlAf1YgvzmI=

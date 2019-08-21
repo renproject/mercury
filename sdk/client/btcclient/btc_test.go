@@ -171,35 +171,6 @@ var _ = Describe("btc client", func() {
 				_, err = client.UTXO(ctx, testCase.NonExistentTxHashOutPoint)
 				Expect(err).To(Equal(ErrTxHashNotFound))
 			})
-
-			It("should return a non-zero number of UTXOs for a funded address that has been imported", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
-				address, err := loadTestAccounts(testCase.Network).Address(44, 1, 0, 0, 1)
-				Expect(err).NotTo(HaveOccurred())
-
-				ctx, cancel := context.WithTimeout(context.Background(), timeout)
-				defer cancel()
-
-				utxos, err := client.UTXOsFromAddress(ctx, address)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(len(utxos)).Should(BeNumerically(">", 0))
-			})
-
-			It("should return zero UTXOs for a randomly generated address", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
-				address, err := testutil.RandomAddress(testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
-
-				ctx, cancel := context.WithTimeout(context.Background(), timeout)
-				defer cancel()
-
-				utxos, err := client.UTXOsFromAddress(ctx, address)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(len(utxos)).Should(Equal(0))
-			})
-
 		})
 
 		Context("when building a utx", func() {
