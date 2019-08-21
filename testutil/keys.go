@@ -60,7 +60,7 @@ func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btctypes.AddressFromPubKey(key.PublicKey, hdkey.network, false)
+	return btctypes.AddressFromPubKey(key.PublicKey, hdkey.network)
 }
 
 // SegWitAddress return the SegWitAddress of the HD key with the current path.
@@ -69,15 +69,23 @@ func (hdkey HdKey) SegWitAddress(path ...uint32) (btctypes.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	return btctypes.AddressFromPubKey(key.PublicKey, hdkey.network, true)
+	return btctypes.SegWitAddressFromPubKey(key.PublicKey, hdkey.network)
 }
 
-func RandomAddress(network btctypes.Network, segwit bool) (btctypes.Address, error) {
+func RandomAddress(network btctypes.Network) (btctypes.Address, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return btctypes.AddressFromPubKey(key.PublicKey, network, segwit)
+	return btctypes.AddressFromPubKey(key.PublicKey, network)
+}
+
+func RandomSegWitAddress(network btctypes.Network) (btctypes.Address, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return btctypes.SegWitAddressFromPubKey(key.PublicKey, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.
