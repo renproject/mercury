@@ -28,7 +28,7 @@ var _ = Describe("btc account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := NewAccount(client, key, false)
+			account, err := NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs(context.Background())
 			Expect(err).NotTo(HaveOccurred())
@@ -38,7 +38,7 @@ var _ = Describe("btc account", func() {
 		It("should fetch zero utxos from a random account", func() {
 			client, err := btcclient.New(logger, btctypes.BtcLocalnet)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := RandomAccount(client, false)
+			account, err := RandomAccount(client)
 			Expect(err).NotTo(HaveOccurred())
 			utxos, err := account.UTXOs(context.Background())
 			Expect(err).NotTo(HaveOccurred())
@@ -57,7 +57,7 @@ var _ = Describe("btc account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
-			account, err := NewAccount(client, key, false)
+			account, err := NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println("address: ", account.Address().EncodeAddress())
 
@@ -69,7 +69,7 @@ var _ = Describe("btc account", func() {
 			Expect(len(utxos)).Should(BeNumerically(">", 0))
 
 			// Build the transaction
-			toAddress, err := btctypes.AddressFromPubKey(key.PublicKey, btctypes.BtcTestnet, false)
+			toAddress, err := btctypes.AddressFromPubKey(key.PublicKey, btctypes.BtcTestnet)
 			Expect(err).NotTo(HaveOccurred())
 			amount := 50000 * btctypes.SAT
 			fmt.Println("to address: ", toAddress.EncodeAddress())

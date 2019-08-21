@@ -35,11 +35,11 @@ type account struct {
 }
 
 // NewAccount returns a new Account from the given private key.
-func NewAccount(client btcclient.Client, key *ecdsa.PrivateKey, segwit bool) (Account, error) {
+func NewAccount(client btcclient.Client, key *ecdsa.PrivateKey) (Account, error) {
 	if key == nil {
 		panic("cannot create account with nil key")
 	}
-	address, err := btctypes.AddressFromPubKey(key.PublicKey, client.Network(), segwit)
+	address, err := btctypes.AddressFromPubKey(key.PublicKey, client.Network())
 	if err != nil {
 		return &account{}, err
 	}
@@ -51,22 +51,22 @@ func NewAccount(client btcclient.Client, key *ecdsa.PrivateKey, segwit bool) (Ac
 }
 
 // NewAccountFromWIF returns a new Account from the given WIF
-func NewAccountFromWIF(client btcclient.Client, wifStr string, segwit bool) (Account, error) {
+func NewAccountFromWIF(client btcclient.Client, wifStr string) (Account, error) {
 	wif, err := btcutil.DecodeWIF(wifStr)
 	if err != nil {
 		return nil, err
 	}
 	privKey := (*ecdsa.PrivateKey)(wif.PrivKey)
-	return NewAccount(client, privKey, segwit)
+	return NewAccount(client, privKey)
 }
 
 // RandomAccount returns a new Account using a random private key.
-func RandomAccount(client btcclient.Client, segwit bool) (Account, error) {
+func RandomAccount(client btcclient.Client) (Account, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return NewAccount(client, key, segwit)
+	return NewAccount(client, key)
 }
 
 // Address returns the Address of the account
