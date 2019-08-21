@@ -16,7 +16,7 @@ type Stat struct {
 // day is the number of nanoseconds in a day
 const day = 24 * time.Hour
 
-func NewStat() Stat {
+func New() Stat {
 	requestTimes := make(map[int]map[string]int)
 	initTimes := make(map[int]time.Time)
 	return Stat{

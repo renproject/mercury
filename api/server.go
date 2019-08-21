@@ -28,7 +28,7 @@ type Server struct {
 
 // NewServer returns a server which supports the given blockchain APIs.
 func NewServer(logger logrus.FieldLogger, port string, apis ...BlockchainApi) *Server {
-	s := stat.NewStat()
+	s := stat.New()
 	return &Server{
 		apis:   apis,
 		port:   port,
