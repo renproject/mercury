@@ -26,8 +26,8 @@ type gateway struct {
 }
 
 // New returns a new Gateway
-func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte, segwit bool) Gateway {
-	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey, client.Network(), segwit)
+func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) Gateway {
+	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey, client.Network())
 	pubKeyHash160 := btcutil.Hash160(pubKeyBytes)
 	b := txscript.NewScriptBuilder()
 	b.AddData(ghash)
@@ -41,11 +41,11 @@ func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte, s
 	if err != nil {
 		panic("invariant violation: invalid gateway script")
 	}
-	scriptAddr, err := btctypes.AddressFromScript(script, client.Network(), segwit)
+	scriptAddr, err := btctypes.AddressFromScript(script, client.Network())
 	if err != nil {
 		panic("invariant violation: invalid gateway script address")
 	}
-	spenderAddr, err := btctypes.AddressFromPubKey(spenderPubKey, client.Network(), segwit)
+	spenderAddr, err := btctypes.AddressFromPubKey(spenderPubKey, client.Network())
 	if err != nil {
 		panic("invariant violation: invalid gateway spender address")
 	}

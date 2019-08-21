@@ -10,13 +10,12 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
 	. "github.com/renproject/mercury/api"
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
-	"github.com/renproject/mercury/rpc/btcrpc"
+	"github.com/renproject/mercury/rpc"
 	"github.com/renproject/mercury/rpcclient/btcrpcclient"
 	"github.com/renproject/mercury/types/btctypes"
 	"github.com/renproject/phi"
@@ -31,8 +30,7 @@ var _ = Describe("Server", func() {
 			btcTestnetUser := os.Getenv("BITCOIN_TESTNET_RPC_USERNAME")
 			btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
 			logger := logrus.StandardLogger()
-			btcTestnetNodeClient, err := btcrpc.NewNodeClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
-			Expect(err).ToNot(HaveOccurred())
+			btcTestnetNodeClient := rpc.NewClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 			btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
 			btcCache := cache.New(kv.NewJSON(kv.NewMemDB()), logger)
 			btcTestnetAPI := api.NewApi(btctypes.BtcTestnet, btcTestnetProxy, btcCache, logger)

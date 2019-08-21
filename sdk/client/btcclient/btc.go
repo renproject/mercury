@@ -271,17 +271,24 @@ func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Reci
 	return btctypes.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
 }
 
-func (c *client) SerializePublicKey(pubkey ecdsa.PublicKey, segwit bool) []byte {
-	return btctypes.SerializePublicKey(pubkey, c.network, segwit)
+func (c *client) SerializePublicKey(pubkey ecdsa.PublicKey) []byte {
+	return btctypes.SerializePublicKey(pubkey, c.network)
 }
+
 func (c *client) AddressFromBase58(addr string) (btctypes.Address, error) {
 	return btctypes.AddressFromBase58(addr, c.network)
 }
-func (c *client) AddressFromPubKey(pubkey ecdsa.PublicKey, segwit bool) (btctypes.Address, error) {
-	return btctypes.AddressFromPubKey(pubkey, c.network, segwit)
+func (c *client) AddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error) {
+	return btctypes.AddressFromPubKey(pubkey, c.network)
 }
-func (c *client) AddressFromScript(script []byte, segwit bool) (btctypes.Address, error) {
-	return btctypes.AddressFromScript(script, c.network, segwit)
+func (c *client) AddressFromScript(script []byte) (btctypes.Address, error) {
+	return btctypes.AddressFromScript(script, c.network)
+}
+func (c *client) SegWitAddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error) {
+	return btctypes.SegWitAddressFromPubKey(pubkey, c.network)
+}
+func (c *client) SegWitAddressFromScript(script []byte) (btctypes.Address, error) {
+	return btctypes.SegWitAddressFromScript(script, c.network)
 }
 func (c *client) PayToAddrScript(address btctypes.Address) ([]byte, error) {
 	return btctypes.PayToAddrScript(address, c.network)

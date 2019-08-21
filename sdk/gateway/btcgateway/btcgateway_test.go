@@ -156,8 +156,8 @@ var _ = Describe("btc gateway", func() {
 				client, err := btcclient.New(logger, network)
 				Expect(err).NotTo(HaveOccurred())
 				key, err := loadTestAccounts(network).EcdsaKey(44, 1, 0, 0, 1)
-				gateway := New(client, key.PublicKey, []byte{}, false)
-				account, err := btcaccount.NewAccount(client, key, false)
+				gateway := New(client, key.PublicKey, []byte{})
+				account, err := btcaccount.NewAccount(client, key)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Transfer some funds to the gateway address
