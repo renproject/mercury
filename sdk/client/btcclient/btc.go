@@ -26,12 +26,6 @@ const (
 	Dust = btctypes.Amount(600)
 )
 
-var (
-	ErrInvalidTxHash  = errors.New("invalid tx hash")
-	ErrTxHashNotFound = errors.New("tx hash not found")
-	ErrUTXOSpent      = errors.New("utxo spent or invalid index")
-)
-
 // Client is a client which is used to talking with certain Bitcoin network. It can interacting with the blockchain
 // through Mercury server.
 type client struct {
@@ -77,18 +71,18 @@ func (c *client) Network() btctypes.Network {
 // UTXO returns the UTXO for the given transaction hash and index.
 func (c *client) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO, error) {
 	if len(op.TxHash()) != 64 {
-		return nil, ErrInvalidTxHash
+		return nil, NewErrInvalidTxHash(fmt.Errorf(string(op.TxHash())))
 	}
 
 	tx, err := c.client.GetRawTransactionVerbose(ctx, string(op.TxHash()))
 	if err != nil {
-		return nil, ErrTxHashNotFound
+		return nil, NewErrTxHashNotFound(err)
 	}
 
 	txOut, err := c.client.GetTxOut(ctx, string(op.TxHash()), op.Vout())
 	if err != nil {
 		if err == rpcclient.ErrNullResult {
-			return nil, ErrUTXOSpent
+			return nil, NewErrUTXOSpent(err)
 		}
 		return nil, fmt.Errorf("cannot get tx output from btc client: %v", err)
 	}
@@ -292,4 +286,45 @@ func (c *client) SegWitAddressFromScript(script []byte) (btctypes.Address, error
 }
 func (c *client) PayToAddrScript(address btctypes.Address) ([]byte, error) {
 	return btctypes.PayToAddrScript(address, c.network)
+}
+
+type ErrInvalidTxHash struct {
+	msg string
+}
+
+func NewErrInvalidTxHash(err error) error {
+	return ErrInvalidTxHash{
+		msg: fmt.Sprintf("invalid tx hash: %v", err),
+	}
+}
+
+func (e ErrInvalidTxHash) Error() string {
+	return e.msg
+}
+
+type ErrTxHashNotFound struct {
+	msg string
+}
+
+func NewErrTxHashNotFound(err error) error {
+	return ErrTxHashNotFound{
+		msg: fmt.Sprintf("tx hash not found: %v", err),
+	}
+}
+func (e ErrTxHashNotFound) Error() string {
+	return e.msg
+}
+
+type ErrUTXOSpent struct {
+	msg string
+}
+
+func NewErrUTXOSpent(err error) error {
+	return ErrUTXOSpent{
+		msg: fmt.Sprintf("utxo spent or invalid index: %v", err),
+	}
+}
+
+func (e ErrUTXOSpent) Error() string {
+	return e.msg
 }
