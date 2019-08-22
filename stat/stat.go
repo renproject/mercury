@@ -27,7 +27,7 @@ func New() Stat {
 }
 
 func (stat *Stat) Get() map[string]int {
-	t := time.Now()
+	t := time.Now().Truncate(time.Hour)
 	numRequests := make(map[string]int)
 	stat.requestsMu.Lock()
 	for hour, methodTimestamps := range stat.requestTimes {
@@ -45,7 +45,7 @@ func (stat *Stat) Get() map[string]int {
 }
 
 func (stat *Stat) Insert(method string) {
-	t := time.Now()
+	t := time.Now().Truncate(time.Hour)
 	stat.requestsMu.Lock()
 
 	// initialise the secondary map if nil
