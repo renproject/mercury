@@ -91,9 +91,9 @@ func NewBchNetwork(network string) Network {
 // Params returns the params config for the network
 func (network network) Params() *chaincfg.Params {
 	switch network {
-	case BtcMainnet, ZecMainnet:
+	case BtcMainnet, ZecMainnet, BchMainnet:
 		return &chaincfg.MainNetParams
-	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet:
+	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet, BchTestnet, BchLocalnet:
 		return &chaincfg.TestNet3Params
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -103,11 +103,11 @@ func (network network) Params() *chaincfg.Params {
 // String implements the `Stringer` interface.
 func (network network) String() string {
 	switch network {
-	case BtcMainnet, ZecMainnet:
+	case BtcMainnet, ZecMainnet, BchMainnet:
 		return "mainnet"
-	case BtcTestnet, ZecTestnet:
+	case BtcTestnet, ZecTestnet, BchTestnet:
 		return "testnet"
-	case BtcLocalnet, ZecLocalnet:
+	case BtcLocalnet, ZecLocalnet, BchLocalnet:
 		return "localnet"
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -122,7 +122,7 @@ func (network network) Chain() types.Chain {
 	case ZecMainnet, ZecTestnet, ZecLocalnet:
 		return types.ZCash
 	case BchMainnet, BchTestnet, BchLocalnet:
-		return types.ZCash
+		return types.BitcoinCash
 	default:
 		panic(types.ErrUnknownNetwork)
 	}

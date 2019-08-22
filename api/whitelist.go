@@ -4,7 +4,7 @@ import "github.com/renproject/mercury/types"
 
 func WhitelistLevel(network types.Network, method string) types.AccessLevel {
 	switch network.Chain() {
-	case types.Bitcoin, types.ZCash:
+	case types.Bitcoin, types.ZCash, types.BitcoinCash:
 		return BtcWhitelistLevel(method)
 	case types.Ethereum:
 		return EthWhitelistLevel(method)

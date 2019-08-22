@@ -65,6 +65,7 @@ func (client *client) SendRequest(ctx context.Context, method string, response i
 			return err
 		}
 		request.SetBasicAuth(client.user, client.password)
+		request = request.WithContext(ctx)
 		resp, err := http.DefaultClient.Do(request)
 		if err != nil {
 			return err
@@ -123,7 +124,10 @@ func retry(ctx context.Context, delay time.Duration, fn func() error) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return err
+			if err != nil {
+				return err
+			}
+			return ctx.Err()
 		case <-ticker.C:
 			err = fn()
 			if err == nil {
