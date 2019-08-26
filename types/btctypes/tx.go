@@ -239,7 +239,7 @@ func (msgTx BchMsgTx) AddSigScript(i int, sigScript []byte) {
 	msgTx.TxIn[i].SignatureScript = sigScript
 }
 
-func (msgTx BchMsgTx) AddSegWit(i int, sig, pubKey []byte) {
+func (msgTx BchMsgTx) AddSegWit(i int, witness ...[]byte) {
 	panic("BitcoinCash does not support SegWit")
 }
 
