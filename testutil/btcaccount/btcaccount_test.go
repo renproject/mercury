@@ -51,9 +51,9 @@ var _ = Describe("btc account", func() {
 	Context("when transferring funds ", func() {
 		FIt("should be able to transfer funds to itself", func() {
 			// Get the account with actual balance
-			client, err := btcclient.New(logger, btctypes.BtcTestnet)
+			client, err := btcclient.New(logger, btctypes.BchLocalnet)
 			Expect(err).NotTo(HaveOccurred())
-			wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", client.Network())
+			wallet, err := testutil.LoadHdWalletFromEnv("BCH_TEST_MNEMONIC", "BCH_TEST_PASSPHRASE", client.Network())
 			Expect(err).NotTo(HaveOccurred())
 			key, err := wallet.EcdsaKey(44, 1, 0, 0, 1)
 			Expect(err).NotTo(HaveOccurred())
@@ -69,7 +69,7 @@ var _ = Describe("btc account", func() {
 			Expect(len(utxos)).Should(BeNumerically(">", 0))
 
 			// Build the transaction
-			toAddress, err := btctypes.AddressFromPubKey(key.PublicKey, btctypes.BtcTestnet)
+			toAddress, err := btctypes.AddressFromPubKey(key.PublicKey, btctypes.BchLocalnet)
 			Expect(err).NotTo(HaveOccurred())
 			amount := 50000 * btctypes.SAT
 			fmt.Println("to address: ", toAddress.EncodeAddress())
