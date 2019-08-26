@@ -33,9 +33,9 @@ func EthWhitelistLevel(method string) types.AccessLevel {
 
 func BtcWhitelistLevel(method string) types.AccessLevel {
 	switch method {
-	case "listunspent":
+	case "listunspent", "gettxout":
 		return types.FullAccess
-	case "gettxout", "sendrawtransaction", "getrawtransaction":
+	case "sendrawtransaction", "getrawtransaction":
 		return types.CachedAccess
 	default:
 		return types.NoAccess
