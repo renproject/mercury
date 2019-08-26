@@ -163,7 +163,7 @@ type MsgTx interface {
 	AddTxIn(txIn *wire.TxIn)
 	AddTxOut(txOut *wire.TxOut)
 	AddSigScript(i int, sigScript []byte)
-	AddSegWit(i int, sig, pubKey []byte)
+	AddSegWit(i int, witness ...[]byte)
 }
 
 func NewMsgTx(network Network) MsgTx {
@@ -196,9 +196,9 @@ func (msgTx BtcMsgTx) AddSigScript(i int, sigScript []byte) {
 	msgTx.TxIn[i].SignatureScript = sigScript
 }
 
-func (msgTx BtcMsgTx) AddSegWit(i int, sig, pubKey []byte) {
+func (msgTx BtcMsgTx) AddSegWit(i int, witness ...[]byte) {
 	op := msgTx.TxIn[i].PreviousOutPoint
-	msgTx.TxIn[i] = wire.NewTxIn(&op, nil, [][]byte{sig, pubKey})
+	msgTx.TxIn[i] = wire.NewTxIn(&op, nil, witness)
 }
 
 type ZecMsgTx struct {
@@ -217,7 +217,7 @@ func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
 	msgTx.TxIn[i].SignatureScript = sigScript
 }
 
-func (msgTx ZecMsgTx) AddSegWit(i int, sig, pubKey []byte) {
+func (msgTx ZecMsgTx) AddSegWit(i int, witness ...[]byte) {
 	panic("ZCash does not support SegWit")
 }
 
