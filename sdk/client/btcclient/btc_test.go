@@ -23,7 +23,7 @@ var _ = Describe("btc client", func() {
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
 		mnemonicENV := fmt.Sprintf("%s_TEST_MNEMONIC", strings.ToUpper(network.Chain().String()))
-		passphraseENV := fmt.Sprintf("%s_TEST_MNEMONIC", strings.ToUpper(network.Chain().String()))
+		passphraseENV := fmt.Sprintf("%s_TEST_PASSPHRASE", strings.ToUpper(network.Chain().String()))
 		wallet, err := testutil.LoadHdWalletFromEnv(mnemonicENV, passphraseENV, network)
 		Expect(err).NotTo(HaveOccurred())
 		return wallet
