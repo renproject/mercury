@@ -253,7 +253,7 @@ func (msgTx BchMsgTx) AddSegWit(i int, witness ...[]byte) {
 }
 
 func (BchMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
-	return append(sig.Serialize(), byte(hashType|0x40))
+	return append(sig.Serialize(), byte(hashType|SigHashForkID))
 }
 
 func NewBchMsgTx(msgTx *wire.MsgTx) BchMsgTx {
