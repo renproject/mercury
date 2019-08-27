@@ -123,7 +123,7 @@ func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]by
 		if u.script == nil {
 			return calcBip143SignatureHash(scriptPubKey, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, u.Amount()), nil
 		}
-		return calcBip143SignatureHash(scriptPubKey, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, u.Amount()), nil
+		return calcBip143SignatureHash(u.script, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, u.Amount()), nil
 	default:
 		return nil, fmt.Errorf("unknown msgTx type: %T", msgTx)
 	}
