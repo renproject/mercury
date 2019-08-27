@@ -3,6 +3,7 @@ package btcgateway_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,18 +25,11 @@ var _ = Describe("btc gateway", func() {
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
-		switch network.Chain() {
-		case types.Bitcoin:
-			wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
-			Expect(err).NotTo(HaveOccurred())
-			return wallet
-		case types.ZCash:
-			wallet, err := testutil.LoadHdWalletFromEnv("ZEC_TEST_MNEMONIC", "ZEC_TEST_PASSPHRASE", network)
-			Expect(err).NotTo(HaveOccurred())
-			return wallet
-		default:
-			panic(types.ErrUnknownChain)
-		}
+		mnemonicENV := fmt.Sprintf("%s_TEST_MNEMONIC", strings.ToUpper(network.Chain().String()))
+		passphraseENV := fmt.Sprintf("%s_TEST_PASSPHRASE", strings.ToUpper(network.Chain().String()))
+		wallet, err := testutil.LoadHdWalletFromEnv(mnemonicENV, passphraseENV, network)
+		Expect(err).NotTo(HaveOccurred())
+		return wallet
 	}
 
 	// TODO: finish writing these tests
@@ -149,7 +143,7 @@ var _ = Describe("btc gateway", func() {
 	// }
 
 	Context("when generating gateways", func() {
-		networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet}
+		networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet, btctypes.BchLocalnet}
 		for _, network := range networks {
 			network := network
 			It(fmt.Sprintf("should be able to generate a %v gateway", network), func() {
