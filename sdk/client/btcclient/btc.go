@@ -5,10 +5,8 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -127,9 +125,6 @@ func (c *client) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO,
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
 // addresses that have not been imported into the Bitcoin node.
 func (c *client) UTXOsFromAddress(ctx context.Context, address btctypes.Address) (btctypes.UTXOs, error) {
-	if c.network.Chain() == types.Bitcoin {
-		return c.queryBlockchainInfo(ctx, address)
-	}
 	outputs, err := c.client.ListUnspent(ctx, 0, 999999, []string{address.EncodeAddress()})
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve utxos from btc client: %v", err)
@@ -207,7 +202,6 @@ func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.BtcTx) (types.
 	if err != nil {
 		return "", fmt.Errorf("pre-condition violation: serialization failed: %v", err)
 	}
-	fmt.Printf("tx: %x\n", data)
 
 	// Pre-condition checks
 	if !stx.IsSigned() {
@@ -285,48 +279,6 @@ func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Reci
 		outputUTXOs[recipient.Address.EncodeAddress()] = btctypes.NewUTXO(btctypes.NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil, nil)
 	}
 	return btctypes.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
-}
-
-func (c *client) queryBlockchainInfo(ctx context.Context, addr btctypes.Address) ([]btctypes.UTXO, error) {
-	url := ""
-	switch c.network {
-	case btctypes.BtcMainnet:
-		url = "https://api.blockcypher.com/v1/btc/main"
-	case btctypes.BtcTestnet, btctypes.BtcLocalnet:
-		url = "https://api.blockcypher.com/v1/btc/test3"
-	}
-
-	response := struct {
-		UnspentOutputs []struct {
-			TxHash  string `json:"tx_hash"`
-			TxIndex uint32 `json:"tx_output_n"`
-		} `json:"txrefs"`
-	}{}
-
-	resp, err := http.Get(fmt.Sprintf("%s/addrs/%s?unspentOnly=true", url, addr.EncodeAddress()))
-	if err != nil {
-		return nil, err
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
-	}
-
-	unspentOutputs := response.UnspentOutputs
-	ops := make([]btctypes.OutPoint, len(unspentOutputs))
-	for i, unspentOutput := range unspentOutputs {
-		ops[i] = btctypes.NewOutPoint(types.TxHash(unspentOutput.TxHash), unspentOutput.TxIndex)
-	}
-
-	utxos := make(btctypes.UTXOs, len(unspentOutputs))
-	for i, op := range ops {
-		utxos[i], err = c.UTXO(ctx, op)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// fmt.Println(utxos)
-	return utxos, nil
 }
 
 func (c *client) SerializePublicKey(pubkey ecdsa.PublicKey) []byte {
