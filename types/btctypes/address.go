@@ -55,7 +55,7 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error) {
 	switch network.Chain() {
 	case types.Bitcoin:
-		return btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
+		return btcutil.NewAddressPubKeyHash(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
 	default:
