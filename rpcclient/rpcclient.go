@@ -115,15 +115,18 @@ var ErrNullResult = fmt.Errorf("unexpected null result")
 
 func retry(ctx context.Context, delay time.Duration, fn func() error) error {
 	ticker := time.NewTicker(delay)
-	if err := fn(); err == nil {
+	err := fn()
+	if err == nil {
 		return nil
 	}
 
-	var err error
 	for {
 		select {
 		case <-ctx.Done():
-			return err
+			if err != nil {
+				return err
+			}
+			return ctx.Err()
 		case <-ticker.C:
 			err = fn()
 			if err == nil {
