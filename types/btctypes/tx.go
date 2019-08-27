@@ -132,7 +132,7 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 
 		if !t.utxos[i].SegWit() {
 			builder := txscript.NewScriptBuilder()
-			builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
+			builder.AddData(t.tx.SigBytes(sig, txscript.SigHashAll))
 			builder.AddData(serializedPubKey)
 			t.utxos[i].AddData(builder)
 			sigScript, err := builder.Script()
@@ -145,7 +145,7 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 			if t.network.String() == "testnet" {
 				serializedPubKey = (*btcec.PublicKey)(&pubKey).SerializeCompressed()
 			}
-			t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey)
+			t.tx.AddSegWit(i, t.tx.SigBytes(sig, txscript.SigHashAll), serializedPubKey)
 		}
 	}
 	t.signed = true
@@ -164,6 +164,7 @@ type MsgTx interface {
 	AddTxOut(txOut *wire.TxOut)
 	AddSigScript(i int, sigScript []byte)
 	AddSegWit(i int, witness ...[]byte)
+	SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte
 }
 
 func NewMsgTx(network Network) MsgTx {
@@ -203,6 +204,10 @@ func (msgTx BtcMsgTx) AddSegWit(i int, witness ...[]byte) {
 	msgTx.TxIn[i] = wire.NewTxIn(&op, nil, witness)
 }
 
+func (BtcMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
+	return append(sig.Serialize(), byte(hashType))
+}
+
 type ZecMsgTx struct {
 	*zecutil.MsgTx
 }
@@ -223,6 +228,10 @@ func (msgTx ZecMsgTx) AddSegWit(i int, witness ...[]byte) {
 	panic("ZCash does not support SegWit")
 }
 
+func (ZecMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
+	return append(sig.Serialize(), byte(hashType))
+}
+
 func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
 	return ZecMsgTx{msgTx}
 }
@@ -241,6 +250,10 @@ func (msgTx BchMsgTx) AddSigScript(i int, sigScript []byte) {
 
 func (msgTx BchMsgTx) AddSegWit(i int, witness ...[]byte) {
 	panic("BitcoinCash does not support SegWit")
+}
+
+func (BchMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
+	return append(sig.Serialize(), byte(hashType|0x40))
 }
 
 func NewBchMsgTx(msgTx *wire.MsgTx) BchMsgTx {
