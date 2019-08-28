@@ -282,7 +282,7 @@ func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Reci
 }
 
 func (c *client) SerializePublicKey(pubkey ecdsa.PublicKey) []byte {
-	return btctypes.SerializePublicKey(pubkey, c.network)
+	return btctypes.SerializePublicKey(pubkey)
 }
 
 func (c *client) AddressFromBase58(addr string) (btctypes.Address, error) {
