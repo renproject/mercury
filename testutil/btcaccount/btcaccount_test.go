@@ -49,7 +49,7 @@ var _ = Describe("btc account", func() {
 
 	// FIXME: Do not run multiple tests with the same keypair.
 	Context("when transferring funds ", func() {
-		FIt("should be able to transfer funds to itself", func() {
+		It("should be able to transfer funds to itself", func() {
 			// Get the account with actual balance
 			client, err := btcclient.New(logger, btctypes.BtcLocalnet)
 			Expect(err).NotTo(HaveOccurred())
@@ -69,12 +69,11 @@ var _ = Describe("btc account", func() {
 			Expect(len(utxos)).Should(BeNumerically(">", 0))
 
 			// Build the transaction
-			toAddress, err := btctypes.AddressFromPubKey(key.PublicKey, btctypes.BtcLocalnet)
-			Expect(err).NotTo(HaveOccurred())
+			toAddress := account.Address()
 			amount := 50000 * btctypes.SAT
 			fmt.Println("to address: ", toAddress.EncodeAddress())
 
-			txHash, err := account.Transfer(ctx, toAddress, amount, types.Standard)
+			txHash, err := account.Transfer(ctx, toAddress, amount, types.Standard, true)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println("txHash: ", txHash[:])
 		})
