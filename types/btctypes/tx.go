@@ -122,14 +122,12 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 	if len(sigs) != t.tx.InCount() {
 		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), t.tx.InCount()))
 	}
+	serializedPubKey := SerializePublicKey(pubKey)
+	if len(serializedPubKey) <= 0 {
+		panic("pre-condition violation: cannot inject signatures with empty pubkey")
+	}
 
 	for i, sig := range sigs {
-		serializedPubKey := SerializePublicKey(pubKey, t.network)
-
-		if len(serializedPubKey) <= 0 {
-			panic("pre-condition violation: cannot inject signatures with empty pubkey")
-		}
-
 		if !t.utxos[i].SegWit() {
 			builder := txscript.NewScriptBuilder()
 			builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
@@ -141,11 +139,7 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 			}
 			t.tx.AddSigScript(i, sigScript)
 		} else {
-			// TODO: look into using compressed pubkeys on testnet
-			if t.network.String() == "testnet" {
-				serializedPubKey = (*btcec.PublicKey)(&pubKey).SerializeCompressed()
-			}
-			t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey)
+			t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey, t.utxos[i].Script())
 		}
 	}
 	t.signed = true
@@ -197,8 +191,7 @@ func (msgTx BtcMsgTx) AddSigScript(i int, sigScript []byte) {
 }
 
 func (msgTx BtcMsgTx) AddSegWit(i int, witness ...[]byte) {
-	op := msgTx.TxIn[i].PreviousOutPoint
-	msgTx.TxIn[i] = wire.NewTxIn(&op, nil, witness)
+	msgTx.TxIn[i].Witness = wire.TxWitness(witness)
 }
 
 type ZecMsgTx struct {
