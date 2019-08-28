@@ -27,7 +27,7 @@ type gateway struct {
 
 // New returns a new Gateway
 func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) Gateway {
-	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey, client.Network())
+	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey)
 	pubKeyHash160 := btcutil.Hash160(pubKeyBytes)
 	b := txscript.NewScriptBuilder()
 	b.AddData(ghash)
