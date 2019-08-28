@@ -22,7 +22,7 @@ func ErrInsufficientBalance(expect, have string) error {
 type Account interface {
 	Address() btctypes.Address
 	PrivateKey() *ecdsa.PrivateKey
-	Transfer(ctx context.Context, address btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error)
+	Transfer(ctx context.Context, address btctypes.Address, value btctypes.Amount, speed types.TxSpeed, transferAll bool) (types.TxHash, error)
 	UTXOs(ctx context.Context) (utxos btctypes.UTXOs, err error)
 }
 
@@ -86,13 +86,17 @@ func (acc *account) UTXOs(ctx context.Context) (utxos btctypes.UTXOs, err error)
 
 // Transfer transfer certain amount value to the target address. Important: this only works for accounts that have been
 // imported into the Bitcoin node.
-func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, speed types.TxSpeed) (types.TxHash, error) {
+func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btctypes.Amount, speed types.TxSpeed, transferAll bool) (types.TxHash, error) {
 	utxos, err := acc.UTXOs(ctx)
 	if err != nil {
 		return "", fmt.Errorf("error fetching utxos: %v", err)
 	}
 
 	fee := acc.Client.SuggestGasPrice(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
+	if transferAll {
+		value = utxos.Sum() - fee
+	}
+
 	// Check if we have enough funds
 	balance := utxos.Sum()
 	if balance < value+fee {
