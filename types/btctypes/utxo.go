@@ -33,6 +33,7 @@ type UTXO interface {
 	ScriptPubKey() []byte
 	SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error)
 	AddData(builder *txscript.ScriptBuilder)
+	Script() []byte
 }
 
 type UTXOs []UTXO
@@ -125,13 +126,17 @@ func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]by
 
 func (u utxo) SegWit() bool {
 	scriptPubKey := u.ScriptPubKey()
-	return txscript.IsPayToWitnessPubKeyHash(scriptPubKey) || txscript.IsPayToWitnessPubKeyHash(scriptPubKey)
+	return txscript.IsPayToWitnessPubKeyHash(scriptPubKey) || txscript.IsPayToWitnessScriptHash(scriptPubKey)
 }
 
 func (u utxo) AddData(builder *txscript.ScriptBuilder) {
 	if u.updateSigScript != nil {
 		u.updateSigScript(builder)
 	}
+}
+
+func (u utxo) Script() []byte {
+	return u.script
 }
 
 type OutPoint interface {
