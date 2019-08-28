@@ -15,6 +15,7 @@ type Gateway interface {
 	btctypes.Script
 	UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO, error)
 	Address() btctypes.Address
+	SegWitAddress() (btctypes.Address, error)
 	Spender() btctypes.Address
 }
 
@@ -66,6 +67,10 @@ func (gw *gateway) Update(utxo btctypes.UTXO) btctypes.UTXO {
 
 func (gw *gateway) Address() btctypes.Address {
 	return gw.addr
+}
+
+func (gw *gateway) SegWitAddress() (btctypes.Address, error) {
+	return btctypes.SegWitAddressFromScript(gw.script.Bytes(), gw.client.Network())
 }
 
 func (gw *gateway) Spender() btctypes.Address {
