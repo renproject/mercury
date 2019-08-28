@@ -11,6 +11,7 @@ type Network interface {
 	types.Network
 
 	Params() *chaincfg.Params
+	SegWitEnabled() bool
 }
 
 type network uint8
@@ -74,6 +75,18 @@ func (network network) Params() *chaincfg.Params {
 		return &chaincfg.MainNetParams
 	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet:
 		return &chaincfg.TestNet3Params
+	default:
+		panic(types.ErrUnknownNetwork)
+	}
+}
+
+// SegWitEnabled returns the params config for the network
+func (network network) SegWitEnabled() bool {
+	switch network.Chain() {
+	case types.Bitcoin:
+		return true
+	case types.ZCash:
+		return false
 	default:
 		panic(types.ErrUnknownNetwork)
 	}

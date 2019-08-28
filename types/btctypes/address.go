@@ -74,6 +74,9 @@ func AddressFromScript(script []byte, network Network) (Address, error) {
 
 // SegWitAddressFromPubKey gets the SegWit compatible `Address` from a PubKey
 func SegWitAddressFromPubKey(pubKey ecdsa.PublicKey, network Network) (Address, error) {
+	if !network.SegWitEnabled() {
+		return nil, ErrDoesNotSupportSegWit
+	}
 	switch network.Chain() {
 	case types.Bitcoin:
 		return btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(SerializePublicKey(pubKey)), network.Params())
@@ -84,6 +87,9 @@ func SegWitAddressFromPubKey(pubKey ecdsa.PublicKey, network Network) (Address, 
 
 // SegWitAddressFromScript gets the SegWit compatible `Address` from a Script.
 func SegWitAddressFromScript(script []byte, network Network) (Address, error) {
+	if !network.SegWitEnabled() {
+		return nil, ErrDoesNotSupportSegWit
+	}
 	switch network.Chain() {
 	case types.Bitcoin:
 		scriptHash := sha256.Sum256(script)

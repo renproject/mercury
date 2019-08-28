@@ -211,7 +211,7 @@ func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
 }
 
 func (msgTx ZecMsgTx) AddSegWit(i int, witness ...[]byte) {
-	panic("ZCash does not support SegWit")
+	panic(ErrDoesNotSupportSegWit)
 }
 
 func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
@@ -221,3 +221,5 @@ func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
 func EstimateTxSize(numUTXOs, numRecipients int) int {
 	return 146*numUTXOs + 33*numRecipients + 10
 }
+
+var ErrDoesNotSupportSegWit = fmt.Errorf("this blockchain does not support SegWit")
