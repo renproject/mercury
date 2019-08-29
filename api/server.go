@@ -1,17 +1,19 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/renproject/mercury/stat"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 )
 
 type BlockchainApi interface {
-	AddHandler(r *mux.Router)
+	AddHandler(r *mux.Router, s *stat.Stat)
 }
 
 // DefaultMaxHeaderBytes is the maximum permitted size of the headers in an HTTP request.
@@ -21,14 +23,17 @@ type Server struct {
 	apis   []BlockchainApi
 	port   string
 	logger logrus.FieldLogger
+	stat   *stat.Stat
 }
 
 // NewServer returns a server which supports the given blockchain APIs.
 func NewServer(logger logrus.FieldLogger, port string, apis ...BlockchainApi) *Server {
+	s := stat.New()
 	return &Server{
 		apis:   apis,
 		port:   port,
 		logger: logger,
+		stat:   &s,
 	}
 }
 
@@ -37,9 +42,10 @@ func (server *Server) Run() {
 	// Add handlers for each blockchain.
 	r := mux.NewRouter().StrictSlash(true)
 	for _, api := range server.apis {
-		api.AddHandler(r)
+		api.AddHandler(r, server.stat)
 	}
 	r.HandleFunc("/health", server.health()).Methods("GET")
+	r.HandleFunc("/stats", server.stats()).Methods("GET")
 
 	// Use recovery handler and provide cross-origin support.
 	r.Use(server.recoveryHandler)
@@ -67,6 +73,14 @@ func (server *Server) Run() {
 func (server *Server) health() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (server *Server) stats() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data := server.stat.Get()
+		json.NewEncoder(w).Encode(data)
+		w.Header().Set("Content-Type", "application/json")
 	}
 }
 

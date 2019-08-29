@@ -20,8 +20,6 @@ type Client interface {
 	SerializePublicKey(pubkey ecdsa.PublicKey) []byte
 	AddressFromBase58(addr string) (btctypes.Address, error)
 	AddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error)
-	SegWitAddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error)
 	AddressFromScript(script []byte) (btctypes.Address, error)
-	SegWitAddressFromScript(script []byte) (btctypes.Address, error)
 	PayToAddrScript(address btctypes.Address) ([]byte, error)
 }

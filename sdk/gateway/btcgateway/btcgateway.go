@@ -14,20 +14,19 @@ import (
 type Gateway interface {
 	btctypes.Script
 	UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO, error)
-	Address() btctypes.Address
 	Spender() btctypes.Address
+	BaseScript() btctypes.Script
 }
 
 type gateway struct {
-	addr    btctypes.Address
 	spender btctypes.Address
 	client  btcclient.Client
-	script  btctypes.Script
+	btctypes.Script
 }
 
 // New returns a new Gateway
 func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) Gateway {
-	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey, client.Network())
+	pubKeyBytes := btctypes.SerializePublicKey(spenderPubKey)
 	pubKeyHash160 := btcutil.Hash160(pubKeyBytes)
 	b := txscript.NewScriptBuilder()
 	b.AddData(ghash)
@@ -41,15 +40,11 @@ func New(client btcclient.Client, spenderPubKey ecdsa.PublicKey, ghash []byte) G
 	if err != nil {
 		panic("invariant violation: invalid gateway script")
 	}
-	scriptAddr, err := btctypes.AddressFromScript(script, client.Network())
-	if err != nil {
-		panic("invariant violation: invalid gateway script address")
-	}
-	spenderAddr, err := btctypes.AddressFromPubKey(spenderPubKey, client.Network())
+	spenderAddr, err := client.AddressFromPubKey(spenderPubKey)
 	if err != nil {
 		panic("invariant violation: invalid gateway spender address")
 	}
-	return &gateway{scriptAddr, spenderAddr, client, btctypes.NewScript(script, nil)}
+	return &gateway{spenderAddr, client, btctypes.NewScript(script, client.Network())}
 }
 
 func (gw *gateway) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO, error) {
@@ -57,26 +52,14 @@ func (gw *gateway) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTX
 	if err != nil {
 		return nil, err
 	}
-	return gw.script.Update(utxo), nil
-}
-
-func (gw *gateway) Update(utxo btctypes.UTXO) btctypes.UTXO {
-	return gw.script.Update(utxo)
-}
-
-func (gw *gateway) Address() btctypes.Address {
-	return gw.addr
+	utxo.SetScript(gw.BaseScript().Bytes())
+	return utxo, nil
 }
 
 func (gw *gateway) Spender() btctypes.Address {
 	return gw.spender
 }
 
-func (gw *gateway) Bytes() []byte {
-	return gw.script.Bytes()
-}
-
-func (gw *gateway) EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int {
-	scriptLen := len(gw.Bytes())
-	return (113+scriptLen)*numGatewayUTXOs + gw.client.EstimateTxSize(numSpenderUTXOs, numRecipients)
+func (gw *gateway) BaseScript() btctypes.Script {
+	return gw.Script
 }

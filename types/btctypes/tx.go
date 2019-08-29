@@ -79,7 +79,7 @@ func (t *tx) OutputUTXO(address Address) UTXO {
 	if !ok {
 		return nil
 	}
-	return NewUTXO(NewOutPoint(t.Hash(), utxo.Vout()), utxo.Amount(), utxo.ScriptPubKey(), 0, nil, nil)
+	return NewUTXO(NewOutPoint(t.Hash(), utxo.Vout()), utxo.Amount(), utxo.ScriptPubKey(), 0, nil)
 }
 
 // Serialize returns the serialized tx in bytes.
@@ -122,30 +122,30 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 	if len(sigs) != t.tx.InCount() {
 		panic(fmt.Errorf("pre-condition violation: expected signature len=%v to equal transaction input len=%v", len(sigs), t.tx.InCount()))
 	}
+	serializedPubKey := SerializePublicKey(pubKey)
+	if len(serializedPubKey) <= 0 {
+		panic("pre-condition violation: cannot inject signatures with empty pubkey")
+	}
 
 	for i, sig := range sigs {
-		serializedPubKey := SerializePublicKey(pubKey, t.network)
-
-		if len(serializedPubKey) <= 0 {
-			panic("pre-condition violation: cannot inject signatures with empty pubkey")
-		}
-
 		if !t.utxos[i].SegWit() {
 			builder := txscript.NewScriptBuilder()
 			builder.AddData(t.tx.SigBytes(sig, txscript.SigHashAll))
 			builder.AddData(serializedPubKey)
-			t.utxos[i].AddData(builder)
+			if script := t.utxos[i].Script(); script != nil {
+				builder.AddData(script)
+			}
 			sigScript, err := builder.Script()
 			if err != nil {
 				return err
 			}
 			t.tx.AddSigScript(i, sigScript)
 		} else {
-			// TODO: look into using compressed pubkeys on testnet
-			if t.network.String() == "testnet" {
-				serializedPubKey = (*btcec.PublicKey)(&pubKey).SerializeCompressed()
+			if script := t.utxos[i].Script(); script != nil {
+				t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey, script)
+			} else {
+				t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey)
 			}
-			t.tx.AddSegWit(i, t.tx.SigBytes(sig, txscript.SigHashAll), serializedPubKey)
 		}
 	}
 	t.signed = true
@@ -200,8 +200,7 @@ func (msgTx BtcMsgTx) AddSigScript(i int, sigScript []byte) {
 }
 
 func (msgTx BtcMsgTx) AddSegWit(i int, witness ...[]byte) {
-	op := msgTx.TxIn[i].PreviousOutPoint
-	msgTx.TxIn[i] = wire.NewTxIn(&op, nil, witness)
+	msgTx.TxIn[i].Witness = wire.TxWitness(witness)
 }
 
 func (BtcMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
@@ -225,7 +224,7 @@ func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
 }
 
 func (msgTx ZecMsgTx) AddSegWit(i int, witness ...[]byte) {
-	panic("ZCash does not support SegWit")
+	panic(ErrDoesNotSupportSegWit)
 }
 
 func (ZecMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
@@ -263,3 +262,5 @@ func NewBchMsgTx(msgTx *wire.MsgTx) BchMsgTx {
 func EstimateTxSize(numUTXOs, numRecipients int) int {
 	return 146*numUTXOs + 33*numRecipients + 10
 }
+
+var ErrDoesNotSupportSegWit = fmt.Errorf("this blockchain does not support SegWit")
