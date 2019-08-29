@@ -3,13 +3,14 @@ package bnctypes
 import (
 	"strings"
 
+	btypes "github.com/binance-chain/go-sdk/common/types"
 	"github.com/renproject/mercury/types"
 )
 
 type Network interface {
 	types.Network
 
-	ChainID() string
+	ChainNetwork() btypes.ChainNetwork
 }
 
 type network uint8
@@ -47,12 +48,12 @@ func (net network) Chain() types.Chain {
 	return types.Binance
 }
 
-func (net network) ChainID() string {
+func (net network) ChainNetwork() btypes.ChainNetwork {
 	switch net {
 	case Testnet:
-		return "testnet"
+		return btypes.TestNetwork
 	case Mainnet:
-		return "mainnet"
+		return btypes.ProdNetwork
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
