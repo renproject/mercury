@@ -52,7 +52,7 @@ var _ = Describe("btc account", func() {
 	})
 
 	// FIXME: Do not run multiple tests with the same keypair.
-	FContext("when transferring funds", func() {
+	Context("when transferring funds", func() {
 		It("should be able to transfer funds to itself", func() {
 			// Get the account with actual balance
 			client := btcclient.NewClient(logger, btctypes.BtcLocalnet)
