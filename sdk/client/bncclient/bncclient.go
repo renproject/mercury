@@ -14,6 +14,7 @@ import (
 
 type Client interface {
 	PrintTime()
+	Balances(from bnctypes.Address) (int64, error)
 }
 
 type client struct {
@@ -51,6 +52,10 @@ func (client *client) PrintTime() {
 	fmt.Println(t.ApTime, t.BlockTime)
 }
 
+func (client *client) OpenOrder(from bnctypes.Address) {
+	return client.BuildTx(from, msg.NewCreateOrderMsg(from.AccAddress(), "", 0))
+}
+
 func (client *client) Mint(from bnctypes.Address, symbol string, amount int64) (types.Tx, error) {
 	return client.BuildTx(from, msg.NewMintMsg(
 		from.AccAddress(),
@@ -67,7 +72,7 @@ func (client *client) BuildTx(from bnctypes.Address, m msg.Msg) (types.Tx, error
 
 	// prepare message to sign
 	signMsg := tx.StdSignMsg{
-		ChainID:       client.network.ChainID(),
+		ChainID:       client.network.String(),
 		AccountNumber: acc.Number,
 		Sequence:      acc.Sequence,
 		Memo:          "",
