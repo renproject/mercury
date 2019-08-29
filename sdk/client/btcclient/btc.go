@@ -45,6 +45,10 @@ type ZecClient struct {
 	Client
 }
 
+type BchClient struct {
+	Client
+}
+
 func MercuryURL(network btctypes.Network) string {
 	switch network {
 	case btctypes.BtcMainnet, btctypes.ZecMainnet, btctypes.BchMainnet:
@@ -75,6 +79,8 @@ func NewClient(logger logrus.FieldLogger, network btctypes.Network) Client {
 		return &BtcClient{baseClient}
 	case types.ZCash:
 		return &ZecClient{baseClient}
+	case types.BitcoinCash:
+		return &BchClient{baseClient}
 	default:
 		panic(types.ErrUnknownChain)
 	}
