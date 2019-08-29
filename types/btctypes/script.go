@@ -1,26 +1,51 @@
 package btctypes
 
-import (
-	"github.com/btcsuite/btcd/txscript"
-)
+import "github.com/renproject/mercury/types"
 
-// Script is an interface for interacting with Scripts
+// BaseScript is an interface for interacting with Scripts
 type Script interface {
 	Update(utxo UTXO) UTXO
 	Bytes() []byte
 	EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int
+	Address() Address
+}
+
+type BtcScript struct {
+	segWitAddress Address
+
+	Script
+}
+
+type ZecScript struct {
+	Script
 }
 
 type script struct {
-	data   []byte
-	solver func(builder *txscript.ScriptBuilder)
+	address Address
+	data    []byte
 }
 
 // NewScript returns a new Script
-func NewScript(data []byte, solver func(builder *txscript.ScriptBuilder)) Script {
-	return &script{
-		data:   data,
-		solver: solver,
+func NewScript(data []byte, network Network) Script {
+	address, err := AddressFromScript(data, network)
+	if err != nil {
+		panic("invariant violation: failed to calcucalte address of a btc script")
+	}
+	baseScript := &script{address, data}
+	switch network.Chain() {
+	case types.Bitcoin:
+		segWitAddress, err := SegWitAddressFromScript(data, network)
+		if err != nil {
+			panic("invariant violation: failed to calcucalte SegWit address of a btc script")
+		}
+		return &BtcScript{
+			Script:        baseScript,
+			segWitAddress: segWitAddress,
+		}
+	case types.ZCash:
+		return &ZecScript{baseScript}
+	default:
+		panic(types.ErrUnknownChain)
 	}
 }
 
@@ -31,12 +56,6 @@ func (s *script) Update(utxo UTXO) UTXO {
 		utxo.ScriptPubKey(),
 		utxo.Confirmations(),
 		s.Bytes(),
-		func(builder *txscript.ScriptBuilder) {
-			if s.solver != nil {
-				s.solver(builder)
-			}
-			builder.AddData(s.Bytes())
-		},
 	)
 }
 
@@ -46,7 +65,15 @@ func (s *script) Bytes() []byte {
 	return script
 }
 
+func (s *script) Address() Address {
+	return s.address
+}
+
 func (s *script) EstimateTxSize(numSpenderUTXOs, numGatewayUTXOs, numRecipients int) int {
 	scriptLen := len(s.Bytes())
 	return (113+scriptLen)*numGatewayUTXOs + EstimateTxSize(numSpenderUTXOs, numRecipients)
+}
+
+func (btcScript *BtcScript) SegWitaddress() Address {
+	return btcScript.segWitAddress
 }

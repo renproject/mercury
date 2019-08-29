@@ -58,7 +58,7 @@ var _ = Describe("btc client", func() {
 			btctypes.NewOutPoint("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0),
 			"76a9142d2b683141de54613e7c6648afdb454fa3b4126d88ac",
 			100000,
-			"0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a914a4cfcb06f8f41446c9142a2c1f494014563aafd788ac08e80000000000001976a9142b075b01d5dd314a902357617ed67f16e4e0591388ac00000000",
+			"0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a914eb32aacf85fb8372fdd0e6f3cca4f9216e85f37288ac08e80000000000001976a91444458029b9de2280c67e6e0373a2ba946984960388ac00000000",
 		},
 		{
 			btctypes.ZecTestnet,
@@ -69,7 +69,7 @@ var _ = Describe("btc client", func() {
 			btctypes.NewOutPoint("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0),
 			"76a9143735df7c4d831491ce9dc462e6f606f6faffb5ca88ac",
 			100000000,
-			"0400008085202f8902b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a9143735df7c4d831491ce9dc462e6f606f6faffb5ca88ac08e80000000000001976a914d125189e1002f3f1c948e2e123dc2926db2efb5188ac00000000809698000000000000000000000000",
+			"0400008085202f8902b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a9147927c1f59b258381973c2e9b88e1aa88170db1e888ac08e80000000000001976a91439758249eea8e82cc7554822abad0ba1c32a3d1588ac00000000809698000000000000000000000000",
 		},
 	}
 
@@ -84,14 +84,12 @@ var _ = Describe("btc client", func() {
 				nil,
 				0,
 				nil,
-				nil,
 			),
 			btctypes.NewUTXO(
 				btctypes.NewOutPoint("1b112299cc23d43935619437343d56e75fd278af50aaa79e0839bb4d08e0e9b4", 1),
 				80000,
 				nil,
 				0,
-				nil,
 				nil,
 			),
 		}
@@ -110,13 +108,11 @@ var _ = Describe("btc client", func() {
 	}
 	for _, testCase := range testCases {
 		testCase := testCase
-		timeout := 30 * time.Second
+		timeout := time.Second
 
 		Context("when fetching UTXOs", func() {
 			It("should return the UTXO for a transaction with unspent outputs", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
-
+				client := NewClient(logger, testCase.Network)
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
@@ -129,54 +125,49 @@ var _ = Describe("btc client", func() {
 			})
 
 			It("should return an error for an invalid UTXO index", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.InvalidOutPoint)
+				_, err := client.UTXO(ctx, testCase.InvalidOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
 			It("should return an error for a UTXO that has been spent", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.SpentOutPoint)
+				_, err := client.UTXO(ctx, testCase.SpentOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
 			It("should return an error for an invalid transaction hash", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.InvalidTxHashOutPoint)
+				_, err := client.UTXO(ctx, testCase.InvalidTxHashOutPoint)
 				Expect(err).To(Equal(ErrInvalidTxHash))
 			})
 
 			It("should return an error for a non-existent transaction hash", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.NonExistentTxHashOutPoint)
+				_, err := client.UTXO(ctx, testCase.NonExistentTxHashOutPoint)
 				Expect(err).To(Equal(ErrTxHashNotFound))
 			})
 		})
 
 		Context("when building a utx", func() {
 			It("should return the expected serialized transaction", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 				address, err := loadTestAccounts(client.Network()).Address(44, 1, 0, 0, 1)
 				Expect(err).NotTo(HaveOccurred())
 

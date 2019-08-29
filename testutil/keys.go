@@ -54,7 +54,7 @@ func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 	return hdutil.DerivePrivKey(hdkey.ExtendedKey, path...)
 }
 
-// EcdsaKey return the ECDSA key on the given path of the HD key.
+// Address return the Address of the HD key with the current path.
 func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
 	key, err := hdkey.EcdsaKey(path...)
 	if err != nil {
@@ -63,12 +63,29 @@ func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
 	return btctypes.AddressFromPubKey(key.PublicKey, hdkey.network)
 }
 
+// SegWitAddress return the SegWitAddress of the HD key with the current path.
+func (hdkey HdKey) SegWitAddress(path ...uint32) (btctypes.Address, error) {
+	key, err := hdkey.EcdsaKey(path...)
+	if err != nil {
+		return nil, err
+	}
+	return btctypes.SegWitAddressFromPubKey(key.PublicKey, hdkey.network)
+}
+
 func RandomAddress(network btctypes.Network) (btctypes.Address, error) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 	return btctypes.AddressFromPubKey(key.PublicKey, network)
+}
+
+func RandomSegWitAddress(network btctypes.Network) (btctypes.Address, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return btctypes.SegWitAddressFromPubKey(key.PublicKey, network)
 }
 
 // TODO : need to be fixed, the stx generated from this tx is not valid at the moment.

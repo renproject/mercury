@@ -25,13 +25,16 @@ const (
 type UTXO interface {
 	OutPoint() OutPoint
 
+	SegWit() bool
 	TxHash() types.TxHash
 	Vout() uint32
 	Confirmations() uint64
 	Amount() Amount
 	ScriptPubKey() []byte
 	SigHash(hashType txscript.SigHashType, tx MsgTx, idx int) ([]byte, error)
-	AddData(builder *txscript.ScriptBuilder)
+
+	Script() []byte
+	SetScript(script []byte)
 }
 
 type UTXOs []UTXO
@@ -55,59 +58,64 @@ func (utxos UTXOs) Filter(confs uint64) UTXOs {
 }
 
 type utxo struct {
-	op              OutPoint
-	amount          Amount
-	scriptPubKey    []byte
-	confirmations   uint64
-	script          []byte
-	updateSigScript func(builder *txscript.ScriptBuilder)
+	op            OutPoint
+	amount        Amount
+	scriptPubKey  []byte
+	confirmations uint64
+	script        []byte
 }
 
-func NewUTXO(op OutPoint, amount Amount, scriptPubKey []byte, confirmations uint64, script []byte, updateSigScript func(builder *txscript.ScriptBuilder)) UTXO {
-	return utxo{
-		op:              op,
-		amount:          amount,
-		scriptPubKey:    scriptPubKey,
-		confirmations:   confirmations,
-		script:          script,
-		updateSigScript: updateSigScript,
+func NewUTXO(op OutPoint, amount Amount, scriptPubKey []byte, confirmations uint64, script []byte) UTXO {
+	return &utxo{
+		op:            op,
+		amount:        amount,
+		scriptPubKey:  scriptPubKey,
+		confirmations: confirmations,
+		script:        script,
 	}
 }
 
-func (u utxo) Confirmations() uint64 {
+func (u *utxo) Confirmations() uint64 {
 	return u.confirmations
 }
 
-func (u utxo) Amount() Amount {
+func (u *utxo) Amount() Amount {
 	return u.amount
 }
 
-func (u utxo) ScriptPubKey() []byte {
+func (u *utxo) ScriptPubKey() []byte {
 	return u.scriptPubKey
 }
 
-func (u utxo) TxHash() types.TxHash {
+func (u *utxo) TxHash() types.TxHash {
 	return u.op.TxHash()
 }
 
-func (u utxo) Vout() uint32 {
+func (u *utxo) Vout() uint32 {
 	return u.op.Vout()
 }
 
-func (u utxo) OutPoint() OutPoint {
+func (u *utxo) OutPoint() OutPoint {
 	return u.op
 }
 
-func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]byte, error) {
+func (u *utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]byte, error) {
+	scriptPubKey := u.ScriptPubKey()
 	switch msgTx := msgTx.(type) {
 	case BtcMsgTx:
 		if u.script == nil {
-			return txscript.CalcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx)
+			if txscript.IsPayToWitnessPubKeyHash(scriptPubKey) {
+				return txscript.CalcWitnessSigHash(scriptPubKey, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, int64(u.amount))
+			}
+			return txscript.CalcSignatureHash(scriptPubKey, hashType, msgTx.MsgTx, idx)
+		}
+		if txscript.IsPayToWitnessScriptHash(scriptPubKey) {
+			return txscript.CalcWitnessSigHash(u.script, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, int64(u.amount))
 		}
 		return txscript.CalcSignatureHash(u.script, hashType, msgTx.MsgTx, idx)
 	case ZecMsgTx:
 		if u.script == nil {
-			return calcSignatureHash(u.ScriptPubKey(), hashType, msgTx.MsgTx, idx, u.Amount())
+			return calcSignatureHash(scriptPubKey, hashType, msgTx.MsgTx, idx, u.Amount())
 		}
 		return calcSignatureHash(u.script, hashType, msgTx.MsgTx, idx, u.Amount())
 	default:
@@ -115,10 +123,17 @@ func (u utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]by
 	}
 }
 
-func (u utxo) AddData(builder *txscript.ScriptBuilder) {
-	if u.updateSigScript != nil {
-		u.updateSigScript(builder)
-	}
+func (u *utxo) SegWit() bool {
+	scriptPubKey := u.ScriptPubKey()
+	return txscript.IsPayToWitnessPubKeyHash(scriptPubKey) || txscript.IsPayToWitnessScriptHash(scriptPubKey)
+}
+
+func (u *utxo) Script() []byte {
+	return u.script
+}
+
+func (u *utxo) SetScript(script []byte) {
+	u.script = script
 }
 
 type OutPoint interface {
