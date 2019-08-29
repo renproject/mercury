@@ -106,7 +106,7 @@ func (network network) SegWitEnabled() bool {
 	switch network.Chain() {
 	case types.Bitcoin:
 		return true
-	case types.ZCash:
+	case types.ZCash, types.BitcoinCash:
 		return false
 	default:
 		panic(types.ErrUnknownNetwork)

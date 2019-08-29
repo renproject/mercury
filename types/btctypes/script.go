@@ -20,6 +20,10 @@ type ZecScript struct {
 	Script
 }
 
+type BchScript struct {
+	Script
+}
+
 type script struct {
 	address Address
 	data    []byte
@@ -44,6 +48,8 @@ func NewScript(data []byte, network Network) Script {
 		}
 	case types.ZCash:
 		return &ZecScript{baseScript}
+	case types.BitcoinCash:
+		return &BchScript{baseScript}
 	default:
 		panic(types.ErrUnknownChain)
 	}
