@@ -43,6 +43,14 @@ type client struct {
 	logger     logrus.FieldLogger
 }
 
+type BtcClient struct {
+	Client
+}
+
+type ZecClient struct {
+	Client
+}
+
 func MercuryURL(network btctypes.Network) string {
 	var chainStr string
 	switch network.Chain() {
@@ -66,18 +74,26 @@ func MercuryURL(network btctypes.Network) string {
 	}
 }
 
-// New returns a new Client of given Bitcoin network.
-func New(logger logrus.FieldLogger, network btctypes.Network) (Client, error) {
+// NewClient returns a new Client of given network.
+func NewClient(logger logrus.FieldLogger, network btctypes.Network) Client {
 	host := MercuryURL(network)
 	gasStation := NewBtcGasStation(logger, 30*time.Minute)
-	return &client{
+	baseClient := &client{
 		client:     btcrpcclient.NewRPCClient(host, "", "", 5*time.Second),
 		network:    network,
 		config:     *network.Params(),
 		url:        host,
 		gasStation: gasStation,
 		logger:     logger,
-	}, nil
+	}
+	switch network.Chain() {
+	case types.Bitcoin:
+		return &BtcClient{baseClient}
+	case types.ZCash:
+		return &ZecClient{baseClient}
+	default:
+		panic(types.ErrUnknownChain)
+	}
 }
 
 func (c *client) Network() btctypes.Network {
@@ -90,12 +106,12 @@ func (c *client) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO,
 		return nil, ErrInvalidTxHash
 	}
 
-	tx, err := c.client.GetRawTransactionVerbose(ctx, string(op.TxHash()))
+	tx, err := c.client.GetRawTransactionVerbose(ctx, op.TxHash())
 	if err != nil {
 		return nil, ErrTxHashNotFound
 	}
 
-	txOut, err := c.client.GetTxOut(ctx, string(op.TxHash()), op.Vout())
+	txOut, err := c.client.GetTxOut(ctx, op.TxHash(), op.Vout())
 	if err != nil {
 		if err == rpcclient.ErrNullResult {
 			return nil, ErrUTXOSpent
@@ -118,14 +134,14 @@ func (c *client) UTXO(ctx context.Context, op btctypes.OutPoint) (btctypes.UTXO,
 		btctypes.Amount(amount),
 		scriptPubKey,
 		uint64(txOut.Confirmations),
-		nil, nil,
+		nil,
 	), nil
 }
 
 // UTXOsFromAddress returns the UTXOs for a given address. Important: this function will not return any UTXOs for
 // addresses that have not been imported into the Bitcoin node.
 func (c *client) UTXOsFromAddress(ctx context.Context, address btctypes.Address) (btctypes.UTXOs, error) {
-	outputs, err := c.client.ListUnspent(ctx, 0, 999999, []string{address.EncodeAddress()})
+	outputs, err := c.client.ListUnspent(ctx, 0, 999999, []btctypes.Address{address})
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve utxos from btc client: %v", err)
 	}
@@ -147,7 +163,7 @@ func (c *client) UTXOsFromAddress(ctx context.Context, address btctypes.Address)
 			btctypes.Amount(amount),
 			scriptPubKey,
 			uint64(output.Confirmations),
-			nil, nil,
+			nil,
 		)
 	}
 
@@ -156,7 +172,7 @@ func (c *client) UTXOsFromAddress(ctx context.Context, address btctypes.Address)
 
 // Confirmations returns the number of confirmation blocks of the given txHash.
 func (c *client) Confirmations(ctx context.Context, txHash types.TxHash) (uint64, error) {
-	tx, err := c.client.GetRawTransactionVerbose(ctx, string(txHash))
+	tx, err := c.client.GetRawTransactionVerbose(ctx, txHash)
 	if err != nil {
 		return 0, fmt.Errorf("cannot get tx from hash %s: %v", txHash, err)
 	}
@@ -198,11 +214,6 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 
 // SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.
 func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.BtcTx) (types.TxHash, error) {
-	data, err := stx.Serialize()
-	if err != nil {
-		return "", fmt.Errorf("pre-condition violation: serialization failed: %v", err)
-	}
-
 	// Pre-condition checks
 	if !stx.IsSigned() {
 		return "", errors.New("pre-condition violation: cannot submit unsigned transaction")
@@ -211,7 +222,7 @@ func (c *client) SubmitSignedTx(ctx context.Context, stx btctypes.BtcTx) (types.
 		return "", fmt.Errorf("pre-condition violation: transaction failed verification: %v", err)
 	}
 
-	txHash, err := c.client.SendRawTransaction(ctx, data)
+	txHash, err := c.client.SendRawTransaction(ctx, stx)
 	if err != nil {
 		return "", fmt.Errorf("cannot send raw transaction using btc client: %v", err)
 	}
@@ -276,7 +287,7 @@ func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Reci
 			return nil, err
 		}
 		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
-		outputUTXOs[recipient.Address.EncodeAddress()] = btctypes.NewUTXO(btctypes.NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil, nil)
+		outputUTXOs[recipient.Address.EncodeAddress()] = btctypes.NewUTXO(btctypes.NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil)
 	}
 	return btctypes.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
 }
@@ -294,12 +305,14 @@ func (c *client) AddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, er
 func (c *client) AddressFromScript(script []byte) (btctypes.Address, error) {
 	return btctypes.AddressFromScript(script, c.network)
 }
-func (c *client) SegWitAddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error) {
-	return btctypes.SegWitAddressFromPubKey(pubkey, c.network)
-}
-func (c *client) SegWitAddressFromScript(script []byte) (btctypes.Address, error) {
-	return btctypes.SegWitAddressFromScript(script, c.network)
-}
+
 func (c *client) PayToAddrScript(address btctypes.Address) ([]byte, error) {
 	return btctypes.PayToAddrScript(address, c.network)
+}
+
+func (c *BtcClient) SegWitAddressFromPubKey(pubkey ecdsa.PublicKey) (btctypes.Address, error) {
+	return btctypes.SegWitAddressFromPubKey(pubkey, c.Network())
+}
+func (c *BtcClient) SegWitAddressFromScript(script []byte) (btctypes.Address, error) {
+	return btctypes.SegWitAddressFromScript(script, c.Network())
 }

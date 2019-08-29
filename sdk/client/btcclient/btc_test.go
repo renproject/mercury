@@ -84,14 +84,12 @@ var _ = Describe("btc client", func() {
 				nil,
 				0,
 				nil,
-				nil,
 			),
 			btctypes.NewUTXO(
 				btctypes.NewOutPoint("1b112299cc23d43935619437343d56e75fd278af50aaa79e0839bb4d08e0e9b4", 1),
 				80000,
 				nil,
 				0,
-				nil,
 				nil,
 			),
 		}
@@ -114,9 +112,7 @@ var _ = Describe("btc client", func() {
 
 		Context("when fetching UTXOs", func() {
 			It("should return the UTXO for a transaction with unspent outputs", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
-
+				client := NewClient(logger, testCase.Network)
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
@@ -129,54 +125,49 @@ var _ = Describe("btc client", func() {
 			})
 
 			It("should return an error for an invalid UTXO index", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.InvalidOutPoint)
+				_, err := client.UTXO(ctx, testCase.InvalidOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
 			It("should return an error for a UTXO that has been spent", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.SpentOutPoint)
+				_, err := client.UTXO(ctx, testCase.SpentOutPoint)
 				Expect(err).To(Equal(ErrUTXOSpent))
 			})
 
 			It("should return an error for an invalid transaction hash", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.InvalidTxHashOutPoint)
+				_, err := client.UTXO(ctx, testCase.InvalidTxHashOutPoint)
 				Expect(err).To(Equal(ErrInvalidTxHash))
 			})
 
 			It("should return an error for a non-existent transaction hash", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel()
 
-				_, err = client.UTXO(ctx, testCase.NonExistentTxHashOutPoint)
+				_, err := client.UTXO(ctx, testCase.NonExistentTxHashOutPoint)
 				Expect(err).To(Equal(ErrTxHashNotFound))
 			})
 		})
 
 		Context("when building a utx", func() {
 			It("should return the expected serialized transaction", func() {
-				client, err := New(logger, testCase.Network)
-				Expect(err).NotTo(HaveOccurred())
+				client := NewClient(logger, testCase.Network)
 				address, err := loadTestAccounts(client.Network()).Address(44, 1, 0, 0, 1)
 				Expect(err).NotTo(HaveOccurred())
 

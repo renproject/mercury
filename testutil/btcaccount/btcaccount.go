@@ -81,7 +81,15 @@ func (acc *account) PrivateKey() *ecdsa.PrivateKey {
 
 // UTXOs returns the UTXOs for an imported account.
 func (acc *account) UTXOs(ctx context.Context) (utxos btctypes.UTXOs, err error) {
-	return acc.Client.UTXOsFromAddress(ctx, acc.address)
+	utxos, err = acc.Client.UTXOsFromAddress(ctx, acc.address)
+	if client, ok := acc.Client.(*btcclient.BtcClient); ok {
+		addr, err := client.SegWitAddressFromPubKey(acc.key.PublicKey)
+		if err == nil {
+			segWitUTXOS, _ := client.UTXOsFromAddress(ctx, addr)
+			utxos = append(utxos, segWitUTXOS...)
+		}
+	}
+	return
 }
 
 // Transfer transfer certain amount value to the target address. Important: this only works for accounts that have been

@@ -79,7 +79,7 @@ func (t *tx) OutputUTXO(address Address) UTXO {
 	if !ok {
 		return nil
 	}
-	return NewUTXO(NewOutPoint(t.Hash(), utxo.Vout()), utxo.Amount(), utxo.ScriptPubKey(), 0, nil, nil)
+	return NewUTXO(NewOutPoint(t.Hash(), utxo.Vout()), utxo.Amount(), utxo.ScriptPubKey(), 0, nil)
 }
 
 // Serialize returns the serialized tx in bytes.
@@ -132,14 +132,20 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 			builder := txscript.NewScriptBuilder()
 			builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
 			builder.AddData(serializedPubKey)
-			t.utxos[i].AddData(builder)
+			if script := t.utxos[i].Script(); script != nil {
+				builder.AddData(script)
+			}
 			sigScript, err := builder.Script()
 			if err != nil {
 				return err
 			}
 			t.tx.AddSigScript(i, sigScript)
 		} else {
-			t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey, t.utxos[i].Script())
+			if script := t.utxos[i].Script(); script != nil {
+				t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey, script)
+			} else {
+				t.tx.AddSegWit(i, append(sig.Serialize(), byte(txscript.SigHashAll)), serializedPubKey)
+			}
 		}
 	}
 	t.signed = true
