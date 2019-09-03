@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Chain uint8
@@ -11,6 +12,20 @@ const (
 	Ethereum Chain = 1
 	ZCash    Chain = 2
 )
+
+func NewChain(chain string) Chain {
+	chain = strings.ToUpper(chain)
+	switch chain {
+	case "BITCOIN", "BTC":
+		return Bitcoin
+	case "ETHEREUM", "ETH":
+		return Ethereum
+	case "ZCASH", "ZEC":
+		return ZCash
+	default:
+		panic(ErrUnknownChain)
+	}
+}
 
 // String implements the `Stringer` interface.
 func (chain Chain) String() string {
