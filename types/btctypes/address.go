@@ -65,6 +65,18 @@ func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error)
 	}
 }
 
+// AddressFromPubKeyHash gets the `Address` from a public key hash.
+func AddressFromPubKeyHash(pHash []byte, network Network) (Address, error) {
+	switch network.Chain() {
+	case types.Bitcoin:
+		return btcutil.NewAddressPubKeyHash(pHash, network.Params())
+	case types.ZCash:
+		return zecAddressFromHash160(pHash, network.Params(), false)
+	default:
+		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
+	}
+}
+
 // AddressFromScript gets the `Address` from a script.
 func AddressFromScript(script []byte, network Network) (Address, error) {
 	switch network.Chain() {
