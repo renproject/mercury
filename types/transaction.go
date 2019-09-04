@@ -2,8 +2,6 @@ package types
 
 import (
 	"crypto/ecdsa"
-
-	"github.com/btcsuite/btcd/btcec"
 )
 
 type SignatureHash []byte
@@ -16,5 +14,5 @@ type Tx interface {
 	IsSigned() bool
 	Serialize() ([]byte, error)
 	Hash() TxHash
-	InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) error
+	InjectSigs(sigs [][]byte, pubKey ecdsa.PublicKey) error
 }
