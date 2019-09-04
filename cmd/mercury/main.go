@@ -62,23 +62,24 @@ func main() {
 		"renex-ui": os.Getenv("INFURA_KEY_RENEX_UI"),
 		"dcc":      os.Getenv("INFURA_KEY_DCC"),
 	}
-	infuraMainnetClient := rpc.NewInfuraClient(ethtypes.Mainnet, taggedKeys)
+	infuraMainnetClient := rpc.NewInfuraClient(ethtypes.EthMainnet, taggedKeys)
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
-	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
+	ethMainnetAPI := api.NewApi(ethtypes.EthMainnet, ethMainnetProxy, ethCache, logger)
 
-	var testnetClient rpc.Client
+	var ethTestnetClient rpc.Client
 	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
 	if ethKovanRPCURL == "" {
 		logger.Infof("Using Infura")
-		testnetClient = rpc.NewInfuraClient(ethtypes.Kovan, taggedKeys)
+		ethTestnetClient = rpc.NewInfuraClient(ethtypes.EthKovan, taggedKeys)
 	} else {
 		logger.Infof("Using local ETH node at: %s", ethKovanRPCURL)
 		ethKovanUser := os.Getenv("ETH_KOVAN_RPC_USERNAME")
 		ethKovanPassword := os.Getenv("ETH_KOVAN_RPC_PASSWORD")
-		testnetClient = rpc.NewClient(ethKovanRPCURL, ethKovanUser, ethKovanPassword)
+		ethTestnetClient = rpc.NewClient(ethKovanRPCURL, ethKovanUser, ethKovanPassword)
 	}
-	ethTestnetProxy := proxy.NewProxy(testnetClient)
-	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
+	ethTestnetProxy := proxy.NewProxy(ethTestnetClient)
+	ethTestnetAPI := api.NewApi(ethtypes.EthKovan, ethTestnetProxy, ethKovanCache, logger)
+
 
 	// Set-up and start the server.
 	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI)
