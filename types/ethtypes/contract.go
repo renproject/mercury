@@ -41,7 +41,7 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 
 	data, err := c.abi.Pack(method, params...)
 	if err != nil {
-		return Tx{}, fmt.Errorf("failed to pack data: %v", err)
+		return nil, fmt.Errorf("failed to pack data: %v", err)
 	}
 
 	// Ensure a valid value field and resolve the account nonce
@@ -51,13 +51,13 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 
 	nonce, err := c.client.PendingNonceAt(ctx, common.Address(from))
 	if err != nil {
-		return Tx{}, fmt.Errorf("failed to retrieve account nonce: %v", err)
+		return nil, fmt.Errorf("failed to retrieve account nonce: %v", err)
 	}
 
 	// Figure out the gas allowance and gas price values
 	gasPrice, err := c.client.SuggestGasPrice(ctx)
 	if err != nil {
-		return Tx{}, fmt.Errorf("failed to suggest gas price: %v", err)
+		return nil, fmt.Errorf("failed to suggest gas price: %v", err)
 	}
 
 	contractAddr := common.Address(c.address)
@@ -65,7 +65,7 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 	msg := ethereum.CallMsg{From: common.Address(from), To: &contractAddr, Value: value, Data: data}
 	gasLimit, err := c.client.EstimateGas(ctx, msg)
 	if err != nil {
-		return Tx{}, fmt.Errorf("failed to estimate gas needed: %v", err)
+		return nil, fmt.Errorf("failed to estimate gas needed: %v", err)
 	}
 
 	// Create the transaction, sign it and schedule it for execution
@@ -78,10 +78,10 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 
 	chainID, err := c.client.ChainID(ctx)
 	if err != nil {
-		return Tx{}, fmt.Errorf("failed to get chain id: %v", err)
+		return nil, fmt.Errorf("failed to get chain id: %v", err)
 	}
 
-	return Tx{
+	return &ethTx{
 		tx:      rawTx,
 		chainID: chainID,
 	}, nil
