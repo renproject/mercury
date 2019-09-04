@@ -8,9 +8,10 @@ import (
 type Chain uint8
 
 const (
-	Bitcoin  Chain = 0
-	Ethereum Chain = 1
-	ZCash    Chain = 2
+	Bitcoin     Chain = 0
+	Ethereum    Chain = 1
+	ZCash       Chain = 2
+	BitcoinCash Chain = 3
 )
 
 func NewChain(chain string) Chain {
@@ -36,6 +37,8 @@ func (chain Chain) String() string {
 		return "eth"
 	case ZCash:
 		return "zec"
+	case BitcoinCash:
+		return "bch"
 	default:
 		panic(ErrUnknownChain)
 	}

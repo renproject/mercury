@@ -3,12 +3,13 @@ package btcclient_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/btcclient"
-	"github.com/renproject/mercury/types"
 
 	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/types/btctypes"
@@ -21,18 +22,11 @@ var _ = Describe("btc client", func() {
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
-		switch network.Chain() {
-		case types.Bitcoin:
-			wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
-			Expect(err).NotTo(HaveOccurred())
-			return wallet
-		case types.ZCash:
-			wallet, err := testutil.LoadHdWalletFromEnv("ZEC_TEST_MNEMONIC", "ZEC_TEST_PASSPHRASE", network)
-			Expect(err).NotTo(HaveOccurred())
-			return wallet
-		default:
-			panic(types.ErrUnknownChain)
-		}
+		mnemonicENV := fmt.Sprintf("%s_TEST_MNEMONIC", strings.ToUpper(network.Chain().String()))
+		passphraseENV := fmt.Sprintf("%s_TEST_PASSPHRASE", strings.ToUpper(network.Chain().String()))
+		wallet, err := testutil.LoadHdWalletFromEnv(mnemonicENV, passphraseENV, network)
+		Expect(err).NotTo(HaveOccurred())
+		return wallet
 	}
 
 	testCases := []struct {
@@ -50,7 +44,7 @@ var _ = Describe("btc client", func() {
 		ExpectedTx string
 	}{
 		{
-			btctypes.BtcTestnet,
+			btctypes.BtcLocalnet,
 			btctypes.NewOutPoint("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c", 0),
 			btctypes.NewOutPoint("bd4bb310b0c6c4e5225bc60711931552e5227c94ef7569bfc7037f014d91030c", 10),
 			btctypes.NewOutPoint("7e65d34373491653934d32cc992211b14b9e0e80d4bb9380e97aaa05fa872df5", 0),
@@ -61,7 +55,7 @@ var _ = Describe("btc client", func() {
 			"0200000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a914eb32aacf85fb8372fdd0e6f3cca4f9216e85f37288ac08e80000000000001976a91444458029b9de2280c67e6e0373a2ba946984960388ac00000000",
 		},
 		{
-			btctypes.ZecTestnet,
+			btctypes.ZecLocalnet,
 			btctypes.NewOutPoint("41ec71582bc44fb9abc2c5d2009d1352e7df118def521b3b17c5bff86e5cfb46", 1),
 			btctypes.NewOutPoint("41ec71582bc44fb9abc2c5d2009d1352e7df118def521b3b17c5bff86e5cfb46", 10),
 			btctypes.NewOutPoint("e96953b5030f44686e71650d6cb71a83625059ad086f7fc7802775e22cef0f65", 0),
@@ -70,6 +64,17 @@ var _ = Describe("btc client", func() {
 			"76a9143735df7c4d831491ce9dc462e6f606f6faffb5ca88ac",
 			100000000,
 			"0400008085202f8902b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a9147927c1f59b258381973c2e9b88e1aa88170db1e888ac08e80000000000001976a91439758249eea8e82cc7554822abad0ba1c32a3d1588ac00000000809698000000000000000000000000",
+		},
+		{
+			btctypes.BchLocalnet,
+			btctypes.NewOutPoint("5d2986a6adbea7a17a6fbd60dfb15b51d2ddfaee41659dd0d4a8bc2601c81e73", 1),
+			btctypes.NewOutPoint("5d2986a6adbea7a17a6fbd60dfb15b51d2ddfaee41659dd0d4a8bc2601c81e73", 10),
+			btctypes.NewOutPoint("09431560c96a97f1504b7a90fc1c56978cca4abeec8a9fae60c66c4b74e2cfa6", 0),
+			btctypes.NewOutPoint("abcdefg", 0),
+			btctypes.NewOutPoint("4b9e0e80d4bb9380e97aaa05fa872df57e65d34373491653934d32cc992211b1", 0),
+			"76a91406689f883f5ec936d5384d5f75beb16d0c5aeafa88ac",
+			10000000,
+			"0100000002b1112299cc324d935316497343d3657ef52d87fa05aa7ae98093bbd4800e9e4b0000000000ffffffffb4e9e0084dbb39089ea7aa50af78d25fe7563d343794613539d423cc9922111b0100000000ffffffff02409c0000000000001976a914bc6baeb5b0b5daa34c2318cc647a911dfe40f0b488ac08e80000000000001976a914a4e1dbf6f6c7404ee1d685e6128f449eb9ca263288ac00000000",
 		},
 	}
 
@@ -110,7 +115,7 @@ var _ = Describe("btc client", func() {
 		testCase := testCase
 		timeout := time.Second
 
-		Context("when fetching UTXOs", func() {
+		Context(fmt.Sprintf("when fetching UTXOs on %s %s", testCase.Network.Chain(), testCase.Network), func() {
 			It("should return the UTXO for a transaction with unspent outputs", func() {
 				client := NewClient(logger, testCase.Network)
 				ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -131,7 +136,8 @@ var _ = Describe("btc client", func() {
 				defer cancel()
 
 				_, err := client.UTXO(ctx, testCase.InvalidOutPoint)
-				Expect(err).To(Equal(ErrUTXOSpent))
+				_, ok := err.(ErrUTXOSpent)
+				Expect(ok).To(BeTrue())
 			})
 
 			It("should return an error for a UTXO that has been spent", func() {
@@ -141,7 +147,8 @@ var _ = Describe("btc client", func() {
 				defer cancel()
 
 				_, err := client.UTXO(ctx, testCase.SpentOutPoint)
-				Expect(err).To(Equal(ErrUTXOSpent))
+				_, ok := err.(ErrUTXOSpent)
+				Expect(ok).To(BeTrue())
 			})
 
 			It("should return an error for an invalid transaction hash", func() {
@@ -151,7 +158,8 @@ var _ = Describe("btc client", func() {
 				defer cancel()
 
 				_, err := client.UTXO(ctx, testCase.InvalidTxHashOutPoint)
-				Expect(err).To(Equal(ErrInvalidTxHash))
+				_, ok := err.(ErrInvalidTxHash)
+				Expect(ok).To(BeTrue())
 			})
 
 			It("should return an error for a non-existent transaction hash", func() {
@@ -161,11 +169,12 @@ var _ = Describe("btc client", func() {
 				defer cancel()
 
 				_, err := client.UTXO(ctx, testCase.NonExistentTxHashOutPoint)
-				Expect(err).To(Equal(ErrTxHashNotFound))
+				_, ok := err.(ErrTxHashNotFound)
+				Expect(ok).To(BeTrue())
 			})
 		})
 
-		Context("when building a utx", func() {
+		Context(fmt.Sprintf("when building a utx on %s %s", testCase.Network.Chain(), testCase.Network), func() {
 			It("should return the expected serialized transaction", func() {
 				client := NewClient(logger, testCase.Network)
 				address, err := loadTestAccounts(client.Network()).Address(44, 1, 0, 0, 1)

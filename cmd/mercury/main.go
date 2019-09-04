@@ -26,6 +26,8 @@ func main() {
 	btcCache := cache.New(btcStore, logger)
 	zecStore := kv.NewJSON(kv.NewMemDB())
 	zecCache := cache.New(zecStore, logger)
+	bchStore := kv.NewJSON(kv.NewMemDB())
+	bchCache := cache.New(bchStore, logger)
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
@@ -42,6 +44,14 @@ func main() {
 	zecTestnetNodeClient := rpc.NewClient(zecTestnetURL, zecTestnetUser, zecTestnetPassword)
 	zecTestnetProxy := proxy.NewProxy(zecTestnetNodeClient)
 	zecTestnetAPI := api.NewApi(btctypes.ZecTestnet, zecTestnetProxy, zecCache, logger)
+
+	// Initialise BCash API.
+	bchTestnetURL := os.Getenv("BCASH_TESTNET_RPC_URL")
+	bchTestnetUser := os.Getenv("BCASH_TESTNET_RPC_USERNAME")
+	bchTestnetPassword := os.Getenv("BCASH_TESTNET_RPC_PASSWORD")
+	bchTestnetNodeClient := rpc.NewClient(bchTestnetURL, bchTestnetUser, bchTestnetPassword)
+	bchTestnetProxy := proxy.NewProxy(bchTestnetNodeClient)
+	bchTestnetAPI := api.NewApi(btctypes.BchTestnet, bchTestnetProxy, bchCache, logger)
 
 	// Initialize Ethereum API.
 	taggedKeys := map[string]string{
@@ -71,6 +81,6 @@ func main() {
 	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
-	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, ethMainnetAPI, ethTestnetAPI)
+	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI)
 	server.Run()
 }

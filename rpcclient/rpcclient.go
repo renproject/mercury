@@ -65,6 +65,7 @@ func (client *client) SendRequest(ctx context.Context, method string, response i
 			return err
 		}
 		request.SetBasicAuth(client.user, client.password)
+		request = request.WithContext(ctx)
 		resp, err := http.DefaultClient.Do(request)
 		if err != nil {
 			return err

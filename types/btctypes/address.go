@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/btctypes/bch"
 )
 
 // Address is an interface type for any type of destination a transaction output may spend to. This includes pay-to-
@@ -43,6 +44,8 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 		return btcutil.DecodeAddress(addr, network.Params())
 	case types.ZCash:
 		return zecutil.DecodeAddress(addr, network.Params().Name)
+	case types.BitcoinCash:
+		return bch.DecodeAddress(addr, network.Params())
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -55,6 +58,8 @@ func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error)
 		return btcutil.NewAddressPubKeyHash(btcutil.Hash160(SerializePublicKey(pubkey)), network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey)), network.Params(), false)
+	case types.BitcoinCash:
+		return bch.NewAddressPubKey(SerializePublicKey(pubkey), network.Params()), nil
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -79,6 +84,8 @@ func AddressFromScript(script []byte, network Network) (Address, error) {
 		return btcutil.NewAddressScriptHash(script, network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
+	case types.BitcoinCash:
+		return bch.NewAddressScriptHash(script, network.Params()), nil
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -118,6 +125,8 @@ func PayToAddrScript(address Address, network Network) ([]byte, error) {
 		return txscript.PayToAddrScript(address)
 	case types.ZCash:
 		return zecutil.PayToAddrScript(address)
+	case types.BitcoinCash:
+		return bch.PayToAddrScript(address)
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}

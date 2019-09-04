@@ -24,6 +24,10 @@ const (
 	ZecLocalnet network = 3
 	ZecMainnet  network = 4
 	ZecTestnet  network = 5
+
+	BchLocalnet network = 6
+	BchMainnet  network = 7
+	BchTestnet  network = 8
 )
 
 // NewNetwork parse the network from a string.
@@ -33,6 +37,8 @@ func NewNetwork(chain types.Chain, network string) Network {
 		return NewBtcNetwork(network)
 	case types.ZCash:
 		return NewZecNetwork(network)
+	case types.BitcoinCash:
+		return NewBchNetwork(network)
 	default:
 		panic(types.ErrUnknownChain)
 	}
@@ -68,12 +74,27 @@ func NewZecNetwork(network string) Network {
 	}
 }
 
+// NewBchNetwork parse the ltc network from a string.
+func NewBchNetwork(network string) Network {
+	network = strings.ToLower(strings.TrimSpace(network))
+	switch network {
+	case "mainnet":
+		return BchMainnet
+	case "testnet", "testnet3":
+		return BchTestnet
+	case "localnet", "localhost":
+		return BchLocalnet
+	default:
+		panic(types.ErrUnknownNetwork)
+	}
+}
+
 // Params returns the params config for the network
 func (network network) Params() *chaincfg.Params {
 	switch network {
-	case BtcMainnet, ZecMainnet:
+	case BtcMainnet, ZecMainnet, BchMainnet:
 		return &chaincfg.MainNetParams
-	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet:
+	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet, BchTestnet, BchLocalnet:
 		return &chaincfg.TestNet3Params
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -85,7 +106,7 @@ func (network network) SegWitEnabled() bool {
 	switch network.Chain() {
 	case types.Bitcoin:
 		return true
-	case types.ZCash:
+	case types.ZCash, types.BitcoinCash:
 		return false
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -95,11 +116,11 @@ func (network network) SegWitEnabled() bool {
 // String implements the `Stringer` interface.
 func (network network) String() string {
 	switch network {
-	case BtcMainnet, ZecMainnet:
+	case BtcMainnet, ZecMainnet, BchMainnet:
 		return "mainnet"
-	case BtcTestnet, ZecTestnet:
+	case BtcTestnet, ZecTestnet, BchTestnet:
 		return "testnet"
-	case BtcLocalnet, ZecLocalnet:
+	case BtcLocalnet, ZecLocalnet, BchLocalnet:
 		return "localnet"
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -113,6 +134,8 @@ func (network network) Chain() types.Chain {
 		return types.Bitcoin
 	case ZecMainnet, ZecTestnet, ZecLocalnet:
 		return types.ZCash
+	case BchMainnet, BchTestnet, BchLocalnet:
+		return types.BitcoinCash
 	default:
 		panic(types.ErrUnknownNetwork)
 	}

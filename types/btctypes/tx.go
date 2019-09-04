@@ -130,7 +130,7 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 	for i, sig := range sigs {
 		if !t.utxos[i].SegWit() {
 			builder := txscript.NewScriptBuilder()
-			builder.AddData(append(sig.Serialize(), byte(txscript.SigHashAll)))
+			builder.AddData(t.tx.SigBytes(sig, txscript.SigHashAll))
 			builder.AddData(serializedPubKey)
 			if script := t.utxos[i].Script(); script != nil {
 				builder.AddData(script)
@@ -164,6 +164,7 @@ type MsgTx interface {
 	AddTxOut(txOut *wire.TxOut)
 	AddSigScript(i int, sigScript []byte)
 	AddSegWit(i int, witness ...[]byte)
+	SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte
 }
 
 func NewMsgTx(network Network) MsgTx {
@@ -175,6 +176,8 @@ func NewMsgTx(network Network) MsgTx {
 			MsgTx:        wire.NewMsgTx(ZecVersion),
 			ExpiryHeight: ZecExpiryHeight,
 		})
+	case types.BitcoinCash:
+		return NewBchMsgTx(wire.NewMsgTx(BchVersion))
 	default:
 		panic(types.ErrUnknownChain)
 	}
@@ -200,6 +203,10 @@ func (msgTx BtcMsgTx) AddSegWit(i int, witness ...[]byte) {
 	msgTx.TxIn[i].Witness = wire.TxWitness(witness)
 }
 
+func (BtcMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
+	return append(sig.Serialize(), byte(hashType))
+}
+
 type ZecMsgTx struct {
 	*zecutil.MsgTx
 }
@@ -220,8 +227,36 @@ func (msgTx ZecMsgTx) AddSegWit(i int, witness ...[]byte) {
 	panic(ErrDoesNotSupportSegWit)
 }
 
+func (ZecMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
+	return append(sig.Serialize(), byte(hashType))
+}
+
 func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
 	return ZecMsgTx{msgTx}
+}
+
+type BchMsgTx struct {
+	*wire.MsgTx
+}
+
+func (msgTx BchMsgTx) InCount() int {
+	return len(msgTx.TxIn)
+}
+
+func (msgTx BchMsgTx) AddSigScript(i int, sigScript []byte) {
+	msgTx.TxIn[i].SignatureScript = sigScript
+}
+
+func (msgTx BchMsgTx) AddSegWit(i int, witness ...[]byte) {
+	panic("BitcoinCash does not support SegWit")
+}
+
+func (BchMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
+	return append(sig.Serialize(), byte(hashType|SigHashForkID))
+}
+
+func NewBchMsgTx(msgTx *wire.MsgTx) BchMsgTx {
+	return BchMsgTx{msgTx}
 }
 
 func EstimateTxSize(numUTXOs, numRecipients int) int {

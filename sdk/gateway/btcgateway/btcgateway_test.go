@@ -3,6 +3,7 @@ package btcgateway_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,18 +25,11 @@ var _ = Describe("btc gateway", func() {
 	// loadTestAccounts loads a HD Extended key for this tests. Some addresses of certain path has been set up for this
 	// test. (i.e have known balance, utxos.)
 	loadTestAccounts := func(network btctypes.Network) testutil.HdKey {
-		switch network.Chain() {
-		case types.Bitcoin:
-			wallet, err := testutil.LoadHdWalletFromEnv("BTC_TEST_MNEMONIC", "BTC_TEST_PASSPHRASE", network)
-			Expect(err).NotTo(HaveOccurred())
-			return wallet
-		case types.ZCash:
-			wallet, err := testutil.LoadHdWalletFromEnv("ZEC_TEST_MNEMONIC", "ZEC_TEST_PASSPHRASE", network)
-			Expect(err).NotTo(HaveOccurred())
-			return wallet
-		default:
-			panic(types.ErrUnknownChain)
-		}
+		mnemonicENV := fmt.Sprintf("%s_TEST_MNEMONIC", strings.ToUpper(network.Chain().String()))
+		passphraseENV := fmt.Sprintf("%s_TEST_PASSPHRASE", strings.ToUpper(network.Chain().String()))
+		wallet, err := testutil.LoadHdWalletFromEnv(mnemonicENV, passphraseENV, network)
+		Expect(err).NotTo(HaveOccurred())
+		return wallet
 	}
 
 	// TODO: finish writing these tests
@@ -148,7 +142,7 @@ var _ = Describe("btc gateway", func() {
 	// }
 
 	Context("when generating gateways", func() {
-		networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet}
+		networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet, btctypes.BchLocalnet}
 		for _, network := range networks {
 			network := network
 			It(fmt.Sprintf("should be able to generate a %v gateway", network), func() {
@@ -158,24 +152,27 @@ var _ = Describe("btc gateway", func() {
 				account, err := btcaccount.NewAccount(client, key)
 				Expect(err).NotTo(HaveOccurred())
 
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+
 				fmt.Println(network, account.Address())
 				// Transfer some funds to the gateway address
 				amount := 20000 * btctypes.SAT
 
-				txHash, err := account.Transfer(context.Background(), gateway.Address(), amount, types.Standard, false)
+				txHash, err := account.Transfer(ctx, gateway.Address(), amount, types.Standard, false)
 				Expect(err).NotTo(HaveOccurred())
 				fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
 				// Sleep for a small period of time in hopes that the transaction will go through
 				time.Sleep(5 * time.Second)
 
 				// Fetch the UTXOs for the transaction hash
-				gatewayUTXO, err := gateway.UTXO(context.Background(), btctypes.NewOutPoint(txHash, 0))
+				gatewayUTXO, err := gateway.UTXO(ctx, btctypes.NewOutPoint(txHash, 0))
 				Expect(err).NotTo(HaveOccurred())
 				// fmt.Printf("utxo: %v", gatewayUTXO)
 				gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
 				Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 				txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
-				gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
+				gasAmount := client.SuggestGasPrice(ctx, types.Standard, txSize)
 				fmt.Printf("gas amount=%v", gasAmount)
 				recipients := btctypes.Recipients{{
 					Address: account.Address(),
@@ -211,22 +208,25 @@ var _ = Describe("btc gateway", func() {
 			// Transfer some funds to the gateway address
 			amount := 20000 * btctypes.SAT
 
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
 			segWitAddr := gateway.BaseScript().(*btctypes.BtcScript).SegWitaddress()
 			// Fund mjSUANWKvokgHo6mxoHdq27aBgdCJ39uNA if the following transfer fails with not enough balance.
-			txHash, err := account.Transfer(context.Background(), segWitAddr, amount, types.Standard, false)
+			txHash, err := account.Transfer(ctx, segWitAddr, amount, types.Standard, false)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("funding gateway address=%v with txhash=%v\n", segWitAddr, txHash)
 			// Sleep for a small period of time in hopes that the transaction will go through
 			time.Sleep(5 * time.Second)
 
 			// Fetch the UTXOs for the transaction hash
-			gatewayUTXO, err := gateway.UTXO(context.Background(), btctypes.NewOutPoint(txHash, 0))
+			gatewayUTXO, err := gateway.UTXO(ctx, btctypes.NewOutPoint(txHash, 0))
 			Expect(err).NotTo(HaveOccurred())
 			// fmt.Printf("utxo: %v", gatewayUTXO)
 			gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
-			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
+			gasAmount := client.SuggestGasPrice(ctx, types.Standard, txSize)
 			fmt.Printf("gas amount=%v", gasAmount)
 			recipients := btctypes.Recipients{{
 				Address: account.Address(),
@@ -245,7 +245,7 @@ var _ = Describe("btc gateway", func() {
 			err = tx.InjectSignatures(sigs, key.PublicKey)
 
 			Expect(err).NotTo(HaveOccurred())
-			newTxHash, err := client.SubmitSignedTx(context.Background(), tx)
+			newTxHash, err := client.SubmitSignedTx(ctx, tx)
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
 		})
