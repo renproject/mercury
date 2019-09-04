@@ -18,6 +18,7 @@ type BtcTx interface {
 	types.Tx
 	UTXOs() UTXOs
 	OutputUTXO(address Address) UTXO
+	InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) error
 }
 
 type tx struct {
@@ -104,6 +105,18 @@ func (t *tx) Serialize() ([]byte, error) {
 
 func (t *tx) Hash() types.TxHash {
 	return types.TxHash(t.tx.TxHash().String())
+}
+
+func (t *tx) InjectSigs(sigs [][]byte, pubKey ecdsa.PublicKey) error {
+	signatures := make([]*btcec.Signature, len(sigs))
+	for i, sig := range sigs {
+		signature, err := btcec.ParseSignature(sig, btcec.S256())
+		if err != nil {
+			return err
+		}
+		signatures[i] = signature
+	}
+	return t.InjectSignatures(signatures, pubKey)
 }
 
 // InjectSignatures injects the signed signatureHashes into the Tx. You cannot use the USTX anymore. scriptData is
