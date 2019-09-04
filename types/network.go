@@ -12,6 +12,7 @@ const (
 	Ethereum    Chain = 1
 	ZCash       Chain = 2
 	BitcoinCash Chain = 3
+	Matic       Chain = 4
 )
 
 func NewChain(chain string) Chain {
@@ -23,6 +24,8 @@ func NewChain(chain string) Chain {
 		return Ethereum
 	case "ZCASH", "ZEC":
 		return ZCash
+	case "MATIC":
+		return Matic
 	default:
 		panic(ErrUnknownChain)
 	}
@@ -39,6 +42,8 @@ func (chain Chain) String() string {
 		return "zec"
 	case BitcoinCash:
 		return "bch"
+	case Matic:
+		return "matic"
 	default:
 		panic(ErrUnknownChain)
 	}

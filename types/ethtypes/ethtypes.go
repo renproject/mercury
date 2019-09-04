@@ -11,23 +11,39 @@ import (
 )
 
 const (
-	Mainnet network = 1
-	Kovan   network = 42
+	EthMainnet  network = 0
+	EthKovan    network = 1
+	EthLocalnet network = 2
+
+	MaticMainnet  network = 3
+	MaticTestnet  network = 4
+	MaticLocalnet network = 5
 )
 
 func (network network) String() string {
 	switch network {
-	case Mainnet:
+	case EthMainnet, MaticMainnet:
 		return "mainnet"
-	case Kovan:
+	case EthKovan:
 		return "kovan"
+	case MaticTestnet:
+		return "testnet"
+	case EthLocalnet, MaticLocalnet:
+		return "localnet"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
 }
 
 func (network network) Chain() types.Chain {
+	switch network {
+	case EthMainnet, EthKovan, EthLocalnet:
 	return types.Ethereum
+	case MaticMainnet, MaticTestnet, MaticLocalnet:
+		return types.Matic
+	default:
+		panic(types.ErrUnknownChain)
+}
 }
 
 type Network interface {

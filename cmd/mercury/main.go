@@ -28,6 +28,8 @@ func main() {
 	zecCache := cache.New(zecStore, logger)
 	bchStore := kv.NewJSON(kv.NewMemDB())
 	bchCache := cache.New(bchStore, logger)
+	maticStore := kv.NewJSON(kv.NewMemDB())
+	maticCache := cache.New(maticStore, logger)
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
@@ -80,8 +82,11 @@ func main() {
 	ethTestnetProxy := proxy.NewProxy(ethTestnetClient)
 	ethTestnetAPI := api.NewApi(ethtypes.EthKovan, ethTestnetProxy, ethKovanCache, logger)
 
+	maticTestnetClient := rpc.NewClient(os.Getenv("MATIC_TESTNET_RPC_URL"), "", "")
+	maticTestnetProxy := proxy.NewProxy(maticTestnetClient)
+	maticTestnetAPI := api.NewApi(ethtypes.MaticTestnet, maticTestnetProxy, maticCache, logger)
 
 	// Set-up and start the server.
-	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI)
+	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI, maticTestnetAPI)
 	server.Run()
 }
