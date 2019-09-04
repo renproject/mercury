@@ -27,32 +27,6 @@ var _ = Describe("eth account", func() {
 			Expect(account.Address()).To(BeEquivalentTo(convertedAddr))
 		})
 
-		It("can create an unsigned transaction", func() {
-			ctx := context.Background()
-			amount := ethtypes.Ether(3)
-			gasLimit := uint64(1000)
-			gasPrice := Client.SuggestGasPrice(ctx, types.Standard)
-			account, err := RandomAccount(Client)
-			Expect(err).NotTo(HaveOccurred())
-			var data []byte
-			_, err = EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("can sign an unsigned transaction", func() {
-			ctx := context.Background()
-			amount := ethtypes.Ether(3)
-			gasLimit := uint64(1000)
-			gasPrice := Client.SuggestGasPrice(ctx, types.Standard)
-			account, err := RandomAccount(Client)
-			Expect(err).NotTo(HaveOccurred())
-			var data []byte
-			utx, err := EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
-			Expect(err).NotTo(HaveOccurred())
-			err = EthAccount.SignUnsignedTx(ctx, &utx)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		XIt("can transfer funds", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
@@ -69,13 +43,7 @@ var _ = Describe("eth account", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
 			var data []byte
-			tx, err := EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
-			fmt.Println(tx.Hash())
-			Expect(err).NotTo(HaveOccurred())
-			err = EthAccount.SignUnsignedTx(ctx, &tx)
-			fmt.Println(tx.Hash())
-			Expect(err).NotTo(HaveOccurred())
-			_, err = Client.PublishSignedTx(ctx, tx)
+			_, err = EthAccount.Transact(ctx, account.Address(), amount, gasPrice, gasLimit, data)
 			Expect(err).NotTo(HaveOccurred())
 			// check new balance
 			newBal, err := Client.Balance(ctx, account.Address())
