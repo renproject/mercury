@@ -8,10 +8,8 @@ require (
 	github.com/aristanetworks/goarista v0.0.0-20190712234253-ed1100a1c015 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190807005414-4063feeff79a
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
-	github.com/btcsuite/golangcrypto v0.0.0-20150304025918-53f62d9b43e8
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/codahale/blake2 v0.0.0-20150924215134-8d10d0420cbf
-	github.com/cpacia/bchutil v0.0.0-20181003130114-b126f6a35b6c // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
@@ -26,7 +24,6 @@ require (
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/huin/goupnp v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.7.7 // indirect
-	github.com/iqoption/zecutil v0.0.0-20181123060914-2cb80ea5c0ce
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/karalabe/usb v0.0.0-20190819132248-550797b1cad8 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
