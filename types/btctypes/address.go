@@ -6,11 +6,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/base58"
-	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/btctypes/bch"
 )
@@ -19,6 +15,13 @@ import (
 // pubkey (P2PK), pay-to-pubkey-hash (P2PKH), and pay-to-script-hash (P2SH). Address is designed to be generic enough
 // that other kinds of addresses may be added in the future without changing the decoding and encoding API.
 type Address btcutil.Address
+
+type AddressType uint32
+
+const (
+	P2PKH = AddressType(0)
+	P2SH  = AddressType(1)
+)
 
 type Recipient struct {
 	Address Address
@@ -43,7 +46,7 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 	case types.Bitcoin:
 		return btcutil.DecodeAddress(addr, network.Params())
 	case types.ZCash:
-		return zecutil.DecodeAddress(addr, network.Params().Name)
+		return DecodeAddress(addr)
 	case types.BitcoinCash:
 		return bch.DecodeAddress(addr, network.Params())
 	default:
@@ -57,7 +60,7 @@ func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error)
 	case types.Bitcoin:
 		return btcutil.NewAddressPubKeyHash(btcutil.Hash160(SerializePublicKey(pubkey)), network.Params())
 	case types.ZCash:
-		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey)), network.Params(), false)
+		return NewAddressPubKey(SerializePublicKey(pubkey), network), nil
 	case types.BitcoinCash:
 		return bch.NewAddressPubKey(SerializePublicKey(pubkey), network.Params()), nil
 	default:
@@ -71,7 +74,7 @@ func AddressFromPubKeyHash(pHash []byte, network Network) (Address, error) {
 	case types.Bitcoin:
 		return btcutil.NewAddressPubKeyHash(pHash, network.Params())
 	case types.ZCash:
-		return zecAddressFromHash160(pHash, network.Params(), false)
+		return NewAddressPubKeyHash(pHash, network), nil
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -83,7 +86,7 @@ func AddressFromScript(script []byte, network Network) (Address, error) {
 	case types.Bitcoin:
 		return btcutil.NewAddressScriptHash(script, network.Params())
 	case types.ZCash:
-		return zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
+		return NewAddressScriptHash(script, network), nil
 	case types.BitcoinCash:
 		return bch.NewAddressScriptHash(script, network.Params()), nil
 	default:
@@ -118,56 +121,4 @@ func SegWitAddressFromScript(script []byte, network Network) (Address, error) {
 	}
 }
 
-// PayToAddrScript gets the PayToAddrScript for an address on the given blockchain
-func PayToAddrScript(address Address, network Network) ([]byte, error) {
-	switch network.Chain() {
-	case types.Bitcoin:
-		return txscript.PayToAddrScript(address)
-	case types.ZCash:
-		return zecutil.PayToAddrScript(address)
-	case types.BitcoinCash:
-		return bch.PayToAddrScript(address)
-	default:
-		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
-	}
-}
-
-func zecAddressFromHash160(hash []byte, params *chaincfg.Params, isScript bool) (btcutil.Address, error) {
-	prefixes := map[string]map[string][]byte{
-		"mainnet": map[string][]byte{
-			"pubkey": []byte{0x1C, 0xB8},
-			"script": []byte{0x1C, 0xBD},
-		},
-		"testnet3": map[string][]byte{
-			"pubkey": []byte{0x1D, 0x25},
-			"script": []byte{0x1C, 0xBA},
-		},
-		"regtest": map[string][]byte{
-			"pubkey": []byte{0x1D, 0x25},
-			"script": []byte{0x1C, 0xBA},
-		},
-	}
-	if isScript {
-		return zecutil.DecodeAddress(encodeHash(hash[:], prefixes[params.Name]["script"]), params.Name)
-	}
-	return zecutil.DecodeAddress(encodeHash(hash[:], prefixes[params.Name]["pubkey"]), params.Name)
-}
-
-func encodeHash(addrHash, prefix []byte) string {
-	var (
-		body  = append(prefix, addrHash...)
-		chk   = addrChecksum(body)
-		cksum [4]byte
-	)
-	copy(cksum[:], chk[:4])
-	return base58.Encode(append(body, cksum[:]...))
-}
-
-func addrChecksum(input []byte) (cksum [4]byte) {
-	var (
-		h  = sha256.Sum256(input)
-		h2 = sha256.Sum256(h[:])
-	)
-	copy(cksum[:], h2[:4])
-	return
-}
+var ErrUnknownAddressType = fmt.Errorf("unknown address type")
