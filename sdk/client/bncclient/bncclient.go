@@ -27,9 +27,9 @@ type client struct {
 func New(network bnctypes.Network) Client {
 	var baseURL string
 	switch network {
-	case bnctypes.Testnet:
-		baseURL = "dex.binance.org"
 	case bnctypes.Mainnet:
+		baseURL = "dex.binance.org"
+	case bnctypes.Testnet:
 		baseURL = "testnet-dex.binance.org"
 	default:
 		panic(types.ErrUnknownNetwork)
