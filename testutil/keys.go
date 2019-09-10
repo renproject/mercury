@@ -1,17 +1,10 @@
 package testutil
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"os"
 
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/pkg/errors"
@@ -54,13 +47,22 @@ func (hdkey HdKey) EcdsaKey(path ...uint32) (*ecdsa.PrivateKey, error) {
 	return hdutil.DerivePrivKey(hdkey.ExtendedKey, path...)
 }
 
-// EcdsaKey return the ECDSA key on the given path of the HD key.
+// Address return the Address of the HD key with the current path.
 func (hdkey HdKey) Address(path ...uint32) (btctypes.Address, error) {
 	key, err := hdkey.EcdsaKey(path...)
 	if err != nil {
 		return nil, err
 	}
 	return btctypes.AddressFromPubKey(key.PublicKey, hdkey.network)
+}
+
+// SegWitAddress return the SegWitAddress of the HD key with the current path.
+func (hdkey HdKey) SegWitAddress(path ...uint32) (btctypes.Address, error) {
+	key, err := hdkey.EcdsaKey(path...)
+	if err != nil {
+		return nil, err
+	}
+	return btctypes.SegWitAddressFromPubKey(key.PublicKey, hdkey.network)
 }
 
 func RandomAddress(network btctypes.Network) (btctypes.Address, error) {
@@ -71,55 +73,10 @@ func RandomAddress(network btctypes.Network) (btctypes.Address, error) {
 	return btctypes.AddressFromPubKey(key.PublicKey, network)
 }
 
-// TODO : need to be fixed, the stx generated from this tx is not valid at the moment.
-func GenerateSignedTx(network btctypes.Network, key *ecdsa.PrivateKey, destination string, amount int64, txHash string) ([]byte, error) {
-	wif, err := btcutil.NewWIF((*btcec.PrivateKey)(key), network.Params(), network == btctypes.BtcMainnet || network == btctypes.ZecMainnet)
+func RandomSegWitAddress(network btctypes.Network) (btctypes.Address, error) {
+	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-
-	addresspubkey, err := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeUncompressed(), &chaincfg.MainNetParams)
-	if err != nil {
-		return nil, err
-	}
-	sourceTx := wire.NewMsgTx(wire.TxVersion)
-	sourceUtxoHash, _ := chainhash.NewHashFromStr(txHash)
-	sourceUtxo := wire.NewOutPoint(sourceUtxoHash, 0)
-	sourceTxIn := wire.NewTxIn(sourceUtxo, nil, nil)
-	destinationAddress, err := btcutil.DecodeAddress(destination, &chaincfg.MainNetParams)
-	sourceAddress, err := btcutil.DecodeAddress(addresspubkey.EncodeAddress(), &chaincfg.MainNetParams)
-	if err != nil {
-		return nil, err
-	}
-	destinationPkScript, _ := txscript.PayToAddrScript(destinationAddress)
-	sourcePkScript, _ := txscript.PayToAddrScript(sourceAddress)
-	sourceTxOut := wire.NewTxOut(amount, sourcePkScript)
-	sourceTx.AddTxIn(sourceTxIn)
-	sourceTx.AddTxOut(sourceTxOut)
-	sourceTxHash := sourceTx.TxHash()
-	redeemTx := wire.NewMsgTx(wire.TxVersion)
-	prevOut := wire.NewOutPoint(&sourceTxHash, 0)
-	redeemTxIn := wire.NewTxIn(prevOut, nil, nil)
-	redeemTx.AddTxIn(redeemTxIn)
-	redeemTxOut := wire.NewTxOut(amount, destinationPkScript)
-	redeemTx.AddTxOut(redeemTxOut)
-	sigScript, err := txscript.SignatureScript(redeemTx, 0, sourceTx.TxOut[0].PkScript, txscript.SigHashAll, wif.PrivKey, false)
-	if err != nil {
-		return nil, err
-	}
-	redeemTx.TxIn[0].SignatureScript = sigScript
-	flags := txscript.StandardVerifyFlags
-	vm, err := txscript.NewEngine(sourceTx.TxOut[0].PkScript, redeemTx, 0, flags, nil, nil, amount)
-	if err != nil {
-		return nil, err
-	}
-	if err := vm.Execute(); err != nil {
-		return nil, err
-	}
-	var unsignedTx bytes.Buffer
-	var signedTx bytes.Buffer
-	sourceTx.Serialize(&unsignedTx)
-	redeemTx.Serialize(&signedTx)
-
-	return signedTx.Bytes(), nil
+	return btctypes.SegWitAddressFromPubKey(key.PublicKey, network)
 }

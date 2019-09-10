@@ -4,7 +4,7 @@ import "github.com/renproject/mercury/types"
 
 func WhitelistLevel(network types.Network, method string) types.AccessLevel {
 	switch network.Chain() {
-	case types.Bitcoin, types.ZCash:
+	case types.Bitcoin, types.ZCash, types.BitcoinCash:
 		return BtcWhitelistLevel(method)
 	case types.Ethereum:
 		return EthWhitelistLevel(method)
@@ -33,9 +33,9 @@ func EthWhitelistLevel(method string) types.AccessLevel {
 
 func BtcWhitelistLevel(method string) types.AccessLevel {
 	switch method {
-	case "listunspent":
+	case "listunspent", "gettxout", "getrawtransaction":
 		return types.FullAccess
-	case "gettxout", "sendrawtransaction", "getrawtransaction":
+	case "sendrawtransaction":
 		return types.CachedAccess
 	default:
 		return types.NoAccess

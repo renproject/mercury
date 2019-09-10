@@ -1,6 +1,7 @@
 package bncclient
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/binance-chain/go-sdk/client/basic"
@@ -14,7 +15,9 @@ import (
 
 type Client interface {
 	PrintTime()
-	Balances(from bnctypes.Address) (int64, error)
+	Balances(from bnctypes.Address) (bnctypes.Coins, error)
+	Send(from bnctypes.Address, recipients bnctypes.Recipients) (bnctypes.BNCTx, error)
+	SubmitTx(tx types.Tx) error
 }
 
 type client struct {
@@ -37,6 +40,7 @@ func New(network bnctypes.Network) Client {
 
 	c := basic.NewClient(baseURL)
 	return &client{
+		network:     network,
 		basicClient: c,
 		queryClient: query.NewClient(c),
 		wsClient:    websocket.NewClient(c),
@@ -52,10 +56,6 @@ func (client *client) PrintTime() {
 	fmt.Println(t.ApTime, t.BlockTime)
 }
 
-func (client *client) OpenOrder(from bnctypes.Address) {
-	return client.BuildTx(from, msg.NewCreateOrderMsg(from.AccAddress(), "", 0))
-}
-
 func (client *client) Mint(from bnctypes.Address, symbol string, amount int64) (types.Tx, error) {
 	return client.BuildTx(from, msg.NewMintMsg(
 		from.AccAddress(),
@@ -64,7 +64,21 @@ func (client *client) Mint(from bnctypes.Address, symbol string, amount int64) (
 	))
 }
 
-func (client *client) BuildTx(from bnctypes.Address, m msg.Msg) (types.Tx, error) {
+func (client *client) Balances(from bnctypes.Address) (bnctypes.Coins, error) {
+	acc, err := client.queryClient.GetAccount(from.String())
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	fmt.Println("acc balances", acc.Balances)
+	return nil, nil
+}
+
+func (client *client) Send(from bnctypes.Address, recipients bnctypes.Recipients) (bnctypes.BNCTx, error) {
+	return client.BuildTx(from, recipients.SendTx(from))
+}
+
+func (client *client) BuildTx(from bnctypes.Address, m msg.Msg) (bnctypes.BNCTx, error) {
 	acc, err := client.queryClient.GetAccount(from.String())
 	if err != nil {
 		return nil, err
@@ -94,4 +108,22 @@ func (client *client) BuildTx(from bnctypes.Address, m msg.Msg) (types.Tx, error
 	}
 
 	return bnctypes.NewTx(signMsg), nil
+}
+
+func (client *client) SubmitTx(tx types.Tx) error {
+	stx, err := tx.Serialize()
+	if err != nil {
+		return err
+	}
+
+	params := map[string]string{}
+	params["sync"] = "true"
+
+	res, err := client.basicClient.PostTx([]byte(hex.EncodeToString(stx)), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("result", res)
+	return nil
 }

@@ -6,12 +6,14 @@ import (
 	"github.com/binance-chain/go-sdk/types/tx"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/renproject/mercury/types"
+	tmbtcec "github.com/tendermint/btcd/btcec"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 type BNCTx interface {
 	types.Tx
+	InjectSigs([][]byte, ecdsa.PublicKey) error
 }
 
 type bncTx struct {
@@ -40,7 +42,7 @@ func (bncTx *bncTx) Sign(key *ecdsa.PrivateKey) (err error) {
 			return err
 		}
 	}
-	return bncTx.InjectSignatures(sigs, privKey.PubKey().SerializeCompressed())
+	return bncTx.InjectSignatures(sigs, key.PublicKey)
 }
 
 func (bncTx *bncTx) IsSigned() bool {
@@ -55,14 +57,16 @@ func (bncTx *bncTx) Hash() types.TxHash {
 	panic("unimplemented")
 }
 
-func (bncTx *bncTx) InjectSignatures(sigs []*btcec.Signature, serializedPubKey []byte) error {
+func (bncTx *bncTx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) error {
+	publicKey := (btcec.PublicKey)(pubKey)
 	var pubkeyBytes secp256k1.PubKeySecp256k1
-	copy(pubkeyBytes[:], serializedPubKey)
+	copy(pubkeyBytes[:], publicKey.SerializeCompressed())
+	sig := tmbtcec.Signature{R: sigs[0].R, S: sigs[0].S}
 	bncTx.tx = tx.NewStdTx(bncTx.msg.Msgs, []tx.StdSignature{tx.StdSignature{
 		AccountNumber: bncTx.msg.AccountNumber,
 		Sequence:      bncTx.msg.Sequence,
 		PubKey:        pubkeyBytes,
-		Signature:     sigs[0].Serialize(),
+		Signature:     sig.Serialize(),
 	}}, bncTx.msg.Memo, bncTx.msg.Source, bncTx.msg.Data)
 	bncTx.signed = true
 	return nil

@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/btctypes/bch"
 )
 
 // Address is an interface type for any type of destination a transaction output may spend to. This includes pay-to-
@@ -32,15 +33,8 @@ func NewRecipient(address Address, amount Amount) Recipient {
 type Recipients []Recipient
 
 // SerializePublicKey serializes the public key to bytes.
-func SerializePublicKey(pubkey ecdsa.PublicKey, network Network) []byte {
-	switch network {
-	case BtcMainnet, ZecMainnet:
-		return (*btcec.PublicKey)(&pubkey).SerializeCompressed()
-	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet:
-		return (*btcec.PublicKey)(&pubkey).SerializeUncompressed()
-	default:
-		panic(types.ErrUnknownNetwork)
-	}
+func SerializePublicKey(pubkey ecdsa.PublicKey) []byte {
+	return (*btcec.PublicKey)(&pubkey).SerializeCompressed()
 }
 
 // AddressFromBase58 decodes the base58 encoded address to an `Address`.
@@ -50,6 +44,8 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 		return btcutil.DecodeAddress(addr, network.Params())
 	case types.ZCash:
 		return zecutil.DecodeAddress(addr, network.Params().Name)
+	case types.BitcoinCash:
+		return bch.DecodeAddress(addr, network.Params())
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -59,13 +55,23 @@ func AddressFromBase58(addr string, network Network) (Address, error) {
 func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error) {
 	switch network.Chain() {
 	case types.Bitcoin:
-		addr, err := btcutil.NewAddressPubKey(SerializePublicKey(pubkey, network), network.Params())
-		if err != nil {
-			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
-		}
-		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
+		return btcutil.NewAddressPubKeyHash(btcutil.Hash160(SerializePublicKey(pubkey)), network.Params())
 	case types.ZCash:
-		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey, network)), network.Params(), false)
+		return zecAddressFromHash160(btcutil.Hash160(SerializePublicKey(pubkey)), network.Params(), false)
+	case types.BitcoinCash:
+		return bch.NewAddressPubKey(SerializePublicKey(pubkey), network.Params()), nil
+	default:
+		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
+	}
+}
+
+// AddressFromPubKeyHash gets the `Address` from a public key hash.
+func AddressFromPubKeyHash(pHash []byte, network Network) (Address, error) {
+	switch network.Chain() {
+	case types.Bitcoin:
+		return btcutil.NewAddressPubKeyHash(pHash, network.Params())
+	case types.ZCash:
+		return zecAddressFromHash160(pHash, network.Params(), false)
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}
@@ -75,15 +81,40 @@ func AddressFromPubKey(pubkey ecdsa.PublicKey, network Network) (Address, error)
 func AddressFromScript(script []byte, network Network) (Address, error) {
 	switch network.Chain() {
 	case types.Bitcoin:
-		addr, err := btcutil.NewAddressScriptHash(script, network.Params())
-		if err != nil {
-			return nil, fmt.Errorf("cannot decode address from public key: %v", err)
-		}
-		return btcutil.DecodeAddress(addr.EncodeAddress(), network.Params())
+		return btcutil.NewAddressScriptHash(script, network.Params())
 	case types.ZCash:
 		return zecAddressFromHash160(btcutil.Hash160(script), network.Params(), true)
+	case types.BitcoinCash:
+		return bch.NewAddressScriptHash(script, network.Params()), nil
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
+	}
+}
+
+// SegWitAddressFromPubKey gets the SegWit compatible `Address` from a PubKey
+func SegWitAddressFromPubKey(pubKey ecdsa.PublicKey, network Network) (Address, error) {
+	if !network.SegWitEnabled() {
+		return nil, ErrDoesNotSupportSegWit
+	}
+	switch network.Chain() {
+	case types.Bitcoin:
+		return btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(SerializePublicKey(pubKey)), network.Params())
+	default:
+		return nil, types.ErrUnknownChain
+	}
+}
+
+// SegWitAddressFromScript gets the SegWit compatible `Address` from a Script.
+func SegWitAddressFromScript(script []byte, network Network) (Address, error) {
+	if !network.SegWitEnabled() {
+		return nil, ErrDoesNotSupportSegWit
+	}
+	switch network.Chain() {
+	case types.Bitcoin:
+		scriptHash := sha256.Sum256(script)
+		return btcutil.NewAddressWitnessScriptHash(scriptHash[:], network.Params())
+	default:
+		return nil, types.ErrUnknownChain
 	}
 }
 
@@ -94,6 +125,8 @@ func PayToAddrScript(address Address, network Network) ([]byte, error) {
 		return txscript.PayToAddrScript(address)
 	case types.ZCash:
 		return zecutil.PayToAddrScript(address)
+	case types.BitcoinCash:
+		return bch.PayToAddrScript(address)
 	default:
 		return nil, fmt.Errorf("unsupported blockchain: %v", network.Chain())
 	}

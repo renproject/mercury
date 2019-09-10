@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/renproject/mercury/rpcclient"
+	"github.com/renproject/mercury/types"
+	"github.com/renproject/mercury/types/btctypes"
 )
 
 type ListUnspentResponse []ListUnspentObj
@@ -40,10 +42,10 @@ type ScriptPubKey struct {
 }
 
 type Client interface {
-	ListUnspent(ctx context.Context, minConf, maxConf int64, addresses []string) (ListUnspentResponse, error)
-	SendRawTransaction(ctx context.Context, stx []byte) (string, error)
-	GetTxOut(ctx context.Context, txid string, i uint32) (GetTxOutResponse, error)
-	GetRawTransactionVerbose(ctx context.Context, txid string) (RawTransactionVerbose, error)
+	ListUnspent(ctx context.Context, minConf, maxConf int64, addresses []btctypes.Address) (ListUnspentResponse, error)
+	SendRawTransaction(ctx context.Context, stx btctypes.BtcTx) (string, error)
+	GetTxOut(ctx context.Context, txid types.TxHash, i uint32) (GetTxOutResponse, error)
+	GetRawTransactionVerbose(ctx context.Context, txid types.TxHash) (RawTransactionVerbose, error)
 }
 
 type rpcClient struct {
@@ -56,23 +58,32 @@ func NewRPCClient(host, user, password string, retryDelay time.Duration) Client 
 	}
 }
 
-func (client *rpcClient) ListUnspent(ctx context.Context, minConf, maxConf int64, addresses []string) (ListUnspentResponse, error) {
+func (client *rpcClient) ListUnspent(ctx context.Context, minConf, maxConf int64, addresses []btctypes.Address) (ListUnspentResponse, error) {
+	addrs := make([]string, len(addresses))
+	for i := range addresses {
+		addrs[i] = addresses[i].EncodeAddress()
+	}
+
 	resp := ListUnspentResponse{}
-	if err := client.client.SendRequest(ctx, "listunspent", &resp, minConf, maxConf, addresses); err != nil && err != io.EOF {
+	if err := client.client.SendRequest(ctx, "listunspent", &resp, minConf, maxConf, addrs); err != nil && err != io.EOF {
 		return resp, err
 	}
 	return resp, nil
 }
 
-func (client *rpcClient) SendRawTransaction(ctx context.Context, stx []byte) (string, error) {
+func (client *rpcClient) SendRawTransaction(ctx context.Context, stx btctypes.BtcTx) (string, error) {
+	stxBytes, err := stx.Serialize()
+	if err != nil {
+		return "", err
+	}
 	resp := ""
-	if err := client.client.SendRequest(ctx, "sendrawtransaction", &resp, hex.EncodeToString(stx), false); err != nil {
+	if err := client.client.SendRequest(ctx, "sendrawtransaction", &resp, hex.EncodeToString(stxBytes), false); err != nil {
 		return resp, err
 	}
 	return resp, nil
 }
 
-func (client *rpcClient) GetTxOut(ctx context.Context, tx string, i uint32) (GetTxOutResponse, error) {
+func (client *rpcClient) GetTxOut(ctx context.Context, tx types.TxHash, i uint32) (GetTxOutResponse, error) {
 	resp := GetTxOutResponse{}
 	if err := client.client.SendRequest(ctx, "gettxout", &resp, tx, i); err != nil {
 		return resp, err
@@ -80,7 +91,7 @@ func (client *rpcClient) GetTxOut(ctx context.Context, tx string, i uint32) (Get
 	return resp, nil
 }
 
-func (client *rpcClient) GetRawTransactionVerbose(ctx context.Context, txid string) (RawTransactionVerbose, error) {
+func (client *rpcClient) GetRawTransactionVerbose(ctx context.Context, txid types.TxHash) (RawTransactionVerbose, error) {
 	resp := RawTransactionVerbose{}
 	if err := client.client.SendRequest(ctx, "getrawtransaction", &resp, txid, 1); err != nil {
 		return resp, err

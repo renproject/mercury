@@ -1,4 +1,4 @@
-package ethrpc_test
+package rpc_test
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/renproject/mercury/rpc/ethrpc"
+	. "github.com/renproject/mercury/rpc"
 
 	"github.com/renproject/mercury/types/ethtypes"
 )
@@ -18,9 +18,9 @@ var _ = Describe("Infura RPC client", func() {
 	Context("when interacting with the infura client", func() {
 		It("should return the correct response", func() {
 			infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
-
-			client, err := NewInfuraClient(ethtypes.Kovan, infuraAPIKey, nil)
-			Expect(err).ToNot(HaveOccurred())
+			client := NewInfuraClient(ethtypes.Kovan, map[string]string{
+				"": infuraAPIKey,
+			})
 
 			r, err := http.NewRequest("POST", "http://0.0.0.0:5000/eth/kovan", nil)
 			Expect(err).ToNot(HaveOccurred())

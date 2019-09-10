@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
+	"github.com/renproject/mercury/stat"
 	"github.com/renproject/mercury/types"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
@@ -40,11 +41,11 @@ func NewApi(network types.Network, proxy *proxy.Proxy, cache *cache.Cache, logge
 }
 
 // AddHandler implements the `BlockchainApi` interface.
-func (api *Api) AddHandler(r *mux.Router) {
-	r.HandleFunc(fmt.Sprintf("/%s/%s", api.network.Chain(), api.network), api.jsonRPCHandler()).Methods("POST")
+func (api *Api) AddHandler(r *mux.Router, s *stat.Stat) {
+	r.HandleFunc(fmt.Sprintf("/%s/%s", api.network.Chain(), api.network), api.jsonRPCHandler(s)).Methods("POST")
 }
 
-func (api *Api) jsonRPCHandler() http.HandlerFunc {
+func (api *Api) jsonRPCHandler(s *stat.Stat) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -64,6 +65,8 @@ func (api *Api) jsonRPCHandler() http.HandlerFunc {
 			return
 		}
 
+		s.Insert(method)
+
 		hash, err := HashData(data)
 		if err != nil {
 			writeError(w, r, api.logger, http.StatusInternalServerError, id, err)
@@ -79,7 +82,7 @@ func (api *Api) jsonRPCHandler() http.HandlerFunc {
 
 		var result Result
 		if err := json.Unmarshal(resp, &result); err != nil {
-			writeError(w, r, api.logger, http.StatusInternalServerError, id, err)
+			writeError(w, r, api.logger, http.StatusInternalServerError, id, fmt.Errorf(string(resp)))
 			return
 		}
 

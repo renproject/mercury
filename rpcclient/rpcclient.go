@@ -65,6 +65,7 @@ func (client *client) SendRequest(ctx context.Context, method string, response i
 			return err
 		}
 		request.SetBasicAuth(client.user, client.password)
+		request = request.WithContext(ctx)
 		resp, err := http.DefaultClient.Do(request)
 		if err != nil {
 			return err
@@ -115,15 +116,21 @@ var ErrNullResult = fmt.Errorf("unexpected null result")
 
 func retry(ctx context.Context, delay time.Duration, fn func() error) error {
 	ticker := time.NewTicker(delay)
-	if err := fn(); err == nil {
+	err := fn()
+	if err == nil {
 		return nil
 	}
+
 	for {
 		select {
 		case <-ctx.Done():
+			if err != nil {
+				return err
+			}
 			return ctx.Err()
 		case <-ticker.C:
-			if err := fn(); err == nil {
+			err = fn()
+			if err == nil {
 				return nil
 			}
 		}
