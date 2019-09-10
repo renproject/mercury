@@ -174,7 +174,6 @@ func (t *tx) UTXOs() UTXOs {
 
 type MsgTx interface {
 	Serialize(buffer io.Writer) error
-	Deserialize(buffer io.Reader) error
 	TxHash() chainhash.Hash
 	InCount() int
 	AddTxIn(txIn *wire.TxIn)
