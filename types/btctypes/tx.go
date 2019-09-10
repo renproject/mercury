@@ -16,6 +16,7 @@ import (
 type BtcTx interface {
 	types.Tx
 	UTXOs() UTXOs
+	Recipients() Recipients
 	OutputUTXO(address Address) UTXO
 }
 
@@ -24,6 +25,7 @@ type tx struct {
 	network     Network
 	sigHashes   []types.SignatureHash
 	utxos       UTXOs
+	recipients  Recipients
 	tx          MsgTx
 	signed      bool
 }
@@ -170,6 +172,10 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 
 func (t *tx) UTXOs() UTXOs {
 	return t.utxos
+}
+
+func (t *tx) Recipients() Recipients {
+	return t.recipients
 }
 
 type MsgTx interface {
