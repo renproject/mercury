@@ -10,6 +10,7 @@ import (
 type Network interface {
 	types.Network
 
+	Prefix(addrType AddressType) []byte
 	Params() *chaincfg.Params
 	SegWitEnabled() bool
 }
@@ -20,10 +21,6 @@ const (
 	BtcLocalnet network = 0
 	BtcMainnet  network = 1
 	BtcTestnet  network = 2
-
-	ZecLocalnet network = 3
-	ZecMainnet  network = 4
-	ZecTestnet  network = 5
 
 	BchLocalnet network = 6
 	BchMainnet  network = 7
@@ -59,21 +56,6 @@ func NewBtcNetwork(network string) Network {
 	}
 }
 
-// NewZecNetwork parse the zec network from a string.
-func NewZecNetwork(network string) Network {
-	network = strings.ToLower(strings.TrimSpace(network))
-	switch network {
-	case "mainnet":
-		return ZecMainnet
-	case "testnet", "testnet3":
-		return ZecTestnet
-	case "localnet", "localhost":
-		return ZecLocalnet
-	default:
-		panic(types.ErrUnknownNetwork)
-	}
-}
-
 // NewBchNetwork parse the ltc network from a string.
 func NewBchNetwork(network string) Network {
 	network = strings.ToLower(strings.TrimSpace(network))
@@ -92,9 +74,9 @@ func NewBchNetwork(network string) Network {
 // Params returns the params config for the network
 func (network network) Params() *chaincfg.Params {
 	switch network {
-	case BtcMainnet, ZecMainnet, BchMainnet:
+	case BtcMainnet, BchMainnet:
 		return &chaincfg.MainNetParams
-	case BtcTestnet, BtcLocalnet, ZecTestnet, ZecLocalnet, BchTestnet, BchLocalnet:
+	case BtcTestnet, BtcLocalnet, BchTestnet, BchLocalnet:
 		return &chaincfg.TestNet3Params
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -116,11 +98,11 @@ func (network network) SegWitEnabled() bool {
 // String implements the `Stringer` interface.
 func (network network) String() string {
 	switch network {
-	case BtcMainnet, ZecMainnet, BchMainnet:
+	case BtcMainnet, BchMainnet:
 		return "mainnet"
-	case BtcTestnet, ZecTestnet, BchTestnet:
+	case BtcTestnet, BchTestnet:
 		return "testnet"
-	case BtcLocalnet, ZecLocalnet, BchLocalnet:
+	case BtcLocalnet, BchLocalnet:
 		return "localnet"
 	default:
 		panic(types.ErrUnknownNetwork)
@@ -132,11 +114,14 @@ func (network network) Chain() types.Chain {
 	switch network {
 	case BtcMainnet, BtcTestnet, BtcLocalnet:
 		return types.Bitcoin
-	case ZecMainnet, ZecTestnet, ZecLocalnet:
-		return types.ZCash
 	case BchMainnet, BchTestnet, BchLocalnet:
 		return types.BitcoinCash
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
+}
+
+// Prefix implements the types.Network interface.
+func (network network) Prefix(addrType AddressType) []byte {
+	panic("unimplemented")
 }
