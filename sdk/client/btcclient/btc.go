@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
@@ -199,7 +198,7 @@ func (c *client) BuildUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recip
 	}
 
 	// Get the signature hashes we need to sign.
-	return c.createUnsignedTx(utxos, recipients)
+	return btctypes.NewUnsignedTx(c.network, utxos, recipients)
 }
 
 // SubmitSignedTx submits the signed transaction and returns the transaction hash in hex.
@@ -259,27 +258,6 @@ func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed, txSiz
 	c.logger.Errorf("error getting btc gas information: %v", err)
 	c.logger.Infof("using 10k sats as gas price")
 	return 10000 * btctypes.SAT
-}
-
-func (c *client) createUnsignedTx(utxos btctypes.UTXOs, recipients btctypes.Recipients) (btctypes.BtcTx, error) {
-	outputUTXOs := map[string]btctypes.UTXO{}
-	msgTx := btctypes.NewMsgTx(c.network)
-	for _, utxo := range utxos {
-		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
-		if err != nil {
-			return nil, err
-		}
-		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
-	}
-	for i, recipient := range recipients {
-		script, err := btctypes.PayToAddrScript(recipient.Address, c.network)
-		if err != nil {
-			return nil, err
-		}
-		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
-		outputUTXOs[recipient.Address.EncodeAddress()] = btctypes.NewUTXO(btctypes.NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil)
-	}
-	return btctypes.NewUnsignedTx(c.network, utxos, msgTx, outputUTXOs)
 }
 
 func (c *client) SerializePublicKey(pubkey ecdsa.PublicKey) []byte {

@@ -16,6 +16,7 @@ import (
 type BtcTx interface {
 	types.Tx
 	UTXOs() UTXOs
+	Recipients() Recipients
 	OutputUTXO(address Address) UTXO
 }
 
@@ -24,11 +25,29 @@ type tx struct {
 	network     Network
 	sigHashes   []types.SignatureHash
 	utxos       UTXOs
+	recipients  Recipients
 	tx          MsgTx
 	signed      bool
 }
 
-func NewUnsignedTx(network Network, utxos UTXOs, msgTx MsgTx, outputUTXOs map[string]UTXO) (BtcTx, error) {
+func NewUnsignedTx(network Network, utxos UTXOs, recipients Recipients) (BtcTx, error) {
+	outputUTXOs := map[string]UTXO{}
+	msgTx := NewMsgTx(network)
+	for _, utxo := range utxos {
+		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
+	}
+	for i, recipient := range recipients {
+		script, err := PayToAddrScript(recipient.Address, network)
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
+		outputUTXOs[recipient.Address.EncodeAddress()] = NewUTXO(NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil)
+	}
 	t := tx{
 		outputUTXOs: outputUTXOs,
 		network:     network,
@@ -153,6 +172,10 @@ func (t *tx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) e
 
 func (t *tx) UTXOs() UTXOs {
 	return t.utxos
+}
+
+func (t *tx) Recipients() Recipients {
+	return t.recipients
 }
 
 type MsgTx interface {
