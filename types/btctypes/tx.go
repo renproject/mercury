@@ -28,7 +28,24 @@ type tx struct {
 	signed      bool
 }
 
-func NewUnsignedTx(network Network, utxos UTXOs, msgTx MsgTx, outputUTXOs map[string]UTXO) (BtcTx, error) {
+func NewUnsignedTx(network Network, utxos UTXOs, recipients Recipients) (BtcTx, error) {
+	outputUTXOs := map[string]UTXO{}
+	msgTx := NewMsgTx(network)
+	for _, utxo := range utxos {
+		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
+	}
+	for i, recipient := range recipients {
+		script, err := PayToAddrScript(recipient.Address, network)
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
+		outputUTXOs[recipient.Address.EncodeAddress()] = NewUTXO(NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil)
+	}
 	t := tx{
 		outputUTXOs: outputUTXOs,
 		network:     network,
@@ -157,6 +174,7 @@ func (t *tx) UTXOs() UTXOs {
 
 type MsgTx interface {
 	Serialize(buffer io.Writer) error
+	Deserialize(buffer io.Reader) error
 	TxHash() chainhash.Hash
 	InCount() int
 	AddTxIn(txIn *wire.TxIn)
