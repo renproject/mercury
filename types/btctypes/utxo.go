@@ -3,6 +3,7 @@ package btctypes
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -153,7 +154,7 @@ type outPoint struct {
 }
 
 func NewOutPoint(txHash types.TxHash, vout uint32) OutPoint {
-	return outPoint{
+	return &outPoint{
 		txHash: txHash,
 		vout:   vout,
 	}
@@ -162,12 +163,12 @@ func NewOutPoint(txHash types.TxHash, vout uint32) OutPoint {
 func ReadOutPoint(r io.Reader) (OutPoint, error) {
 	op := outPoint{}
 	if err := binary.Read(r, binary.LittleEndian, &op.txHash); err != nil {
-		return op, err
+		return &op, err
 	}
 	if err := binary.Read(r, binary.LittleEndian, &op.vout); err != nil {
-		return op, err
+		return &op, err
 	}
-	return op, nil
+	return &op, nil
 }
 
 func (op outPoint) TxHash() types.TxHash {
@@ -190,6 +191,28 @@ func (op outPoint) Write(w io.Writer) error {
 
 func (op outPoint) String() string {
 	return fmt.Sprintf("%s:%d", op.txHash, op.vout)
+}
+
+func (op outPoint) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		TxHash types.TxHash `json:"txHash"`
+		Vout   uint32       `json:"vout"`
+	}{
+		TxHash: op.txHash,
+		Vout:   op.vout,
+	})
+}
+
+func (op *outPoint) UnmarshalJSON(data []byte) error {
+	tmp := struct {
+		TxHash types.TxHash `json:"txHash"`
+		Vout   uint32       `json:"vout"`
+	}{}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	*op = outPoint{txHash: tmp.TxHash, vout: tmp.Vout}
+	return nil
 }
 
 const SigHashForkID txscript.SigHashType = 0x40
