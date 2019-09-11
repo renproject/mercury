@@ -13,7 +13,6 @@ import (
 
 type BNCTx interface {
 	types.Tx
-	InjectSigs([][]byte, ecdsa.PublicKey) error
 }
 
 type bncTx struct {

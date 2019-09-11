@@ -3,14 +3,11 @@ package bnctypes
 import (
 	"crypto/ecdsa"
 	"encoding/hex"
-	"fmt"
 
 	"github.com/binance-chain/go-sdk/common/types"
-	"github.com/binance-chain/go-sdk/keys"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil"
-	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 type Recipient struct {
@@ -26,6 +23,7 @@ type Address struct {
 }
 
 func (recipients Recipients) SendTx(from Address) msg.SendMsg {
+	types.Network = from.Network.ChainNetwork()
 	var inputCoins types.Coins
 	ops := make([]msg.Output, len(recipients))
 	for i, recipient := range recipients {
@@ -40,13 +38,13 @@ func (recipients Recipients) SendTx(from Address) msg.SendMsg {
 	return msg.SendMsg{Inputs: ips, Outputs: ops}
 }
 
-func AddressFromBech32(address string) (Address, error) {
-	network := networkFromPrefix(address[:3])
-	pkh, err := types.GetFromBech32(address, network.ChainNetwork().Bech32Prefixes())
+func AddressFromBech32(address string, network Network) (Address, error) {
+	types.Network = network.ChainNetwork()
+	accAddr, err := types.AccAddressFromBech32(address)
 	if err != nil {
 		return Address{}, err
 	}
-	return Address{PubKeyHash: pkh, Network: network}, nil
+	return Address{PubKeyHash: accAddr, Network: network}, nil
 }
 
 func AddressFromHex(address string, network Network) (Address, error) {
@@ -62,44 +60,12 @@ func AddressFromPubKey(pubKey ecdsa.PublicKey, network Network) Address {
 	return Address{network, pkHash}
 }
 
-func PubKeyHashToAddress(pkHash []byte, network Network) (string, error) {
-	return bech32.ConvertAndEncode(network.ChainNetwork().Bech32Prefixes(), pkHash)
-}
-
 func (addr Address) AccAddress() types.AccAddress {
+	types.Network = addr.Network.ChainNetwork()
 	return types.AccAddress(addr.PubKeyHash)
 }
 
 func (addr Address) String() string {
-	addrString, err := PubKeyHashToAddress(addr.PubKeyHash, addr.Network)
-	if err != nil {
-		panic(err)
-	}
-	return addrString
-}
-
-func PrivKeyFromKeyStore(keystore string, password string) (*ecdsa.PrivateKey, error) {
-	keyManager, err := keys.NewKeyStoreKeyManager(keystore, password)
-	if err != nil {
-		panic(err)
-	}
-
-	privKey, err := keyManager.ExportAsPrivateKey()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(privKey)
-	return nil, nil
-}
-
-func networkFromPrefix(prefix string) Network {
-	switch prefix {
-	case "bnb":
-		return Mainnet
-	case "tbn":
-		return Testnet
-	default:
-		panic(fmt.Sprintf("invalid bnc prefix: %s", prefix))
-	}
+	types.Network = addr.Network.ChainNetwork()
+	return types.AccAddress(addr.PubKeyHash).String()
 }

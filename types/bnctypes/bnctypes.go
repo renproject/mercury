@@ -10,6 +10,7 @@ import (
 type Network interface {
 	types.Network
 
+	ChainID() string
 	ChainNetwork() btypes.ChainNetwork
 }
 
@@ -39,6 +40,17 @@ func (net network) String() string {
 		return "testnet"
 	case Mainnet:
 		return "mainnet"
+	default:
+		panic(types.ErrUnknownNetwork)
+	}
+}
+
+func (net network) ChainID() string {
+	switch net {
+	case Testnet:
+		return "Binance-Chain-Nile"
+	case Mainnet:
+		return "Binance-Chain-Tigris"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
