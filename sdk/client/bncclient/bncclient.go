@@ -86,7 +86,7 @@ func (client *client) BuildTx(from bnctypes.Address, m msg.Msg) (bnctypes.BNCTx,
 
 	// prepare message to sign
 	signMsg := tx.StdSignMsg{
-		ChainID:       client.network.String(),
+		ChainID:       client.network.ChainID(),
 		AccountNumber: acc.Number,
 		Sequence:      acc.Sequence,
 		Memo:          "",

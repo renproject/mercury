@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/crypto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -37,16 +36,7 @@ var _ = Describe("bnc client", func() {
 			client := New(bnctypes.Testnet)
 			tx, err := client.Send(address, bnctypes.Recipients{bnctypes.NewRecipent(address, bnctypes.NewBNBCoin(1000000))})
 			Expect(err).Should(BeNil())
-			btcPrivKey := (*btcec.PrivateKey)(privKey)
-			sigs := []*btcec.Signature{}
-			for _, hash := range tx.SignatureHashes() {
-				sig, err := btcPrivKey.Sign(hash)
-				if err != nil {
-					Expect(err).Should(BeNil())
-				}
-				sigs = append(sigs, sig)
-			}
-			tx.InjectSignatures(sigs, privKey.PublicKey)
+			tx.Sign(privKey)
 			Expect(client.SubmitTx(tx)).Should(BeNil())
 		})
 	})
