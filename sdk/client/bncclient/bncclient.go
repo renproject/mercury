@@ -67,11 +67,16 @@ func (client *client) Mint(from bnctypes.Address, symbol string, amount int64) (
 func (client *client) Balances(from bnctypes.Address) (bnctypes.Coins, error) {
 	acc, err := client.queryClient.GetAccount(from.String())
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
-	fmt.Println("acc balances", acc.Balances)
-	return nil, nil
+	balances := make([]bnctypes.Coin, len(acc.Balances))
+	for i := range balances {
+		balances[i] = bnctypes.Coin{
+			Denom:  acc.Balances[i].Symbol,
+			Amount: acc.Balances[i].Free.ToInt64(),
+		}
+	}
+	return bnctypes.NewCoins(balances...), nil
 }
 
 func (client *client) Send(from bnctypes.Address, recipients bnctypes.Recipients) (bnctypes.BNCTx, error) {
@@ -115,15 +120,10 @@ func (client *client) SubmitTx(tx types.Tx) error {
 	if err != nil {
 		return err
 	}
-
 	params := map[string]string{}
 	params["sync"] = "true"
-
-	res, err := client.basicClient.PostTx([]byte(hex.EncodeToString(stx)), params)
-	if err != nil {
+	if _, err := client.basicClient.PostTx([]byte(hex.EncodeToString(stx)), params); err != nil {
 		return err
 	}
-
-	fmt.Println("result", res)
 	return nil
 }
