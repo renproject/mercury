@@ -49,6 +49,8 @@ func (chain Chain) String() string {
 		return "bch"
 	case Matic:
 		return "matic"
+	case Binance:
+		return "bnc"
 	default:
 		panic(ErrUnknownChain)
 	}
