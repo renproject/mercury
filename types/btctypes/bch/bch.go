@@ -168,16 +168,17 @@ func AppendChecksum(prefix string, payload []byte) []byte {
 
 func DecodeAddress(addr string, params *chaincfg.Params) (btcutil.Address, error) {
 	if addrParts := strings.Split(addr, ":"); len(addrParts) != 1 {
-		addr = addrParts[0]
+		addr = addrParts[1]
 	}
 
-	addrBytes, err := bech32.ConvertBits(BCashCodec.DecodeString(addr), 5, 8, false)
+	decoded := BCashCodec.DecodeString(addr)
+	if !VerifyChecksum(prefix(params), decoded) {
+		return nil, btcutil.ErrChecksumMismatch
+	}
+
+	addrBytes, err := bech32.ConvertBits(decoded[:len(decoded)-8], 5, 8, false)
 	if err != nil {
 		return nil, err
-	}
-
-	if !VerifyChecksum(prefix(params), addrBytes) {
-		return nil, btcutil.ErrChecksumMismatch
 	}
 
 	switch len(addrBytes) - 1 {

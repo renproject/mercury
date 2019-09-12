@@ -10,13 +10,13 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/iqoption/zecutil"
 	"github.com/renproject/mercury/types"
 )
 
 type BtcTx interface {
 	types.Tx
 	UTXOs() UTXOs
+	Recipients() Recipients
 	OutputUTXO(address Address) UTXO
 	InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.PublicKey) error
 }
@@ -26,11 +26,29 @@ type tx struct {
 	network     Network
 	sigHashes   []types.SignatureHash
 	utxos       UTXOs
+	recipients  Recipients
 	tx          MsgTx
 	signed      bool
 }
 
-func NewUnsignedTx(network Network, utxos UTXOs, msgTx MsgTx, outputUTXOs map[string]UTXO) (BtcTx, error) {
+func NewUnsignedTx(network Network, utxos UTXOs, recipients Recipients) (BtcTx, error) {
+	outputUTXOs := map[string]UTXO{}
+	msgTx := NewMsgTx(network)
+	for _, utxo := range utxos {
+		hash, err := chainhash.NewHashFromStr(string(utxo.TxHash()))
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(hash, utxo.Vout()), nil, nil))
+	}
+	for i, recipient := range recipients {
+		script, err := PayToAddrScript(recipient.Address, network)
+		if err != nil {
+			return nil, err
+		}
+		msgTx.AddTxOut(wire.NewTxOut(int64(recipient.Amount), script))
+		outputUTXOs[recipient.Address.EncodeAddress()] = NewUTXO(NewOutPoint("", uint32(i)), recipient.Amount, script, 0, nil)
+	}
 	t := tx{
 		outputUTXOs: outputUTXOs,
 		network:     network,
@@ -169,6 +187,10 @@ func (t *tx) UTXOs() UTXOs {
 	return t.utxos
 }
 
+func (t *tx) Recipients() Recipients {
+	return t.recipients
+}
+
 type MsgTx interface {
 	Serialize(buffer io.Writer) error
 	TxHash() chainhash.Hash
@@ -185,10 +207,7 @@ func NewMsgTx(network Network) MsgTx {
 	case types.Bitcoin:
 		return NewBtcMsgTx(wire.NewMsgTx(BtcVersion))
 	case types.ZCash:
-		return NewZecMsgTx(&zecutil.MsgTx{
-			MsgTx:        wire.NewMsgTx(ZecVersion),
-			ExpiryHeight: ZecExpiryHeight,
-		})
+		return NewZecMsgTx(wire.NewMsgTx(ZecVersion), ZecExpiryHeight)
 	case types.BitcoinCash:
 		return NewBchMsgTx(wire.NewMsgTx(BchVersion))
 	default:
@@ -220,32 +239,31 @@ func (BtcMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []
 	return append(sig.Serialize(), byte(hashType))
 }
 
-type ZecMsgTx struct {
-	*zecutil.MsgTx
-}
-
-func (msgTx ZecMsgTx) Serialize(buf io.Writer) error {
+func (msgTx *ZecMsgTx) Serialize(buf io.Writer) error {
 	return msgTx.ZecEncode(buf, 0, wire.BaseEncoding)
 }
 
-func (msgTx ZecMsgTx) InCount() int {
+func (msgTx *ZecMsgTx) InCount() int {
 	return len(msgTx.TxIn)
 }
 
-func (msgTx ZecMsgTx) AddSigScript(i int, sigScript []byte) {
+func (msgTx *ZecMsgTx) AddSigScript(i int, sigScript []byte) {
 	msgTx.TxIn[i].SignatureScript = sigScript
 }
 
-func (msgTx ZecMsgTx) AddSegWit(i int, witness ...[]byte) {
+func (msgTx *ZecMsgTx) AddSegWit(i int, witness ...[]byte) {
 	panic(ErrDoesNotSupportSegWit)
 }
 
-func (ZecMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
+func (*ZecMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) []byte {
 	return append(sig.Serialize(), byte(hashType))
 }
 
-func NewZecMsgTx(msgTx *zecutil.MsgTx) ZecMsgTx {
-	return ZecMsgTx{msgTx}
+func NewZecMsgTx(msgTx *wire.MsgTx, expiryHeight uint32) *ZecMsgTx {
+	return &ZecMsgTx{
+		MsgTx:        msgTx,
+		ExpiryHeight: expiryHeight,
+	}
 }
 
 type BchMsgTx struct {
