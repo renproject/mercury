@@ -70,3 +70,17 @@ func (bncTx *bncTx) InjectSignatures(sigs []*btcec.Signature, pubKey ecdsa.Publi
 	bncTx.signed = true
 	return nil
 }
+
+func (bncTx *bncTx) InjectSigs(sigs [][]byte, pubKey ecdsa.PublicKey) error {
+	publicKey := (btcec.PublicKey)(pubKey)
+	var pubkeyBytes secp256k1.PubKeySecp256k1
+	copy(pubkeyBytes[:], publicKey.SerializeCompressed())
+	bncTx.tx = tx.NewStdTx(bncTx.msg.Msgs, []tx.StdSignature{tx.StdSignature{
+		AccountNumber: bncTx.msg.AccountNumber,
+		Sequence:      bncTx.msg.Sequence,
+		PubKey:        pubkeyBytes,
+		Signature:     sigs[0],
+	}}, bncTx.msg.Memo, bncTx.msg.Source, bncTx.msg.Data)
+	bncTx.signed = true
+	return nil
+}
