@@ -10,9 +10,13 @@ func NewBNBCoin(amount int64) Coin {
 }
 
 func NewRecipent(address Address, coins ...Coin) Recipient {
+	return Recipient{address, NewCoins(coins...)}
+}
+
+func NewCoins(coins ...Coin) Coins {
 	bCoins := make(Coins, len(coins))
 	for i := range coins {
 		bCoins[i] = types.Coin(coins[i])
 	}
-	return Recipient{address, bCoins}
+	return bCoins
 }
