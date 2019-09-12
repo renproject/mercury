@@ -16,7 +16,9 @@ import (
 type Client interface {
 	PrintTime()
 	Balances(from bnctypes.Address) (bnctypes.Coins, error)
-	Send(from bnctypes.Address, recipients bnctypes.Recipients) (bnctypes.BNCTx, error)
+	Mint(from bnctypes.Address, coin bnctypes.Coin) (types.Tx, error)
+	Burn(from bnctypes.Address, coin bnctypes.Coin) (types.Tx, error)
+	Send(from bnctypes.Address, recipients bnctypes.Recipients) (types.Tx, error)
 	SubmitTx(tx types.Tx) error
 }
 
@@ -56,11 +58,19 @@ func (client *client) PrintTime() {
 	fmt.Println(t.ApTime, t.BlockTime)
 }
 
-func (client *client) Mint(from bnctypes.Address, symbol string, amount int64) (types.Tx, error) {
+func (client *client) Mint(from bnctypes.Address, coin bnctypes.Coin) (types.Tx, error) {
 	return client.BuildTx(from, msg.NewMintMsg(
 		from.AccAddress(),
-		symbol,
-		amount,
+		coin.Denom,
+		coin.Amount,
+	))
+}
+
+func (client *client) Burn(from bnctypes.Address, coin bnctypes.Coin) (types.Tx, error) {
+	return client.BuildTx(from, msg.NewTokenBurnMsg(
+		from.AccAddress(),
+		coin.Denom,
+		coin.Amount,
 	))
 }
 
@@ -79,11 +89,11 @@ func (client *client) Balances(from bnctypes.Address) (bnctypes.Coins, error) {
 	return bnctypes.NewCoins(balances...), nil
 }
 
-func (client *client) Send(from bnctypes.Address, recipients bnctypes.Recipients) (bnctypes.BNCTx, error) {
+func (client *client) Send(from bnctypes.Address, recipients bnctypes.Recipients) (types.Tx, error) {
 	return client.BuildTx(from, recipients.SendTx(from))
 }
 
-func (client *client) BuildTx(from bnctypes.Address, m msg.Msg) (bnctypes.BNCTx, error) {
+func (client *client) BuildTx(from bnctypes.Address, m msg.Msg) (types.Tx, error) {
 	acc, err := client.queryClient.GetAccount(from.String())
 	if err != nil {
 		return nil, err
