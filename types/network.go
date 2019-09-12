@@ -44,6 +44,8 @@ func (chain Chain) String() string {
 		return "zec"
 	case BitcoinCash:
 		return "bch"
+	case Binance:
+		return "bnc"
 	default:
 		panic(ErrUnknownChain)
 	}
