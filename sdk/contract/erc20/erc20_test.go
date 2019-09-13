@@ -20,7 +20,7 @@ var _ = Describe("ERC20 contract", func() {
 		UserAddress     ethtypes.Address
 	}{
 		{
-			ethtypes.Kovan,
+			ethtypes.EthKovan,
 
 			ethtypes.AddressFromHex("0x2cd647668494c1b15743ab283a0f980d90a87394"),
 			ethtypes.AddressFromHex("0xaD34c12F6000B28a7C583EfC19D631735d1313c4"),
@@ -32,7 +32,7 @@ var _ = Describe("ERC20 contract", func() {
 		// TODO: Add tests for the other functions on the ERC20 contract
 		Context("when interacting with an ERC20 contract", func() {
 			It("should be able to call decimals on an ERC20 contract", func() {
-				client, err := ethclient.New(logrus.StandardLogger(), ethtypes.Kovan)
+				client, err := ethclient.New(logrus.StandardLogger(), testcase.Network)
 				Expect(err).Should(BeNil())
 				erc20, err := New(client, testcase.ContractAddress)
 				Expect(err).Should(BeNil())

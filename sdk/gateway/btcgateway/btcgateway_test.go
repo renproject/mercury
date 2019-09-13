@@ -2,6 +2,7 @@ package btcgateway_test
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"strings"
 	"time"
@@ -32,114 +33,55 @@ var _ = Describe("btc gateway", func() {
 		return wallet
 	}
 
-	// TODO: finish writing these tests
-	// testCases := []struct {
-	// 	Network btctypes.Network
-	// 	UTXOs   btctypes.UTXOs
+	testCases := []struct {
+		Network        btctypes.Network
+		GatewayAddress string
+		SpenderAddress string
+	}{
+		{
+			btctypes.BtcTestnet,
+			"2NDzN2erre3RS7UY8ieY1LsiZ7AwNxGEnTU",
+			"mzPbx28MWBrEZdXbjauVgf8UgnCm5hFdpf",
+		},
+		{
+			btctypes.ZecTestnet,
 
-	// 	GatewayAddress btctypes.Address
-	// 	GatewayScript  []byte
-	// 	GatewayUTXO    btctypes.UTXO
+			"t2V72Lwadq2hkH1rdcgckLBEitRUtcViUU1",
+			"tmXymiPTMYvNjVbfG2xa9S3hsUiKvd1SvMS",
+		},
+		{
+			btctypes.BchTestnet,
 
-	// 	FundingTx  string
-	// 	SpendingTx string
-	// }{
-	// 	{
-	// 		btctypes.BtcTestnet,
-	// 		btctypes.UTXOs{},
+			"ppl7dtqf2zx0l0sln2r53mvlyc4see253ujcxsvvq8",
+			"qqdwdwu3lpcpcusct56l3t5ptvw32tv7ns4ez829fa",
+		},
+	}
 
-	// 		btctypes.Address{},
-	// 		nil,
-	// 		btctypes.UTXO{},
+	for _, testcase := range testCases {
+		testcase := testcase
+		Context(fmt.Sprintf("locally validating %s gateways", testcase.Network.Chain()), func() {
+			It(fmt.Sprintf("should be able to generate a %v gateway", testcase.Network), func() {
+				client := btcclient.NewClient(logger, testcase.Network)
+				key, err := loadTestAccounts(client.Network()).EcdsaKey(44, 1, 1, 0, 1)
+				Expect(err).Should(BeNil())
+				gateway := New(client, key.PublicKey, []byte{})
+				Expect(gateway.Address().EncodeAddress()).Should(Equal(testcase.GatewayAddress))
+			})
 
-	// 		"",
-	// 		"",
-	// 	},
-	// 	{
-	// 		btctypes.ZecTestnet,
-	// 		btctypes.UTXOs{},
+			It(fmt.Sprintf("should be able to generate a %v gateway", testcase.Network), func() {
+				client := btcclient.NewClient(logger, testcase.Network)
+				key, err := loadTestAccounts(client.Network()).EcdsaKey(44, 1, 1, 0, 1)
+				Expect(err).Should(BeNil())
+				gateway := New(client, key.PublicKey, []byte{})
+				Expect(gateway.Spender().EncodeAddress()).Should(Equal(testcase.SpenderAddress))
+			})
 
-	// 		btctypes.Address{},
-	// 		nil,
-	// 		btctypes.UTXO{},
-
-	// 		"",
-	// 		"",
-	// 	},
-	// }
-
-	// for _, testcase := range testCases {
-	// 	Context(fmt.Sprintf("locally validating %s gateways", testcase.Network.Chain()), func() {
-	// 		It(fmt.Sprintf("should be able to generate a %v gateway", testcase.Network), func() {
-	// 			client, err := btcclient.New(logger, testcase.Network)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			key, err := loadTestAccounts(client.Network()).EcdsaKey(44, 1, 1, 0, 1)
-	// 			gateway := New(client, key.PublicKey, []byte{})
-	// 			Expect(gateway.Address()).Should(Equal(testcase.GatewayAddress))
-
-	// 		})
-
-	// 		It(fmt.Sprintf("should be able to generate a %v gateway", testcase.Network), func() {
-	// 			client, err := btcclient.New(logger, testcase.Network)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			key, err := loadTestAccounts(client.Network()).EcdsaKey(44, 1, 0, 0, 1)
-	// 			gateway := New(client, key.PublicKey, []byte{})
-
-	// 			address, err := btctypes.AddressFromPubKey(key.PublicKey, client.Network())
-	// 			Expect(err).NotTo(HaveOccurred())
-
-	// 			// send to gateway
-	// 			recipients := btctypes.Recipients{
-	// 				{
-	// 					Address: gateway.Address(),
-	// 					Amount:  20000 * btctypes.SAT,
-	// 				},
-	// 			}
-
-	// 			tx, err := client.BuildUnsignedTx(testcase.UTXOs, recipients, address, 10000)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			Expect(tx.Sign(key)).NotTo(HaveOccurred())
-
-	// 			txData, err := tx.Serialize()
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			Expect(fmt.Sprintf("%x", txData)).Should(Equal(testcase.FundingTx))
-
-	// 			txHash := tx.Hash()
-	// 			fmt.Printf("funding gateway address=%v with txhash=%v\n", gateway.Address(), txHash)
-
-	// 			// Fetch the UTXOs for the transaction hash
-	// 			gatewayUTXO, err := gateway.UTXO(tx.OutPoint(gateway.Address()))
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			// fmt.Printf("utxo: %v", gatewayUTXO)
-	// 			gatewayUTXOs := btctypes.UTXOs{gatewayUTXO}
-	// 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
-	// 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
-	// 			gasAmount := client.SuggestGasPrice(context.Background(), types.Standard, txSize)
-	// 			fmt.Printf("gas amount=%v", gasAmount)
-	// 			recipients = btctypes.Recipients{{
-	// 				Address: address,
-	// 				Amount:  gatewayUTXOs.Sum() - gasAmount,
-	// 			}}
-	// 			tx, err = client.BuildUnsignedTx(gatewayUTXOs, recipients, address, gasAmount)
-	// 			Expect(err).NotTo(HaveOccurred())
-
-	// 			// Sign the transaction
-	// 			subScripts := tx.SignatureHashes()
-	// 			sigs := make([]*btcec.Signature, len(subScripts))
-	// 			for i, subScript := range subScripts {
-	// 				sigs[i], err = (*btcec.PrivateKey)(key).Sign(subScript)
-	// 				Expect(err).NotTo(HaveOccurred())
-	// 			}
-	// 			serializedPK := btctypes.SerializePublicKey(key.PublicKey, client.Network())
-	// 			err = tx.InjectSignatures(sigs, serializedPK)
-
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			newTxHash, err := client.SubmitSignedTx(tx)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
-	// 		})
-	// 	})
-	// }
+			It(fmt.Sprintf("should panic when trying to use an invalid pub key to generate %v gateway", testcase.Network), func() {
+				client := btcclient.NewClient(logger, testcase.Network)
+				Expect(func() { New(client, ecdsa.PublicKey{}, []byte{}) }).Should(Panic())
+			})
+		})
+	}
 
 	Context("when generating gateways", func() {
 		networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet, btctypes.BchLocalnet}

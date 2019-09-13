@@ -33,7 +33,7 @@ var _ = Describe("eth client", func() {
 		// Remove this once the ethereum node ancient block sync is done.
 		XIt("can fetch the confirmations of a Kovan transaction", func() {
 			Expect(err).NotTo(HaveOccurred())
-			hash := ethtypes.NewTxHashFromHex("0x288a0fe0cb305195bac6fefa6b16df576f0180c229fe5b4a453d57b0dcb42673")
+			hash := types.TxHash("0x288a0fe0cb305195bac6fefa6b16df576f0180c229fe5b4a453d57b0dcb42673")
 			ctx := context.Background()
 			confs, err := client.Confirmations(ctx, hash)
 			Expect(err).NotTo(HaveOccurred())
