@@ -25,6 +25,10 @@ var _ = Describe("eth addresses", func() {
 			rand.Read(addrBytes[:])
 			Expect(func() { ethtypes.AddressFromHex(hex.EncodeToString(addrBytes[:])) }).ShouldNot(Panic())
 		})
+
+		It("should panic on nil public key", func() {
+			Expect(func() { ethtypes.AddressFromPublicKey(nil) }).Should(Panic())
+		})
 	})
 
 })
