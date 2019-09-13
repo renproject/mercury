@@ -80,3 +80,7 @@ func RandomSegWitAddress(network btctypes.Network) (btctypes.Address, error) {
 	}
 	return btctypes.SegWitAddressFromPubKey(key.PublicKey, network)
 }
+
+func RandomKey() (*ecdsa.PrivateKey, error) {
+	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+}
