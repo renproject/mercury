@@ -20,12 +20,12 @@ var (
 
 type Cache struct {
 	locks  sync.Map
-	store  kv.Store
+	store  kv.Table
 	logger logrus.FieldLogger
 }
 
 // New returns a new Cache.
-func New(store kv.Store, logger logrus.FieldLogger) *Cache {
+func New(store kv.Table, logger logrus.FieldLogger) *Cache {
 	return &Cache{
 		locks:  sync.Map{},
 		store:  store,

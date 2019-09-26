@@ -68,6 +68,8 @@ github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9
 github.com/go-stack/stack v1.8.0 h1:5SgMzNM5HxrEjV0ww2lTmX6E2Izsfxas4+YHWRs3Lsk=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
+github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 h1:ZgQEtGgCBiWRM39fZuwSd1LwSqqSW0hOdXCYYDX0R3I=
+github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.1 h1:YF8+flBXS5eO826T4nzqPrxfhQThhXl0YzfuUPu4SBg=
 github.com/golang/protobuf v1.3.1/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
@@ -165,6 +167,9 @@ github.com/prometheus/tsdb v0.10.0 h1:If5rVCMTp6W2SiRAQFlbpJNgVlgMEd+U2GZckwK38i
 github.com/prometheus/tsdb v0.10.0/go.mod h1:oi49uRhEe9dPUTlS3JRZOwJuVi6tmh10QSgwXEyGCt4=
 github.com/renproject/kv v0.1.0 h1:i4XpBL2vkKMpZz7dhYhaPf/I3/3DNfSZkz9GY96UryE=
 github.com/renproject/kv v0.1.0/go.mod h1:1kC6F4r7jhMeyZtqc7Of047E/DpfHDphRg/bQHt08hA=
+github.com/renproject/kv v1.0.2 h1:0t8FYMPBQnzwN/DrlHN1MLvRTaN5U5Q8USoMa7gkwo8=
+github.com/renproject/kv v1.0.2/go.mod h1:B+LKu5xLj9t65LrbsSyzTcgLcPdWCd0qxFEtNB7NRo8=
+github.com/renproject/phi v0.0.0-20190713013721-51f586bc4816/go.mod h1:Hrxx2ONVpfByficRjyRd1trecalYr0lo7Z0akx8UXqg=
 github.com/renproject/phi v0.1.0 h1:ZOn7QeDribk/uV46OhQWcTLxyuLg7P+xR1Hfl5cOQuI=
 github.com/renproject/phi v0.1.0/go.mod h1:Hrxx2ONVpfByficRjyRd1trecalYr0lo7Z0akx8UXqg=
 github.com/renproject/rzl v0.1.0 h1:/ToITTp5zB04Ghv7FYk9Tnt0vsEo7Gv4pyEtSBVT+Tk=

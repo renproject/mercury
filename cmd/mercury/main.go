@@ -17,17 +17,17 @@ func main() {
 	// Initialise logger.
 	logger := logrus.StandardLogger()
 
+	db := kv.NewMemDB(kv.JSONCodec)
+
 	// Initialise stores.
-	ethKovanStore := kv.NewJSON(kv.NewMemDB())
-	ethKovanCache := cache.New(ethKovanStore, logger)
-	ethStore := kv.NewJSON(kv.NewMemDB())
-	ethCache := cache.New(ethStore, logger)
-	btcStore := kv.NewJSON(kv.NewMemDB())
-	btcCache := cache.New(btcStore, logger)
-	zecStore := kv.NewJSON(kv.NewMemDB())
-	zecCache := cache.New(zecStore, logger)
-	bchStore := kv.NewJSON(kv.NewMemDB())
-	bchCache := cache.New(bchStore, logger)
+	ethKovanCache := cache.New(kv.NewTable(db, "ethKovan"), logger)
+	btcTestCache := cache.New(kv.NewTable(db, "btcTest"), logger)
+	zecTestCache := cache.New(kv.NewTable(db, "zecTest"), logger)
+	bchTestCache := cache.New(kv.NewTable(db, "bchTest"), logger)
+	ethCache := cache.New(kv.NewTable(db, "eth"), logger)
+	btcCache := cache.New(kv.NewTable(db, "btc"), logger)
+	zecCache := cache.New(kv.NewTable(db, "zec"), logger)
+	bchCache := cache.New(kv.NewTable(db, "bch"), logger)
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
@@ -35,7 +35,14 @@ func main() {
 	btcTestnetPassword := os.Getenv("BITCOIN_TESTNET_RPC_PASSWORD")
 	btcTestnetNodeClient := rpc.NewClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 	btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
-	btcTestnetAPI := api.NewApi(btctypes.BtcTestnet, btcTestnetProxy, btcCache, logger)
+	btcTestnetAPI := api.NewApi(btctypes.BtcTestnet, btcTestnetProxy, btcTestCache, logger)
+
+	btcMainnetURL := os.Getenv("BITCOIN_MAINNET_RPC_URL")
+	btcMainnetUser := os.Getenv("BITCOIN_MAINNET_RPC_USERNAME")
+	btcMainnetPassword := os.Getenv("BITCOIN_MAINNET_RPC_PASSWORD")
+	btcMainnetNodeClient := rpc.NewClient(btcMainnetURL, btcMainnetUser, btcMainnetPassword)
+	btcMainnetProxy := proxy.NewProxy(btcMainnetNodeClient)
+	btcMainnetAPI := api.NewApi(btctypes.BtcMainnet, btcMainnetProxy, btcCache, logger)
 
 	// Initialise ZCash API.
 	zecTestnetURL := os.Getenv("ZCASH_TESTNET_RPC_URL")
@@ -43,7 +50,14 @@ func main() {
 	zecTestnetPassword := os.Getenv("ZCASH_TESTNET_RPC_PASSWORD")
 	zecTestnetNodeClient := rpc.NewClient(zecTestnetURL, zecTestnetUser, zecTestnetPassword)
 	zecTestnetProxy := proxy.NewProxy(zecTestnetNodeClient)
-	zecTestnetAPI := api.NewApi(btctypes.ZecTestnet, zecTestnetProxy, zecCache, logger)
+	zecTestnetAPI := api.NewApi(btctypes.ZecTestnet, zecTestnetProxy, zecTestCache, logger)
+
+	zecMainnetURL := os.Getenv("ZCASH_MAINNET_RPC_URL")
+	zecMainnetUser := os.Getenv("ZCASH_MAINNET_RPC_USERNAME")
+	zecMainnetPassword := os.Getenv("ZCASH_MAINNET_RPC_PASSWORD")
+	zecMainnetNodeClient := rpc.NewClient(zecMainnetURL, zecMainnetUser, zecMainnetPassword)
+	zecMainnetProxy := proxy.NewProxy(zecMainnetNodeClient)
+	zecMainnetAPI := api.NewApi(btctypes.ZecMainnet, zecMainnetProxy, zecCache, logger)
 
 	// Initialise BCash API.
 	bchTestnetURL := os.Getenv("BCASH_TESTNET_RPC_URL")
@@ -51,7 +65,14 @@ func main() {
 	bchTestnetPassword := os.Getenv("BCASH_TESTNET_RPC_PASSWORD")
 	bchTestnetNodeClient := rpc.NewClient(bchTestnetURL, bchTestnetUser, bchTestnetPassword)
 	bchTestnetProxy := proxy.NewProxy(bchTestnetNodeClient)
-	bchTestnetAPI := api.NewApi(btctypes.BchTestnet, bchTestnetProxy, bchCache, logger)
+	bchTestnetAPI := api.NewApi(btctypes.BchTestnet, bchTestnetProxy, bchTestCache, logger)
+
+	bchMainnetURL := os.Getenv("BCASH_MAINNET_RPC_URL")
+	bchMainnetUser := os.Getenv("BCASH_MAINNET_RPC_USERNAME")
+	bchMainnetPassword := os.Getenv("BCASH_MAINNET_RPC_PASSWORD")
+	bchMainnetNodeClient := rpc.NewClient(bchMainnetURL, bchMainnetUser, bchMainnetPassword)
+	bchMainnetProxy := proxy.NewProxy(bchMainnetNodeClient)
+	bchMainnetAPI := api.NewApi(btctypes.BchMainnet, bchMainnetProxy, bchCache, logger)
 
 	// Initialize Ethereum API.
 	taggedKeys := map[string]string{
@@ -81,6 +102,6 @@ func main() {
 	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
-	server := api.NewServer(logger, "5000", btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI)
+	server := api.NewServer(logger, "5000", btcMainnetAPI, zecMainnetAPI, bchMainnetAPI, btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI)
 	server.Run()
 }

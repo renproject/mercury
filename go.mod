@@ -39,7 +39,7 @@ require (
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/tsdb v0.10.0 // indirect
-	github.com/renproject/kv v0.1.0
+	github.com/renproject/kv v1.0.2
 	github.com/renproject/phi v0.1.0
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.7.0

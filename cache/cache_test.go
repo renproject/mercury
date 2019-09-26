@@ -23,7 +23,7 @@ var _ = Describe("Cache", func() {
 
 	Context("when sending multiple identical requests", func() {
 		It("should only forward a single request", func() {
-			store := kv.NewJSON(kv.NewMemDB())
+			store := kv.NewTable(kv.NewMemDB(kv.JSONCodec), "test")
 			logger := logrus.StandardLogger()
 			cache := New(store, logger)
 
@@ -72,7 +72,7 @@ var _ = Describe("Cache", func() {
 		})
 
 		It("should return the same result for each request", func() {
-			store := kv.NewJSON(kv.NewMemDB())
+			store := kv.NewTable(kv.NewMemDB(kv.JSONCodec), "test")
 			logger := logrus.StandardLogger()
 			cache := New(store, logger)
 
