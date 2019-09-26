@@ -8,6 +8,7 @@ import (
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil"
+	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 type Recipient struct {
@@ -39,8 +40,7 @@ func (recipients Recipients) SendTx(from Address) msg.SendMsg {
 }
 
 func AddressFromBech32(address string, network Network) (Address, error) {
-	types.Network = network.ChainNetwork()
-	accAddr, err := types.AccAddressFromBech32(address)
+	accAddr, err := accAddressFromBech32(address, network)
 	if err != nil {
 		return Address{}, err
 	}
@@ -61,11 +61,21 @@ func AddressFromPubKey(pubKey ecdsa.PublicKey, network Network) Address {
 }
 
 func (addr Address) AccAddress() types.AccAddress {
-	types.Network = addr.Network.ChainNetwork()
 	return types.AccAddress(addr.PubKeyHash)
 }
 
 func (addr Address) String() string {
-	types.Network = addr.Network.ChainNetwork()
-	return types.AccAddress(addr.PubKeyHash).String()
+	bech32Addr, err := bech32.ConvertAndEncode(addr.Network.ChainNetwork().Bech32Prefixes(), addr.PubKeyHash)
+	if err != nil {
+		panic(err)
+	}
+	return bech32Addr
+}
+
+func accAddressFromBech32(address string, network Network) (addr types.AccAddress, err error) {
+	bz, err := types.GetFromBech32(address, network.ChainNetwork().Bech32Prefixes())
+	if err != nil {
+		return nil, err
+	}
+	return types.AccAddress(bz), nil
 }
