@@ -2,6 +2,7 @@ package btcclient_test
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/client/btcclient"
+	"github.com/renproject/mercury/types"
 
 	"github.com/renproject/mercury/testutil"
 	"github.com/renproject/mercury/types/btctypes"
@@ -114,6 +116,19 @@ var _ = Describe("btc client", func() {
 	for _, testCase := range testCases {
 		testCase := testCase
 		timeout := time.Second
+
+		Context("when getting confirmations of a txhash", func() {
+			It("should return 0 if the txHash does not exist", func() {
+				client := NewClient(logger, testCase.Network)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+				hash := [32]byte{}
+				rand.Read(hash[:])
+				conf, err := client.Confirmations(ctx, types.TxHash(fmt.Sprintf("%x", hash[:])))
+				Expect(conf).Should(BeZero())
+				Expect(err).ShouldNot(BeNil())
+			})
+		})
 
 		Context(fmt.Sprintf("when fetching UTXOs on %s %s", testCase.Network.Chain(), testCase.Network), func() {
 			It("should return the UTXO for a transaction with unspent outputs", func() {
