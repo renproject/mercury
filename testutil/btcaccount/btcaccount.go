@@ -100,7 +100,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 		return "", fmt.Errorf("error fetching utxos: %v", err)
 	}
 
-	fee := acc.Client.SuggestGasPrice(context.Background(), speed, acc.Client.EstimateTxSize(len(utxos), 2))
+	fee := 10000 * btctypes.SAT
 	if all {
 		value = utxos.Sum() - fee
 	}
