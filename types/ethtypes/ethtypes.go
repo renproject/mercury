@@ -13,6 +13,7 @@ import (
 const (
 	Mainnet network = 1
 	Kovan   network = 42
+	Ganache network = 255
 )
 
 func (network network) String() string {
@@ -21,6 +22,8 @@ func (network network) String() string {
 		return "mainnet"
 	case Kovan:
 		return "kovan"
+	case Ganache:
+		return "ganache"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
