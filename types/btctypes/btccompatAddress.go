@@ -83,7 +83,7 @@ func EncodeAddress(addrType AddressType, hash []byte, network Network) string {
 
 func DecodeAddress(address string) (btcutil.Address, error) {
 	var decoded = base58.Decode(address)
-	if len(decoded) != 26 || len(decoded) != 25 {
+	if len(decoded) != 26 && len(decoded) != 25 {
 		return nil, base58.ErrInvalidFormat
 	}
 
@@ -93,7 +93,7 @@ func DecodeAddress(address string) (btcutil.Address, error) {
 		return nil, base58.ErrChecksum
 	}
 
-	if len(decoded)-6 != ripemd160.Size || len(decoded)-5 != ripemd160.Size {
+	if len(decoded)-6 != ripemd160.Size && len(decoded)-5 != ripemd160.Size {
 		return nil, errors.New("incorrect payload len")
 	}
 

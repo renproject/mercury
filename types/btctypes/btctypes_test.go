@@ -93,6 +93,13 @@ var _ = Describe("btc types", func() {
 		})
 	})
 
+	Context("bitcoin compat address", func() {
+		FIt("should decode the address correctly", func() {
+			_, err := DecodeAddress("tmXj1bXqHFU9toMhLnAwFad5JcehNNqGASy")
+			Expect(err).Should(BeNil())
+		})
+	})
+
 	Context("bitcoin networks", func() {
 		It("should be able to parse network from a string", func() {
 			testnet := "testnet"
