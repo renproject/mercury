@@ -99,7 +99,7 @@ func DecodeAddress(address string) (btcutil.Address, error) {
 
 	var net Network
 	var addrType AddressType
-	var hash []byte
+	hash := make([]byte, 20)
 	if len(decoded) == 26 {
 		addrType, net = ParsePrefix(decoded[:2])
 		copy(hash, decoded[2:22])
