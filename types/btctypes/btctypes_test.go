@@ -94,9 +94,10 @@ var _ = Describe("btc types", func() {
 	})
 
 	Context("bitcoin compat address", func() {
-		FIt("should decode the address correctly", func() {
-			_, err := DecodeAddress("tmXj1bXqHFU9toMhLnAwFad5JcehNNqGASy")
+		It("should decode the address correctly", func() {
+			addr, err := DecodeAddress("tmXj1bXqHFU9toMhLnAwFad5JcehNNqGASy")
 			Expect(err).Should(BeNil())
+			Expect(addr.String()).Should(Equal("tmXj1bXqHFU9toMhLnAwFad5JcehNNqGASy"))
 		})
 	})
 
