@@ -55,7 +55,7 @@ func MercuryURL(network btctypes.Network) string {
 	case btctypes.BtcTestnet.String(), btctypes.ZecTestnet.String(), btctypes.BchTestnet.String():
 		return fmt.Sprintf("%s/%s/testnet", mclient.MercuryURL, network.Chain().String())
 	case btctypes.BtcLocalnet.String(), btctypes.ZecLocalnet.String(), btctypes.BchLocalnet.String():
-		return fmt.Sprintf("http://0.0.0.0:5000/%s/testnet", network.Chain().String())
+		return fmt.Sprintf("http://0.0.0.0:5000/%s/localnet", network.Chain().String())
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
