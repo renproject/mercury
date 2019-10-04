@@ -110,6 +110,7 @@ func (acc *account) Transfer(ctx context.Context, to btctypes.Address, value btc
 	if balance < value+fee {
 		return "", ErrInsufficientBalance(fmt.Sprintf("%v", value), fmt.Sprintf("%v", balance))
 	}
+	utxos = utxos.Select(value + fee)
 
 	// todo : select some utxos from all the utxos we have.
 	tx, err := acc.Client.BuildUnsignedTx(utxos, btctypes.Recipients{{Address: to, Amount: value}}, acc.Address(), fee)
