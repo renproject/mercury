@@ -56,6 +56,18 @@ func (utxos UTXOs) Filter(confs uint64) UTXOs {
 	return newList
 }
 
+func (utxos UTXOs) Select(amount Amount) UTXOs {
+	newList := UTXOs{}
+	for _, utxo := range utxos {
+		newList = append(newList, utxo)
+		amount -= utxo.Amount()
+		if amount <= 0 {
+			return newList
+		}
+	}
+	return newList
+}
+
 type utxo struct {
 	op            OutPoint
 	amount        Amount
@@ -114,9 +126,9 @@ func (u *utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]b
 		return txscript.CalcSignatureHash(u.script, hashType, msgTx.MsgTx, idx)
 	case *ZecMsgTx:
 		if u.script == nil {
-			return calcSignatureHash(scriptPubKey, hashType, msgTx, idx, u.Amount())
+			return calcSignatureHash(scriptPubKey, hashType, msgTx, idx, u.Amount(), msgTx.Network)
 		}
-		return calcSignatureHash(u.script, hashType, msgTx, idx, u.Amount())
+		return calcSignatureHash(u.script, hashType, msgTx, idx, u.Amount(), msgTx.Network)
 	case BchMsgTx:
 		if u.script == nil {
 			return calcBip143SignatureHash(scriptPubKey, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, u.Amount()), nil

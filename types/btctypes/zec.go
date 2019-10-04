@@ -26,17 +26,11 @@ const (
 	versionSaplingGroupID           = 0x892f2085
 )
 
-var upgradeParams = []upgradeParam{
-	{0, []byte{0x00, 0x00, 0x00, 0x00}},
-	{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
-	{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
-	{584000, []byte{0x60, 0x0E, 0xB4, 0x2B}},
-}
-
 // ZecMsgTx zec fork
 type ZecMsgTx struct {
 	*wire.MsgTx
 	ExpiryHeight uint32
+	Network      Network
 }
 
 // witnessMarkerBytes are a pair of bytes specific to the witness encoding. If
@@ -332,6 +326,7 @@ func calcSignatureHash(
 	tx *ZecMsgTx,
 	idx int,
 	amt Amount,
+	network Network,
 ) ([]byte, error) {
 	sigHashes, err := NewTxSigHashes(tx)
 	if err != nil {
@@ -482,7 +477,7 @@ func calcSignatureHash(
 	}
 
 	var h chainhash.Hash
-	if h, err = blake2bHash(sigHash.Bytes(), sigHashKey(tx.ExpiryHeight)); err != nil {
+	if h, err = blake2bHash(sigHash.Bytes(), sigHashKey(tx.ExpiryHeight, network.(ZecNetwork))); err != nil {
 		return nil, err
 	}
 
@@ -503,7 +498,8 @@ func blake2bHash(data, key []byte) (h chainhash.Hash, err error) {
 	return h, err
 }
 
-func sigHashKey(activationHeight uint32) []byte {
+func sigHashKey(activationHeight uint32, network ZecNetwork) []byte {
+	upgradeParams := network.upgradeParams
 	var i int
 	for i = len(upgradeParams) - 1; i >= 0; i-- {
 		if activationHeight >= upgradeParams[i].ActivationHeight {
