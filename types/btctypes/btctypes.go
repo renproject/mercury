@@ -76,8 +76,10 @@ func (network network) Params() *chaincfg.Params {
 	switch network {
 	case BtcMainnet, BchMainnet:
 		return &chaincfg.MainNetParams
-	case BtcTestnet, BtcLocalnet, BchTestnet, BchLocalnet:
+	case BtcTestnet, BchTestnet:
 		return &chaincfg.TestNet3Params
+	case BtcLocalnet, BchLocalnet:
+		return &chaincfg.RegressionNetParams
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
