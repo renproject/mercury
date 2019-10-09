@@ -65,9 +65,11 @@ func (server *Server) Run() {
 		MaxHeaderBytes:    DefaultMaxHeaderBytes,
 	}
 
-	// Start running the server.
 	server.logger.Infof("mercury listening on 0.0.0.0:%v...", server.port)
-	httpServer.ListenAndServe()
+	// Start running the server.
+	if err := httpServer.ListenAndServe(); err != nil {
+		server.logger.Errorf("failed to listen and serve on port: %v", server.port)
+	}
 }
 
 func (server *Server) health() http.HandlerFunc {
