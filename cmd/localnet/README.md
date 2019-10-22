@@ -10,6 +10,6 @@
 1. docker
 2. docker-compose 
 
-### Steps
+### How to start
 
-1. docker-compose up --build
+run ```sh docker-compose up --build```
