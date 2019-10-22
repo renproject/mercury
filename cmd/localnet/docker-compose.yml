@@ -1,0 +1,33 @@
+version: "3.7"
+services:
+  bitcoin:
+    build:
+      context: ./bitcoin
+      args:
+        Address: "miNMZAeaQEz7B1mf52bzPMKtrYu5vamRQS"
+    image: bitcoin:latest
+
+  zcash:
+    build:
+      context: ./zcash
+      args:
+        Address: "tmCZkbHU8xCqx8nYNxckUYutErCaHJ9TuQd"
+    image: zcash:latest
+
+  bcash:
+    build:
+      context: ./bcash
+      args:
+        Address: "qqevpw63q4xrtekfwlxynejf4jlcu3lcwqyx6f9ut5"
+    image: bcash:latest
+
+  mercury: 
+    build:
+      context: ./mercury
+      args:
+        BTC_RPC_URL: 'http://bitcoin:18443'
+        ZEC_RPC_URL: 'http://zcash:18232'
+        BCH_RPC_URL: 'http://bcash:18443'
+    image: mercury:latest
+    ports: 
+      - "5000:5000"

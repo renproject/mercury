@@ -1,0 +1,16 @@
+FROM ubuntu:xenial
+
+COPY mercury /root/
+RUN chmod +x ~/mercury
+
+ARG BTC_RPC_URL
+ARG ZEC_RPC_URL
+ARG BCH_RPC_URL
+
+ENV BTC_RPC_URL=${BTC_RPC_URL}
+ENV ZEC_RPC_URL=${ZEC_RPC_URL}
+ENV BCH_RPC_URL=${BCH_RPC_URL}
+
+EXPOSE 5000
+
+CMD ["./root/mercury"]
