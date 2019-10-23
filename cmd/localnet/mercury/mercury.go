@@ -17,11 +17,13 @@ func main() {
 	logger := logrus.StandardLogger()
 
 	// Initialise stores.
-	btcStore := kv.NewJSON(kv.NewMemDB())
+	store := kv.NewMemDB(kv.JSONCodec)
+
+	btcStore := kv.NewTable(store, "btc")
 	btcCache := cache.New(btcStore, logger)
-	zecStore := kv.NewJSON(kv.NewMemDB())
+	zecStore := kv.NewTable(store, "zec")
 	zecCache := cache.New(zecStore, logger)
-	bchStore := kv.NewJSON(kv.NewMemDB())
+	bchStore := kv.NewTable(store, "bch")
 	bchCache := cache.New(bchStore, logger)
 
 	// Initialise Bitcoin API.
