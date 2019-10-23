@@ -4,21 +4,21 @@ services:
     build:
       context: ./bitcoin
       args:
-        Address: "miNMZAeaQEz7B1mf52bzPMKtrYu5vamRQS"
+        Address: "mmjwW62DSSWbHuMmRTqUdWd5ABGStniygb"
     image: bitcoin:latest
 
   zcash:
     build:
       context: ./zcash
       args:
-        Address: "tmCZkbHU8xCqx8nYNxckUYutErCaHJ9TuQd"
+        Address: "tmExAcmdSvXsNodpDRbg6LAMUqeVyMVtikL"
     image: zcash:latest
 
   bcash:
     build:
       context: ./bcash
       args:
-        Address: "qqevpw63q4xrtekfwlxynejf4jlcu3lcwqyx6f9ut5"
+        Address: "qzjwrklk7mr5qnhp66z7vy50gj0tnj3xxgl5ztpnsx"
     image: bcash:latest
 
   mercury: 
