@@ -16,43 +16,60 @@ var (
 	paramNetwork string
 	paramAddress string
 	paramName    string
+	paramABI     string
 )
 
 func main() {
 	flag.StringVar(&paramAddress, "address", "", "Address of the contract")
 	flag.StringVar(&paramName, "name", "", "Name of the contract, the newly generated interface is named after this")
 	flag.StringVar(&paramNetwork, "network", "mainnet", "EVM chain network")
+	flag.StringVar(&paramABI, "abi", "", "ABI of the contract")
 	flag.Parse()
 
 	if paramName == "" {
 		panic("please provide a name for this contract, the interface is named after this")
 	}
 
-	if paramAddress == "" {
-		panic("please provide the address of contract, this is used to recover the ABI of the contract")
+	if paramABI == "" {
+		if paramAddress == "" {
+			panic("please provide the address of contract, this is used to recover the ABI of the contract")
+		}
+
+		var err error
+		paramABI, err = getContractDetails(paramNetwork, ethtypes.AddressFromHex(paramAddress))
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	abiString, err := getContractDetails(ethtypes.AddressFromHex(paramAddress))
-	if err != nil {
-		panic(err)
-	}
-
-	contractABI, err := newABI(abiString)
+	contractABI, err := newABI(paramABI)
 	if err != nil {
 		panic(err)
 	}
 
 	d1 := []byte(buildImports(paramName))
 	d2 := []byte(buildInterface(paramName, contractABI))
-	d3 := []byte(buildConstructor(paramName, abiString))
+	d3 := []byte(buildConstructor(paramName, paramABI))
 	d4 := []byte(buildFunctions(paramName, contractABI))
 	if err := ioutil.WriteFile(fmt.Sprintf("./%s.go", paramName), append(append(d1, d2...), append(d3, d4...)...), 0644); err != nil {
 		panic(err)
 	}
 }
 
-func getContractDetails(address ethtypes.Address) (string, error) {
-	url := fmt.Sprintf("https://api.etherscan.io/api?module=contract&action=getabi&address=%s&apikey=R8F2CVXTVSCIDD2IQ2ZQP9P6VZADUWHDHN", address.Hex())
+func getContractDetails(network string, address ethtypes.Address) (string, error) {
+	apiPrefix := ""
+	switch strings.ToLower(network) {
+	case "mainnet":
+		apiPrefix = "api"
+	case "kovan":
+		apiPrefix = "api-kovan"
+	case "ropsten":
+		apiPrefix = "api-ropsten"
+	default:
+		return "", fmt.Errorf("unknown network: %s", network)
+	}
+
+	url := fmt.Sprintf("https://%s.etherscan.io/api?module=contract&action=getabi&address=%s&apikey=R8F2CVXTVSCIDD2IQ2ZQP9P6VZADUWHDHN", apiPrefix, address.Hex())
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
