@@ -26,16 +26,10 @@ const (
 	versionSaplingGroupID           = 0x892f2085
 )
 
-var upgradeParams = []upgradeParam{
-	{0, []byte{0x00, 0x00, 0x00, 0x00}},
-	{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
-	{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
-	{584000, []byte{0x60, 0x0E, 0xB4, 0x2B}},
-}
-
 // ZecMsgTx zec fork
 type ZecMsgTx struct {
 	*wire.MsgTx
+	Network      ZecNetwork
 	ExpiryHeight uint32
 }
 
@@ -327,6 +321,7 @@ func calcHashOutputs(tx *ZecMsgTx) (_ chainhash.Hash, err error) {
 }
 
 func calcSignatureHash(
+	network ZecNetwork,
 	subScript []byte,
 	hashType txscript.SigHashType,
 	tx *ZecMsgTx,
@@ -482,7 +477,7 @@ func calcSignatureHash(
 	}
 
 	var h chainhash.Hash
-	if h, err = blake2bHash(sigHash.Bytes(), sigHashKey(tx.ExpiryHeight)); err != nil {
+	if h, err = blake2bHash(sigHash.Bytes(), sigHashKey(tx.ExpiryHeight, network)); err != nil {
 		return nil, err
 	}
 
@@ -503,13 +498,13 @@ func blake2bHash(data, key []byte) (h chainhash.Hash, err error) {
 	return h, err
 }
 
-func sigHashKey(activationHeight uint32) []byte {
+func sigHashKey(activationHeight uint32, network ZecNetwork) []byte {
 	var i int
+	upgradeParams := network.upgradeParams
 	for i = len(upgradeParams) - 1; i >= 0; i-- {
 		if activationHeight >= upgradeParams[i].ActivationHeight {
 			break
 		}
 	}
-
 	return append([]byte(blake2BSigHash), upgradeParams[i].BranchID...)
 }
