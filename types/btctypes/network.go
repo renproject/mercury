@@ -8,31 +8,49 @@ import (
 )
 
 type ZecNetwork struct {
-	p2shPrefix  []byte
-	p2pkhPrefix []byte
-	params      *chaincfg.Params
-	netString   string
+	p2shPrefix    []byte
+	p2pkhPrefix   []byte
+	upgradeParams []upgradeParam
+	params        *chaincfg.Params
+	netString     string
 }
 
 var ZecMainnet = ZecNetwork{
 	p2pkhPrefix: []byte{0x1C, 0xB8},
 	p2shPrefix:  []byte{0x1C, 0xBD},
-	netString:   "mainnet",
-	params:      &chaincfg.MainNetParams,
+	upgradeParams: []upgradeParam{
+		{0, []byte{0x00, 0x00, 0x00, 0x00}},
+		{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
+		{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
+	},
+	netString: "mainnet",
+	params:    &chaincfg.MainNetParams,
 }
 
 var ZecTestnet = ZecNetwork{
 	p2pkhPrefix: []byte{0x1D, 0x25},
 	p2shPrefix:  []byte{0x1C, 0xBA},
-	netString:   "testnet",
-	params:      &chaincfg.TestNet3Params,
+	upgradeParams: []upgradeParam{
+		{0, []byte{0x00, 0x00, 0x00, 0x00}},
+		{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
+		{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
+		{584000, []byte{0x60, 0x0E, 0xB4, 0x2B}},
+	},
+	netString: "testnet",
+	params:    &chaincfg.TestNet3Params,
 }
 
 var ZecRegnet = ZecNetwork{
 	p2pkhPrefix: []byte{0x1D, 0x25},
 	p2shPrefix:  []byte{0x1C, 0xBA},
-	netString:   "regtest",
-	params:      &chaincfg.RegressionNetParams,
+	upgradeParams: []upgradeParam{
+		{0, []byte{0x00, 0x00, 0x00, 0x00}},
+		{60, []byte{0x19, 0x1B, 0xA8, 0x5B}},
+		{80, []byte{0xBB, 0x09, 0xB8, 0x76}},
+		{100, []byte{0x60, 0x0E, 0xB4, 0x2B}},
+	},
+	netString: "regtest",
+	params:    &chaincfg.RegressionNetParams,
 }
 
 var ZecLocalnet = ZecTestnet
