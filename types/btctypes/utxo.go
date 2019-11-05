@@ -126,9 +126,9 @@ func (u *utxo) SigHash(hashType txscript.SigHashType, msgTx MsgTx, idx int) ([]b
 		return txscript.CalcSignatureHash(u.script, hashType, msgTx.MsgTx, idx)
 	case *ZecMsgTx:
 		if u.script == nil {
-			return calcSignatureHash(scriptPubKey, hashType, msgTx, idx, u.Amount(), msgTx.Network)
+			return calcSignatureHash(msgTx.Network, scriptPubKey, hashType, msgTx, idx, u.Amount())
 		}
-		return calcSignatureHash(u.script, hashType, msgTx, idx, u.Amount(), msgTx.Network)
+		return calcSignatureHash(msgTx.Network, u.script, hashType, msgTx, idx, u.Amount())
 	case BchMsgTx:
 		if u.script == nil {
 			return calcBip143SignatureHash(scriptPubKey, txscript.NewTxSigHashes(msgTx.MsgTx), hashType, msgTx.MsgTx, idx, u.Amount()), nil

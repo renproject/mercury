@@ -194,7 +194,7 @@ func NewMsgTx(network Network) MsgTx {
 	case types.Bitcoin:
 		return NewBtcMsgTx(wire.NewMsgTx(BtcVersion))
 	case types.ZCash:
-		return NewZecMsgTx(wire.NewMsgTx(ZecVersion), ZecExpiryHeight, network)
+		return NewZecMsgTx(network.(ZecNetwork), wire.NewMsgTx(ZecVersion), ZecExpiryHeight)
 	case types.BitcoinCash:
 		return NewBchMsgTx(wire.NewMsgTx(BchVersion))
 	default:
@@ -246,11 +246,11 @@ func (*ZecMsgTx) SigBytes(sig *btcec.Signature, hashType txscript.SigHashType) [
 	return append(sig.Serialize(), byte(hashType))
 }
 
-func NewZecMsgTx(msgTx *wire.MsgTx, expiryHeight uint32, network Network) *ZecMsgTx {
+func NewZecMsgTx(network ZecNetwork, msgTx *wire.MsgTx, expiryHeight uint32) *ZecMsgTx {
 	return &ZecMsgTx{
+		Network:      network,
 		MsgTx:        msgTx,
 		ExpiryHeight: expiryHeight,
-		Network:      network,
 	}
 }
 
