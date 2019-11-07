@@ -9,6 +9,7 @@ import (
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc"
 	"github.com/renproject/mercury/types/btctypes"
+	"github.com/renproject/mercury/types/ethtypes"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,6 +26,8 @@ func main() {
 	zecCache := cache.New(zecStore, logger)
 	bchStore := kv.NewTable(store, "bch")
 	bchCache := cache.New(bchStore, logger)
+	ethStore := kv.NewTable(store, "eth")
+	ethCache := cache.New(ethStore, logger)
 
 	// Initialise Bitcoin API.
 	btcNodeClient := rpc.NewClient(os.Getenv("BTC_RPC_URL"), "user", "password")
@@ -41,7 +44,11 @@ func main() {
 	bchProxy := proxy.NewProxy(bchNodeClient)
 	bchAPI := api.NewApi(btctypes.BchLocalnet, bchProxy, bchCache, logger)
 
+	ethNodeClient := rpc.NewClient(os.Getenv("ETH_RPC_URL"), "", "")
+	ethProxy := proxy.NewProxy(ethNodeClient)
+	ethAPI := api.NewApi(ethtypes.EthLocalnet, ethProxy, ethCache, logger)
+
 	// Set-up and start the server.
-	server := api.NewServer(logger, "5000", btcAPI, zecAPI, bchAPI)
+	server := api.NewServer(logger, "5000", btcAPI, zecAPI, bchAPI, ethAPI)
 	server.Run()
 }
