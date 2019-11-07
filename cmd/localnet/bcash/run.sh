@@ -1,4 +1,5 @@
-
+#!/bin/bash
+Address=$1
 bitcoind
 sleep 5
 
