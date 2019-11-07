@@ -1,3 +1,8 @@
+#!/bin/bash
+
+Address=$1
+echo "
+mineraddress=$Address" >> ~/.zcash/zcash.conf
 zcashd
 sleep 5
 
