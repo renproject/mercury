@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	paramNetwork string
-	paramAddress string
-	paramName    string
-	paramABI     string
+	paramNetwork  string
+	paramAddress  string
+	paramName     string
+	paramABI      string
+	paramArtifact string
 )
 
 func main() {
@@ -24,36 +25,61 @@ func main() {
 	flag.StringVar(&paramName, "name", "", "Name of the contract, the newly generated interface is named after this")
 	flag.StringVar(&paramNetwork, "network", "mainnet", "EVM chain network")
 	flag.StringVar(&paramABI, "abi", "", "ABI of the contract")
+	flag.StringVar(&paramArtifact, "artifact", "", "Provide truffle artifact to generate the bindings from")
 	flag.Parse()
+
+	if paramArtifact != "" {
+		artifact, err := ioutil.ReadFile(paramArtifact)
+		if err != nil {
+			panic(fmt.Errorf("failed to read artifact from file: %v", paramArtifact))
+		}
+		obj := struct {
+			ContractName string          `json:"contractName"`
+			ABI          json.RawMessage `json:"abi"`
+		}{}
+		if err := json.Unmarshal(artifact, &obj); err != nil {
+			panic(fmt.Errorf("%v is not a valid truffle artifact", paramArtifact))
+		}
+		if err := writeBindingsToFile(string(obj.ABI), obj.ContractName); err != nil {
+			panic(err)
+		}
+		return
+	}
 
 	if paramName == "" {
 		panic("please provide a name for this contract, the interface is named after this")
 	}
-
-	if paramABI == "" {
-		if paramAddress == "" {
-			panic("please provide the address of contract, this is used to recover the ABI of the contract")
-		}
-
-		var err error
-		paramABI, err = getContractDetails(paramNetwork, ethtypes.AddressFromHex(paramAddress))
-		if err != nil {
+	if paramABI != "" {
+		if err := writeBindingsToFile(paramABI, paramName); err != nil {
 			panic(err)
 		}
+		return
 	}
-
-	contractABI, err := newABI(paramABI)
+	if paramAddress == "" {
+		panic("please provide the address of contract, this is used to recover the ABI of the contract")
+	}
+	abiString, err := getContractDetails(paramNetwork, ethtypes.AddressFromHex(paramAddress))
 	if err != nil {
 		panic(err)
 	}
-
-	d1 := []byte(buildImports(paramName))
-	d2 := []byte(buildInterface(paramName, contractABI))
-	d3 := []byte(buildConstructor(paramName, paramABI))
-	d4 := []byte(buildFunctions(paramName, contractABI))
-	if err := ioutil.WriteFile(fmt.Sprintf("./%s.go", paramName), append(append(d1, d2...), append(d3, d4...)...), 0644); err != nil {
+	if err := writeBindingsToFile(abiString, paramName); err != nil {
 		panic(err)
 	}
+}
+
+func writeBindingsToFile(abi, name string) error {
+	contractABI, err := newABI(abi)
+	if err != nil {
+		return err
+	}
+	d1 := []byte(buildImports(name))
+	d2 := []byte(buildInterface(name, contractABI))
+	d3 := []byte(buildConstructor(name, abi))
+	d4 := []byte(buildFunctions(name, contractABI))
+	if err := ioutil.WriteFile(fmt.Sprintf("./%s.go", name), append(append(d1, d2...), append(d3, d4...)...), 0644); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getContractDetails(network string, address ethtypes.Address) (string, error) {
@@ -92,14 +118,14 @@ func buildImports(contractName string) string {
 }
 
 func buildConstructor(contractName, contractABI string) string {
-	return fmt.Sprintf("type %s struct {\n\tcontract ethtypes.Contract\n}\n\nvar ABI = `%s`\n\n// New returns a new %s instance\nfunc New(client ethclient.Client, addr ethtypes.Address) (%s, error) {\n\tcontract, err := client.Contract(addr, []byte(ABI))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to bind %s at address=%s\", addr, err)\n\t}\n\treturn &%s{\n\t\tcontract: contract,\n\t}, nil\n}\n", contractName, contractABI, strings.Title(contractName), strings.Title(contractName), contractName, "%v: %v", contractName)
+	return fmt.Sprintf("type %s struct {\n\tcontract ethtypes.Contract\n}\n\nvar ABI = `%s`\n\n// New returns a new %s instance\nfunc New(client ethclient.Client, addr ethtypes.Address) (%s, error) {\n\tcontract, err := client.Contract(addr, []byte(ABI))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to bind %s at address=%s\", addr, err)\n\t}\n\treturn &%s{\n\t\tcontract: contract,\n\t}, nil\n}\n", structName(contractName), contractABI, strings.Title(contractName), strings.Title(contractName), contractName, "%v: %v", structName(contractName))
 }
 
 func buildFunctions(contractName string, contractABI contractABI) string {
 	funcString := ""
 	for _, method := range contractABI {
 		if method.Type == "function" {
-			funcString = fmt.Sprintf("%sfunc (c *%s) %s%s\n\n", funcString, contractName, functionSig(method), functionBody(method))
+			funcString = fmt.Sprintf("%sfunc (c *%s) %s%s\n\n", funcString, structName(contractName), functionSig(method), functionBody(method))
 		}
 	}
 	return funcString
@@ -238,4 +264,11 @@ func newABI(abiString string) (contractABI, error) {
 		}
 	}
 	return cABI, nil
+}
+
+func structName(contractName string) string {
+	if contractName[0] >= 65 && contractName[0] <= 90 {
+		return string(append([]byte{contractName[0] + byte(0x20)}, contractName[1:]...))
+	}
+	return contractName
 }
