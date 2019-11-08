@@ -16,7 +16,7 @@ services:
     image: renproject/bcash:localnet
     entrypoint:
       - "./root/run.sh"
-      - "qzjwrklk7mr5qnhp66z7vy50gj0tnj3xxgl5ztpnsx"
+      - "qz7xht44kz6a4g6vyvvvcer6jywlus8sksgyj2wnjy"
     
   ethereum:
     image: renproject/parity:localnet
