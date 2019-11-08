@@ -167,6 +167,18 @@ func AppendChecksum(prefix string, payload []byte) []byte {
 }
 
 func DecodeAddress(addr string, params *chaincfg.Params) (btcutil.Address, error) {
+	// Legacy address decoding
+	if address, err := btcutil.DecodeAddress(addr, params); err == nil {
+		switch address.(type) {
+		case *btcutil.AddressPubKeyHash, *btcutil.AddressScriptHash, *btcutil.AddressPubKey:
+			return address, nil
+		case *btcutil.AddressWitnessPubKeyHash, *btcutil.AddressWitnessScriptHash:
+			return nil, fmt.Errorf("bitcoin cash does not support SegWit addresses")
+		default:
+			return nil, fmt.Errorf("unsuported legacy bitcoin address type: %T", address)
+		}
+	}
+
 	if addrParts := strings.Split(addr, ":"); len(addrParts) != 1 {
 		addr = addrParts[1]
 	}
@@ -210,6 +222,8 @@ func PayToAddrScript(addr btcutil.Address) ([]byte, error) {
 	case *P2SHAddress:
 		return txscript.NewScriptBuilder().AddOp(txscript.OP_HASH160).AddData(addr.scriptHash).
 			AddOp(txscript.OP_EQUAL).Script()
+	case *btcutil.AddressPubKeyHash, *btcutil.AddressScriptHash, *btcutil.AddressPubKey:
+		return txscript.PayToAddrScript(addr)
 	default:
 		return nil, fmt.Errorf("unsupported address type %T", addr)
 	}
