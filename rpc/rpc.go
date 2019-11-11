@@ -34,7 +34,9 @@ func (node *client) HandleRequest(r *http.Request, data []byte) (*http.Response,
 	client := http.Client{}
 	req, err := http.NewRequest("POST", node.host, bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(node.username, node.password)
+	if node.username != "" || node.password != "" {
+		req.SetBasicAuth(node.username, node.password)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot construct post request for zcash node: %v", err)
 	}
