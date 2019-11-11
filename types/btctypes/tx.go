@@ -194,7 +194,8 @@ func NewMsgTx(network Network) MsgTx {
 	case types.Bitcoin:
 		return NewBtcMsgTx(wire.NewMsgTx(BtcVersion))
 	case types.ZCash:
-		return NewZecMsgTx(network.(ZecNetwork), wire.NewMsgTx(ZecVersion), ZecExpiryHeight)
+		net := network.(ZecNetwork)
+		return NewZecMsgTx(net, wire.NewMsgTx(ZecVersion), net.expiryHeight)
 	case types.BitcoinCash:
 		return NewBchMsgTx(wire.NewMsgTx(BchVersion))
 	default:

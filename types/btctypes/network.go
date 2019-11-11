@@ -12,6 +12,7 @@ type ZecNetwork struct {
 	p2pkhPrefix   []byte
 	upgradeParams []upgradeParam
 	params        *chaincfg.Params
+	expiryHeight  uint32
 	netString     string
 }
 
@@ -24,8 +25,9 @@ var ZecMainnet = ZecNetwork{
 		{419200, []byte{0xBB, 0x09, 0xB8, 0x76}},
 		{653600, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
-	netString: "mainnet",
-	params:    &chaincfg.MainNetParams,
+	expiryHeight: 653599,
+	netString:    "mainnet",
+	params:       &chaincfg.MainNetParams,
 }
 
 var ZecTestnet = ZecNetwork{
@@ -37,8 +39,9 @@ var ZecTestnet = ZecNetwork{
 		{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
 		{584000, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
-	netString: "testnet",
-	params:    &chaincfg.TestNet3Params,
+	expiryHeight: 10000000,
+	netString:    "testnet",
+	params:       &chaincfg.TestNet3Params,
 }
 
 var ZecRegnet = ZecNetwork{
@@ -50,8 +53,9 @@ var ZecRegnet = ZecNetwork{
 		{80, []byte{0xBB, 0x09, 0xB8, 0x76}},
 		{100, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
-	netString: "regtest",
-	params:    &chaincfg.RegressionNetParams,
+	expiryHeight: 10000000,
+	netString:    "regtest",
+	params:       &chaincfg.RegressionNetParams,
 }
 
 var ZecLocalnet = ZecTestnet
