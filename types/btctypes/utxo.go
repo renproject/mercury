@@ -16,9 +16,7 @@ import (
 const (
 	BtcVersion = 2
 	BchVersion = 1
-
-	ZecExpiryHeight = uint32(10000000)
-	ZecVersion      = 4
+	ZecVersion = 4
 )
 
 type UTXO interface {
