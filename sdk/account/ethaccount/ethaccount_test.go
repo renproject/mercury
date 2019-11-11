@@ -2,22 +2,16 @@ package ethaccount_test
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/sdk/account/ethaccount"
-	"github.com/sirupsen/logrus"
 
-	"github.com/renproject/mercury/sdk/client/ethclient"
 	"github.com/renproject/mercury/types"
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
 var _ = Describe("eth account", func() {
-	logger := logrus.StandardLogger()
-
 	Context("can sign", func() {
 
 		It("can create a random account", func() {
@@ -53,12 +47,11 @@ var _ = Describe("eth account", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		XIt("can transfer funds", func() {
+		It("can transfer funds", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
 			ownerBal, err := EthAccount.Balance(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("owner balance: %v", ownerBal)
 			Expect(ownerBal.Gte(amount)).Should(BeTrue())
 			gasLimit := uint64(30000)
 			gasPrice := Client.SuggestGasPrice(ctx, types.Standard)
@@ -70,10 +63,8 @@ var _ = Describe("eth account", func() {
 			Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
 			var data []byte
 			tx, err := EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
-			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
 			err = EthAccount.SignUnsignedTx(ctx, &tx)
-			fmt.Println(tx.Hash())
 			Expect(err).NotTo(HaveOccurred())
 			_, err = Client.PublishSignedTx(ctx, tx)
 			Expect(err).NotTo(HaveOccurred())
@@ -83,18 +74,18 @@ var _ = Describe("eth account", func() {
 			Expect(newBal.Eq(amount)).Should(BeTrue())
 		})
 
-		XIt("can check kovan funds", func() {
-			kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")
-			Expect(err).NotTo(HaveOccurred())
-			mnemonic := os.Getenv("ETH_KOVAN_MNEMONIC")
-			path := "m/44'/60'/0'/0/0"
-			acc, err := NewAccountFromMnemonic(kovanClient, mnemonic, path)
-			Expect(err).NotTo(HaveOccurred())
-			ctx := context.Background()
-			bal, err := kovanClient.Balance(ctx, acc.Address())
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("balance of %v: %v", acc.Address().Hex(), bal)
-		})
+		// XIt("can check kovan funds", func() {
+		// 	kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	mnemonic := os.Getenv("ETH_KOVAN_MNEMONIC")
+		// 	path := "m/44'/60'/0'/0/0"
+		// 	acc, err := NewAccountFromMnemonic(kovanClient, mnemonic, path)
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	ctx := context.Background()
+		// 	bal, err := kovanClient.Balance(ctx, acc.Address())
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	fmt.Printf("balance of %v: %v", acc.Address().Hex(), bal)
+		// })
 
 		// It("can send kovan funds", func() {
 		// 	kovanClient, err := ethclient.NewCustomClient(logger, "http://localhost:5000/eth/testnet")

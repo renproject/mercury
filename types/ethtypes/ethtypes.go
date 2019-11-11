@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	Mainnet network = 1
-	Kovan   network = 42
-	Ganache network = 255
+	Mainnet     network = 1
+	Kovan       network = 42
+	Ganache     network = 255
+	EthLocalnet network = 254
 )
 
 func (network network) String() string {
@@ -24,6 +25,8 @@ func (network network) String() string {
 		return "kovan"
 	case Ganache:
 		return "ganache"
+	case EthLocalnet:
+		return "localnet"
 	default:
 		panic(types.ErrUnknownNetwork)
 	}
@@ -115,6 +118,7 @@ type Hash common.Hash
 
 type Event struct {
 	Name        string
+	TxHash      TxHash
 	Args        map[string]interface{}
 	IndexedArgs []Hash
 }

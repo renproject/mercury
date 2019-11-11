@@ -43,6 +43,8 @@ func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 		url = fmt.Sprintf("%s/eth/mainnet", mclient.MercuryURL)
 	case ethtypes.Kovan:
 		url = fmt.Sprintf("%s/eth/kovan", mclient.MercuryURL)
+	case ethtypes.EthLocalnet:
+		url = "http://127.0.0.1:5000/eth/localnet"
 	case ethtypes.Ganache:
 		url = "http://127.0.0.1:8545"
 	default:
