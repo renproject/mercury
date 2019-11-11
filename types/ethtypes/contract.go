@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -22,7 +23,7 @@ type contract struct {
 type Contract interface {
 	BuildTx(ctx context.Context, from Address, method string, value *big.Int, params ...interface{}) (Tx, error)
 	Call(ctx context.Context, caller Address, result interface{}, method string, params ...interface{}) error
-	Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, topics ...[]Hash) error
+	Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, event string, indexedArgs ...Hash) error
 }
 
 func NewContract(client *ethclient.Client, address Address, contractABI []byte) (Contract, error) {
@@ -37,11 +38,35 @@ func NewContract(client *ethclient.Client, address Address, contractABI []byte) 
 	}, nil
 }
 
-func (c *contract) BuildTx(ctx context.Context, from Address, method string, value *big.Int, params ...interface{}) (Tx, error) {
+func DeployContract(ctx context.Context, client *ethclient.Client, contractABI []byte, bin []byte, from Address, value *big.Int, params ...interface{}) (Tx, Contract, error) {
+	abi, err := abi.JSON(bytes.NewBuffer(contractABI))
+	if err != nil {
+		return Tx{}, nil, err
+	}
+	c := &contract{
+		client:  client,
+		address: Address{},
+		abi:     abi,
+	}
+	tx, err := c.buildTx(ctx, from, bin, "", value, params...)
+	return tx, c, err
+}
 
+func (c *contract) BuildTx(ctx context.Context, from Address, method string, value *big.Int, params ...interface{}) (Tx, error) {
+	return c.buildTx(ctx, from, nil, method, value, params...)
+}
+
+func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method string, value *big.Int, params ...interface{}) (Tx, error) {
 	data, err := c.abi.Pack(method, params...)
 	if err != nil {
 		return Tx{}, fmt.Errorf("failed to pack data: %v", err)
+	}
+
+	if (from == Address{}) {
+		if bin != nil {
+			return Tx{}, fmt.Errorf("failed to deploy a contract: contract bin not provided")
+		}
+		data = append(bin, data...)
 	}
 
 	// Ensure a valid value field and resolve the account nonce
@@ -72,6 +97,7 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 	var rawTx *types.Transaction
 	if (c.address == Address{}) {
 		rawTx = types.NewContractCreation(nonce, value, gasLimit, gasPrice, data)
+		c.address = Address(crypto.CreateAddress(common.Address(from), nonce))
 	} else {
 		rawTx = types.NewTransaction(nonce, contractAddr, value, gasLimit, gasPrice, data)
 	}
@@ -111,11 +137,15 @@ func (c *contract) Call(ctx context.Context, caller Address, result interface{},
 	return c.abi.Unpack(result, method, output)
 }
 
-func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, topics ...[]Hash) error {
+func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, event string, indexedArgs ...Hash) error {
 	if beginBlockNum == nil {
 		beginBlockNum = big.NewInt(0)
 	}
 	for {
+		topics, err := c.getTopics(event, indexedArgs)
+		if err != nil {
+			return err
+		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -125,10 +155,10 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 				Addresses: []common.Address{
 					common.Address(c.address),
 				},
-				Topics: encodeHashMatrix(topics),
+				Topics: [][]common.Hash{topics},
 			})
 			if err != nil {
-				return fmt.Errorf("failed to filter logs")
+				return fmt.Errorf("failed to filter logs: %v", err)
 			}
 			for _, log := range logs {
 				beginBlockNum.SetUint64(log.BlockNumber)
@@ -142,6 +172,7 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 				}
 				events <- Event{
 					Name:        event.Name,
+					TxHash:      TxHash(log.TxHash),
 					IndexedArgs: decodeHashes(log.Topics[1:]),
 					Args:        eventArgs,
 				}
@@ -167,4 +198,17 @@ func decodeHashes(chashes []common.Hash) []Hash {
 		hashes[i] = Hash(chash)
 	}
 	return hashes
+}
+
+func (c *contract) getTopics(event string, indexedArgs []Hash) ([]common.Hash, error) {
+	eventABI := c.abi.Events[event]
+	fmt.Println(eventABI.ID().Hex())
+	topics := []common.Hash{eventABI.ID()}
+	if len(indexedArgs) > len(eventABI.Inputs)-eventABI.Inputs.LengthNonIndexed() {
+		return topics, fmt.Errorf("invalid number of indexed args: %v", len(indexedArgs))
+	}
+	for _, arg := range indexedArgs {
+		topics = append(topics, common.Hash(arg))
+	}
+	return topics, nil
 }
