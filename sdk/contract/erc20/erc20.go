@@ -2,6 +2,7 @@ package erc20
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -18,8 +19,6 @@ type ERC20 interface {
 	Transfer(ctx context.Context, signer, to ethtypes.Address, amount *big.Int) (ethtypes.Tx, error)
 	Approve(ctx context.Context, signer, to ethtypes.Address, amount *big.Int) (ethtypes.Tx, error)
 	TransferFrom(ctx context.Context, signer, from, to ethtypes.Address, amount *big.Int) (ethtypes.Tx, error)
-
-	Watch(ctx context.Context, events chan<- ethtypes.Event, beginBlockNum *big.Int) error
 }
 
 type erc20 struct {
@@ -27,6 +26,7 @@ type erc20 struct {
 }
 
 var ABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"balance\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"fallback\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"}]"
+var BIN = "0x00"
 
 // New returns a new instance of ERC20
 func New(client ethclient.Client, addr ethtypes.Address) (ERC20, error) {
@@ -37,6 +37,19 @@ func New(client ethclient.Client, addr ethtypes.Address) (ERC20, error) {
 	return &erc20{
 		contract: contract,
 	}, nil
+}
+
+// Deploy a new contract, the contract returned by this function can only be used after signing and submitting the tx returned by this function.
+func Deploy(ctx context.Context, client ethclient.Client, from ethtypes.Address, value *big.Int, params ...interface{}) (ethtypes.Tx, ERC20, error) {
+	contractBin, err := hex.DecodeString(BIN)
+	if err != nil {
+		return ethtypes.Tx{}, nil, err
+	}
+	tx, contract, err := ethtypes.DeployContract(ctx, client.EthClient(), []byte(ABI), contractBin, from, value, params...)
+	if err != nil {
+		return ethtypes.Tx{}, nil, err
+	}
+	return tx, &erc20{contract}, nil
 }
 
 // Balance returns the balance of an address
@@ -76,8 +89,4 @@ func (e *erc20) Approve(ctx context.Context, signer, to ethtypes.Address, amount
 // TransferFrom the given amount of ERC20 to the `to` address from the `from` address
 func (e *erc20) TransferFrom(ctx context.Context, signer, from, to ethtypes.Address, amount *big.Int) (ethtypes.Tx, error) {
 	return e.contract.BuildTx(ctx, signer, "transferFrom", nil, from, to, amount)
-}
-
-func (e *erc20) Watch(ctx context.Context, events chan<- ethtypes.Event, beginBlockNum *big.Int) error {
-	return e.contract.Watch(ctx, events, beginBlockNum)
 }
