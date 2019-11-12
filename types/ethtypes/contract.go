@@ -131,7 +131,7 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 				return fmt.Errorf("failed to filter logs")
 			}
 			for _, log := range logs {
-				beginBlockNum.SetUint64(log.BlockNumber)
+				beginBlockNum.SetUint64(log.BlockNumber + 1)
 				event, err := c.abi.EventByID(log.Topics[0])
 				if err != nil {
 					return fmt.Errorf("failed to get event by id: %s", err)
@@ -140,10 +140,15 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 				if err := event.Inputs.UnpackIntoMap(eventArgs, log.Data); err != nil {
 					return fmt.Errorf("failed to unpack an event: %v", err)
 				}
+				// Try to use the timestamp of the log, use zero on failure.
+				header, _ := c.client.HeaderByHash(ctx, log.BlockHash)
 				events <- Event{
 					Name:        event.Name,
 					IndexedArgs: decodeHashes(log.Topics[1:]),
 					Args:        eventArgs,
+
+					Timestamp: header.Time,
+					TxHash:    TxHash(log.TxHash),
 				}
 			}
 		}

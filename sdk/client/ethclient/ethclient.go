@@ -26,6 +26,7 @@ type Client interface {
 	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
 	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
+	GetTx(ctx context.Context, hash ethtypes.TxHash) (ethtypes.Tx, error)
 }
 
 type client struct {
@@ -148,4 +149,9 @@ func (c *client) Contract(address ethtypes.Address, abi []byte) (ethtypes.Contra
 
 func (c *client) EthClient() *ethclient.Client {
 	return c.client
+}
+
+func (c *client) GetTx(ctx context.Context, hash ethtypes.TxHash) (ethtypes.Tx, error) {
+	tx, _, err := c.client.TransactionByHash(ctx, common.Hash(hash))
+	return ethtypes.NewSignedTx(tx), err
 }
