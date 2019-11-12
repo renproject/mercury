@@ -127,6 +127,9 @@ func buildFunctions(contractName string, contractABI contractABI) string {
 		if method.Type == "function" {
 			funcString = fmt.Sprintf("%sfunc (c *%s) %s%s\n\n", funcString, structName(contractName), functionSig(method), functionBody(method))
 		}
+		if method.Type == "event" {
+			funcString = fmt.Sprintf("%sfunc (c *%s) %s%s\n\n", funcString, structName(contractName), functionEventSig(method), functionEventBody(method))
+		}
 	}
 	return funcString
 }
@@ -137,12 +140,19 @@ func buildInterface(contractName string, contractABI contractABI) string {
 		if method.Type == "function" {
 			interfaceString = fmt.Sprintf("%s\t%s\n", interfaceString, functionSig(method))
 		}
+		if method.Type == "event" {
+			interfaceString = fmt.Sprintf("%s\t%s\n", interfaceString, functionEventSig(method))
+		}
 	}
 	return fmt.Sprintf("%s}\n\n", interfaceString)
 }
 
 func functionSig(method method) string {
 	return fmt.Sprintf("%s(ctx context.Context%s) (%serror)", strings.Title(method.Name), formatInArgs(method.Constant, method.Payable, method.Inputs), formatOutArgs(method.Constant, method.Outputs))
+}
+
+func functionEventSig(method method) string {
+	return fmt.Sprintf("Watch%s(ctx context.Context%s) (error)", strings.Title(method.Name), formatEventInArgs(method.Inputs))
 }
 
 func functionBody(method method) string {
@@ -159,8 +169,39 @@ func functionBody(method method) string {
 	if !method.Constant {
 		return fmt.Sprintf("{\n\treturn c.contract.BuildTx(ctx, signer, \"%s\", nil%s)\n}", method.Name, params)
 	}
-	declaration := fmt.Sprintf("\n\targ := new(%s)", method.Outputs[0].GoType)
-	return fmt.Sprintf("{%s\n\tif err := c.contract.Call(ctx, ethtypes.Address{}, arg, \"%s\"%s); err != nil{\n\t\treturn %s\n\t}\n\treturn *arg, nil\n}", declaration, method.Name, params, errVals(method.Outputs))
+	var declaration, returnValue string
+	if len(method.Outputs) == 1 {
+		declaration = fmt.Sprintf("\n\targ := new(%s)", method.Outputs[0].GoType)
+		returnValue = fmt.Sprintf("\n\treturn *arg, nil\n")
+	} else {
+		if sameType(method.Outputs) {
+			declaration = fmt.Sprintf("\n\targ := new([]%s)", method.Outputs[0].GoType)
+			outArgs := ""
+			for i := range method.Outputs {
+				outArgs = fmt.Sprintf("%sret[%d], ", outArgs, i)
+			}
+			returnValue = fmt.Sprintf("\n\tret := *arg\n\treturn %snil\n", outArgs)
+		} else {
+			panic("multi-type return values not supported")
+		}
+	}
+	return fmt.Sprintf("{%s\n\tif err := c.contract.Call(ctx, ethtypes.Address{}, arg, \"%s\"%s); err != nil{\n\t\treturn %s\n\t}%s}", declaration, method.Name, params, errVals(method.Outputs), returnValue)
+}
+
+func functionEventBody(method method) string {
+	params := fmt.Sprintf("\n\ttopics := [5]ethtypes.Hash{}\n\ttopics[0] = ethtypes.HashFromHex(\"%x\")", method.EventID[:])
+	k := 0
+	for _, in := range method.Inputs {
+		if !in.Indexed {
+			continue
+		}
+		k++
+		if in.Name[:1] == "_" {
+			in.Name = in.Name[1:]
+		}
+		params = fmt.Sprintf("%s\tif (%s != %s) {\n\t\ttopics[%d] = %s\n\t}\n", params, in.Name, defaultValue(in.GoType), k, convertToHex(in.Name, in.GoType))
+	}
+	return fmt.Sprintf("{%s\n\treturn c.contract.Watch(ctx, events, beginBlockNum, topics[:])\n}", params)
 }
 
 func formatInArgs(constant, payable bool, inArgs []arg) string {
@@ -180,6 +221,19 @@ func formatInArgs(constant, payable bool, inArgs []arg) string {
 	return formattedArgs
 }
 
+func formatEventInArgs(inArgs []arg) string {
+	formattedArgs := ", beginBlockNum *big.Int, events chan<- ethtypes.Event"
+	for _, inArg := range inArgs {
+		if !inArg.Indexed {
+			continue
+		}
+		if inArg.Name[:1] == "_" {
+			inArg.Name = inArg.Name[1:]
+		}
+		formattedArgs = fmt.Sprintf("%s, %s %s", formattedArgs, inArg.Name, inArg.GoType)
+	}
+	return formattedArgs
+}
 func formatOutArgs(constant bool, outArgs []arg) string {
 	if !constant {
 		return "ethtypes.Tx, "
@@ -200,9 +254,10 @@ func formatType(argType abi.Type) string {
 }
 
 func errVals(args []arg) string {
-	errMsg := "return "
+	fmt.Println("arg length", len(args))
+	errMsg := ""
 	for _, arg := range args {
-		errMsg = fmt.Sprintf("%s, ", defaultValue(arg.GoType))
+		errMsg = fmt.Sprintf("%s%s, ", errMsg, defaultValue(arg.GoType))
 	}
 	return fmt.Sprintf("%serr", errMsg)
 }
@@ -228,6 +283,36 @@ func defaultValue(goType string) string {
 	}
 }
 
+func convertToHex(inName, goType string) string {
+	if goType[:4] == "uint" || goType[:3] == "int" {
+		return fmt.Sprintf("big.NewInt(int(%s)).Text(16)", inName)
+	}
+	if len(goType) >= 6 && (goType[len(goType)-5:] == "]byte") {
+		return fmt.Sprintf("fmt.Sprintf(\"%s\", %s[:])", "%x", inName)
+	}
+	switch goType {
+	case "*big.Int":
+		return fmt.Sprintf("%s.Text(16)", inName)
+	case "ethtypes.Address":
+		return fmt.Sprintf("%s.Hex()", inName)
+	default:
+		panic(fmt.Sprintf("unsupported go type: %s", goType))
+	}
+}
+
+func sameType(outs []arg) bool {
+	if len(outs) <= 1 {
+		return true
+	}
+	outType := outs[0].Type
+	for _, out := range outs {
+		if out.Type != outType {
+			return false
+		}
+	}
+	return true
+}
+
 type method struct {
 	Name            string `json:"name"`
 	Inputs          []arg  `json:"inputs"`
@@ -237,6 +322,7 @@ type method struct {
 	Constant        bool   `json:"constant,omitempty"`
 	Anonymous       bool   `json:"anonymus,omitempty"`
 	StateMutability string `json:"stateMutability,omitempty"`
+	EventID         ethtypes.Hash
 }
 
 type arg struct {
@@ -261,6 +347,10 @@ func newABI(abiString string) (contractABI, error) {
 		}
 		for j, out := range ethABI.Methods[method.Name].Outputs {
 			cABI[i].Outputs[j].GoType = formatType(out.Type)
+		}
+
+		if method.Type == "event" {
+			cABI[i].EventID = ethtypes.Hash(ethABI.Events[method.Name].ID())
 		}
 	}
 	return cABI, nil

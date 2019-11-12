@@ -113,6 +113,10 @@ func (addr Address) Hex() string {
 
 type Hash common.Hash
 
+func HashFromHex(hashStr string) Hash {
+	return Hash(common.HexToHash(hashStr))
+}
+
 type Event struct {
 	Name        string
 	Args        map[string]interface{}
