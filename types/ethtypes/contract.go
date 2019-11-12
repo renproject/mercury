@@ -128,7 +128,7 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 				Topics: encodeHashMatrix(topics),
 			})
 			if err != nil {
-				return fmt.Errorf("failed to filter logs")
+				return fmt.Errorf("failed to filter logs: %v", err)
 			}
 			for _, log := range logs {
 				beginBlockNum.SetUint64(log.BlockNumber + 1)
