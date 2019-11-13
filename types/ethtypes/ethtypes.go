@@ -91,9 +91,9 @@ func NewUnsignedTx(chainID *big.Int, nonce uint64, to Address, value Amount, gas
 	}
 }
 
-func NewSignedTx(chainID *big.Int, tx *coretypes.Transaction) Tx {
+func NewSignedTx(tx *coretypes.Transaction) Tx {
 	return Tx{
-		chainID: chainID,
+		chainID: tx.ChainId(),
 		tx:      tx,
 		signed:  true,
 	}
@@ -116,9 +116,16 @@ func (addr Address) Hex() string {
 
 type Hash common.Hash
 
+func HashFromHex(hashStr string) Hash {
+	return Hash(common.HexToHash(hashStr))
+}
+
 type Event struct {
 	Name        string
 	TxHash      TxHash
 	Args        map[string]interface{}
 	IndexedArgs []Hash
+
+	Timestamp uint64
+	TxHash    TxHash
 }

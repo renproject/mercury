@@ -1,16 +1,8 @@
 FROM ubuntu:xenial
 
-# Install zcashd
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates
+RUN wget https://releases.parity.io/ethereum/v2.6.4/x86_64-unknown-linux-gnu/parity && chmod +x parity && cp parity /usr/local/bin
 
-RUN bash <(curl https://get.parity.io -L)
+EXPOSE 8545
 
-ARG Address
-
-COPY zcash.conf /root/.zcash/
-COPY mine.sh /root/
-RUN chmod +x ~/mine.sh
-EXPOSE 18443
-
-CMD ["./root/mine.sh", "${Address}"]
+CMD ["parity", "--chain", "dev", "--jsonrpc-cors", "all", "--jsonrpc-interface", "all", "--jsonrpc-hosts", "all"]

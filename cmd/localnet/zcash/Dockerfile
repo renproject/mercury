@@ -8,14 +8,10 @@ RUN apt-get update && \
     apt-get update && apt-get install -y --no-install-recommends zcash && \
     mkdir -p /root/.zcash-params && zcash-fetch-params
 
-ARG Address
-
 COPY zcash.conf /root/.zcash/
-RUN echo "mineraddress=${Address}" >> ~/.zcash/zcash.conf
-COPY zcash.sh /root/
-RUN echo "#!/bin/bash\nAddress=${Address}"|cat - ~/zcash.sh > /tmp/out && mv /tmp/out ~/zcash.sh
-RUN chmod +x ~/zcash.sh
+COPY run.sh /root/
+RUN chmod +x ~/run.sh
 
 EXPOSE 18232
 
-CMD ["./root/zcash.sh"]
+ENTRYPOINT ["./root/run.sh", "tmExAcmdSvXsNodpDRbg6LAMUqeVyMVtikL"]

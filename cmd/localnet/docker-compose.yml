@@ -1,25 +1,25 @@
 version: "3.7"
 services:
   bitcoin:
-    build:
-      context: ./bitcoin
-      args:
-        Address: "mmjwW62DSSWbHuMmRTqUdWd5ABGStniygb"
-    image: bitcoin:latest
+    image: renproject/bitcoin:localnet
+    entrypoint:
+      - "./root/run.sh"
+      - "mmjwW62DSSWbHuMmRTqUdWd5ABGStniygb"
 
   zcash:
-    build:
-      context: ./zcash
-      args:
-        Address: "tmExAcmdSvXsNodpDRbg6LAMUqeVyMVtikL"
-    image: zcash:latest
-
+    image: renproject/zcash:localnet
+    entrypoint:
+      - "./root/run.sh"
+      - "tmExAcmdSvXsNodpDRbg6LAMUqeVyMVtikL"
+    
   bcash:
-    build:
-      context: ./bcash
-      args:
-        Address: "qzjwrklk7mr5qnhp66z7vy50gj0tnj3xxgl5ztpnsx"
-    image: bcash:latest
+    image: renproject/bcash:localnet
+    entrypoint:
+      - "./root/run.sh"
+      - "qz7xht44kz6a4g6vyvvvcer6jywlus8sksgyj2wnjy"
+    
+  ethereum:
+    image: renproject/parity:localnet
 
   mercury: 
     build:
@@ -28,6 +28,7 @@ services:
         BTC_RPC_URL: 'http://bitcoin:18443'
         ZEC_RPC_URL: 'http://zcash:18232'
         BCH_RPC_URL: 'http://bcash:18443'
+        ETH_RPC_URL: 'http://ethereum:8545'
     image: mercury:latest
     ports: 
       - "5000:5000"

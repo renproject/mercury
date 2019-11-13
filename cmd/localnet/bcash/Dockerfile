@@ -5,13 +5,9 @@ RUN apt-get update && apt-get install --yes software-properties-common && \
     add-apt-repository --yes ppa:bitcoin-abc/ppa && apt-get update && \
     apt-get install --yes bitcoind
 
-ARG Address
-
 COPY bitcoin.conf /root/.bitcoin/
-COPY mine.sh /root/
-RUN echo "#!/bin/bash\nAddress=${Address}"|cat - ~/mine.sh > /tmp/out && mv /tmp/out ~/mine.sh
-RUN chmod +x ~/mine.sh
-
+COPY run.sh /root/
+RUN chmod +x ~/run.sh
 EXPOSE 18443
 
-CMD ["./root/mine.sh"]
+ENTRYPOINT ["./root/run.sh", "qzjwrklk7mr5qnhp66z7vy50gj0tnj3xxgl5ztpnsx"]
