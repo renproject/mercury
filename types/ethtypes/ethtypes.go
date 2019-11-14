@@ -122,10 +122,10 @@ func HashFromHex(hashStr string) Hash {
 
 type Event struct {
 	Name        string
-	TxHash      TxHash
 	Args        map[string]interface{}
 	IndexedArgs []Hash
 
-	Timestamp uint64
-	TxHash    TxHash
+	Timestamp   uint64
+	TxHash      TxHash
+	BlockNumber uint64
 }

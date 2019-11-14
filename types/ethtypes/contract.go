@@ -178,8 +178,8 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 					IndexedArgs: decodeHashes(log.Topics[1:]),
 					Args:        eventArgs,
 
-					Timestamp: header.Time,
-					TxHash:    TxHash(log.TxHash),
+					Timestamp:   header.Time,
+					BlockNumber: log.BlockNumber,
 				}
 			}
 		}
