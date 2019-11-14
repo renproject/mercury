@@ -83,6 +83,15 @@ func (tx *Tx) Sign(key *ecdsa.PrivateKey) error {
 	return nil
 }
 
+func (tx *Tx) UpdateNonce(newNonce uint64) {
+	var toAddr common.Address
+	if tx.tx.To() != nil {
+		toAddr = *tx.tx.To()
+	}
+	tx.tx = coretypes.NewTransaction(newNonce, toAddr, tx.tx.Value(), tx.tx.Gas(), tx.tx.GasPrice(), tx.tx.Data())
+	tx.signed = false
+}
+
 func NewUnsignedTx(chainID *big.Int, nonce uint64, to Address, value Amount, gasLimit uint64, gasPrice Amount, data []byte) Tx {
 	return Tx{
 		chainID: chainID,
