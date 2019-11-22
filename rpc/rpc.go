@@ -38,7 +38,7 @@ func (node *client) HandleRequest(r *http.Request, data []byte) (*http.Response,
 		req.SetBasicAuth(node.username, node.password)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("cannot construct post request for zcash node: %v", err)
+		return nil, fmt.Errorf("cannot construct post request: %v", err)
 	}
 	return client.Do(req)
 }

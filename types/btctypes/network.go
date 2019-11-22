@@ -8,16 +8,22 @@ import (
 )
 
 type ZecNetwork struct {
-	p2shPrefix    []byte
-	p2pkhPrefix   []byte
-	upgradeParams []upgradeParam
-	params        *chaincfg.Params
-	netString     string
+	p2shPrefix        []byte
+	p2pkhPrefix       []byte
+	spendingKeyPrefix []byte
+	viewingKeyPrefix  []byte
+	zAddressPrefix    []byte
+	upgradeParams     []upgradeParam
+	params            *chaincfg.Params
+	netString         string
 }
 
 var ZecMainnet = ZecNetwork{
-	p2pkhPrefix: []byte{0x1C, 0xB8},
-	p2shPrefix:  []byte{0x1C, 0xBD},
+	p2pkhPrefix:       []byte{0x1C, 0xB8},
+	p2shPrefix:        []byte{0x1C, 0xBD},
+	spendingKeyPrefix: []byte{0xAB, 0x36},
+	viewingKeyPrefix:  []byte{0xA8, 0xAB, 0xD3},
+	zAddressPrefix:    []byte{0x16, 0x9A},
 	upgradeParams: []upgradeParam{
 		{0, []byte{0x00, 0x00, 0x00, 0x00}},
 		{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
@@ -28,8 +34,11 @@ var ZecMainnet = ZecNetwork{
 }
 
 var ZecTestnet = ZecNetwork{
-	p2pkhPrefix: []byte{0x1D, 0x25},
-	p2shPrefix:  []byte{0x1C, 0xBA},
+	p2pkhPrefix:       []byte{0x1D, 0x25},
+	p2shPrefix:        []byte{0x1C, 0xBA},
+	spendingKeyPrefix: []byte{0xAC, 0x08},
+	viewingKeyPrefix:  []byte{0x16, 0xB6},
+	zAddressPrefix:    []byte{0xA8, 0xAC, 0x0C},
 	upgradeParams: []upgradeParam{
 		{0, []byte{0x00, 0x00, 0x00, 0x00}},
 		{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
@@ -41,8 +50,11 @@ var ZecTestnet = ZecNetwork{
 }
 
 var ZecLocalnet = ZecNetwork{
-	p2pkhPrefix: []byte{0x1D, 0x25},
-	p2shPrefix:  []byte{0x1C, 0xBA},
+	p2pkhPrefix:       []byte{0x1D, 0x25},
+	p2shPrefix:        []byte{0x1C, 0xBA},
+	spendingKeyPrefix: []byte{0xAC, 0x08},
+	viewingKeyPrefix:  []byte{0x16, 0xB6},
+	zAddressPrefix:    []byte{0xA8, 0xAC, 0x0C},
 	upgradeParams: []upgradeParam{
 		{0, []byte{0x00, 0x00, 0x00, 0x00}},
 		{40, []byte{0x19, 0x1B, 0xA8, 0x5B}},

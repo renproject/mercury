@@ -72,7 +72,7 @@ func (acc *account) Transfer(ctx context.Context, toAddress ethtypes.Address, va
 	if err != nil {
 		return ethtypes.TxHash{}, fmt.Errorf("failed to get pending nonce: %v", err)
 	}
-	tx, err := acc.client.BuildUnsignedTx(ctx, nonce, toAddress, value, 21000, gasPrice, nil)
+	tx, err := acc.client.BuildUnsignedTx(ctx, nonce, &toAddress, value, 21000, gasPrice, nil)
 	if err != nil {
 		return ethtypes.TxHash{}, err
 	}
@@ -123,7 +123,7 @@ func (acc *account) retryTx(ctx context.Context, utx ethtypes.Tx) (ethtypes.TxHa
 	if err != nil {
 		return ethtypes.TxHash{}, err
 	}
-	utx.UpdateNonce(updatedNonce)
+	utx.SetNonce(updatedNonce)
 	if err := utx.Sign(acc.key); err != nil {
 		return ethtypes.TxHash{}, err
 	}

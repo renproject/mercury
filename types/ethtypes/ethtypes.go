@@ -2,6 +2,7 @@ package ethtypes
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -12,6 +13,7 @@ import (
 
 const (
 	Mainnet     network = 1
+	Ropsten     network = 3
 	Kovan       network = 42
 	Ganache     network = 255
 	EthLocalnet network = 254
@@ -50,6 +52,10 @@ type Tx struct {
 
 type TxHash common.Hash
 
+func (txHash TxHash) String() string {
+	return common.Hash(txHash).String()
+}
+
 func NewTxHashFromHex(hexString string) TxHash {
 	return TxHash(common.HexToHash(hexString))
 }
@@ -71,9 +77,12 @@ func (tx *Tx) Sign(key *ecdsa.PrivateKey) error {
 	if tx.IsSigned() {
 		panic("pre-condition violation: cannot sign already signed transaction")
 	}
+	if tx.tx == nil {
+		panic("pre-condition violation: cannot sign a nil transaction")
+	}
 
 	signer := coretypes.NewEIP155Signer(tx.chainID)
-	signedTx, err := coretypes.SignTx((*coretypes.Transaction)(tx.tx), signer, key)
+	signedTx, err := coretypes.SignTx(tx.tx, signer, key)
 	if err != nil {
 		return err
 	}
@@ -83,19 +92,43 @@ func (tx *Tx) Sign(key *ecdsa.PrivateKey) error {
 	return nil
 }
 
-func (tx *Tx) UpdateNonce(newNonce uint64) {
-	var toAddr common.Address
-	if tx.tx.To() != nil {
-		toAddr = *tx.tx.To()
+func (tx *Tx) SetNonce(newNonce uint64) {
+	if tx.tx.To() == nil {
+		tx.tx = coretypes.NewContractCreation(newNonce, tx.tx.Value(), tx.tx.Gas(), tx.tx.GasPrice(), tx.tx.Data())
+	} else {
+		tx.tx = coretypes.NewTransaction(newNonce, *tx.tx.To(), tx.tx.Value(), tx.tx.Gas(), tx.tx.GasPrice(), tx.tx.Data())
 	}
-	tx.tx = coretypes.NewTransaction(newNonce, toAddr, tx.tx.Value(), tx.tx.Gas(), tx.tx.GasPrice(), tx.tx.Data())
 	tx.signed = false
 }
 
-func NewUnsignedTx(chainID *big.Int, nonce uint64, to Address, value Amount, gasLimit uint64, gasPrice Amount, data []byte) Tx {
+func (tx *Tx) SetGasPrice(newGasPrice *big.Int) {
+	if tx.tx.To() == nil {
+		tx.tx = coretypes.NewContractCreation(tx.tx.Nonce(), tx.tx.Value(), tx.tx.Gas(), newGasPrice, tx.tx.Data())
+	} else {
+		tx.tx = coretypes.NewTransaction(tx.tx.Nonce(), *tx.tx.To(), tx.tx.Value(), tx.tx.Gas(), newGasPrice, tx.tx.Data())
+	}
+	tx.signed = false
+}
+
+func (tx *Tx) SetGas(newGas uint64) {
+	if tx.tx.To() == nil {
+		tx.tx = coretypes.NewContractCreation(tx.tx.Nonce(), tx.tx.Value(), newGas, tx.tx.GasPrice(), tx.tx.Data())
+	} else {
+		tx.tx = coretypes.NewTransaction(tx.tx.Nonce(), *tx.tx.To(), tx.tx.Value(), newGas, tx.tx.GasPrice(), tx.tx.Data())
+	}
+	tx.signed = false
+}
+
+func NewUnsignedTx(chainID *big.Int, nonce uint64, to *Address, value Amount, gasLimit uint64, gasPrice Amount, data []byte) Tx {
+	tx := new(coretypes.Transaction)
+	if to == nil {
+		tx = coretypes.NewContractCreation(nonce, value.ToBig(), gasLimit, gasPrice.ToBig(), data)
+	} else {
+		tx = coretypes.NewTransaction(nonce, common.Address(*to), value.ToBig(), gasLimit, gasPrice.ToBig(), data)
+	}
 	return Tx{
 		chainID: chainID,
-		tx:      coretypes.NewTransaction(nonce, common.Address(to), value.ToBig(), gasLimit, gasPrice.ToBig(), data),
+		tx:      tx,
 		signed:  false,
 	}
 }
@@ -129,6 +162,10 @@ func HashFromHex(hashStr string) Hash {
 	return Hash(common.HexToHash(hashStr))
 }
 
+func HashFromBytes(hashBytes []byte) Hash {
+	return Hash(common.BytesToHash(hashBytes))
+}
+
 type Event struct {
 	Name        string
 	Args        map[string]interface{}
@@ -137,4 +174,17 @@ type Event struct {
 	Timestamp   uint64
 	TxHash      TxHash
 	BlockNumber uint64
+}
+
+func Keccak256(data interface{}) Hash {
+	switch data := data.(type) {
+	case string:
+		return HashFromBytes(crypto.Keccak256([]byte(data)))
+	case []byte:
+		return HashFromBytes(crypto.Keccak256(data))
+	case [][]byte:
+		return HashFromBytes(crypto.Keccak256(data...))
+	default:
+		panic(fmt.Sprintf("unsupported type: %T", data))
+	}
 }

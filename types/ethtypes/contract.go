@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"reflect"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -21,9 +23,11 @@ type contract struct {
 }
 
 type Contract interface {
+	Address() Address
 	BuildTx(ctx context.Context, from Address, method string, value *big.Int, params ...interface{}) (Tx, error)
 	Call(ctx context.Context, caller Address, result interface{}, method string, params ...interface{}) error
-	Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, event string, indexedArgs ...Hash) error
+	Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, event string,
+		indexedArgs ...Hash) error
 }
 
 func NewContract(client *ethclient.Client, address Address, contractABI []byte) (Contract, error) {
@@ -56,14 +60,18 @@ func (c *contract) BuildTx(ctx context.Context, from Address, method string, val
 	return c.buildTx(ctx, from, nil, method, value, params...)
 }
 
+func (c *contract) Address() Address {
+	return c.address
+}
+
 func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method string, value *big.Int, params ...interface{}) (Tx, error) {
 	data, err := c.abi.Pack(method, params...)
 	if err != nil {
 		return Tx{}, fmt.Errorf("failed to pack data: %v", err)
 	}
 
-	if (from == Address{}) {
-		if bin != nil {
+	if (c.address == Address{}) {
+		if bin == nil {
 			return Tx{}, fmt.Errorf("failed to deploy a contract: contract bin not provided")
 		}
 		data = append(bin, data...)
@@ -74,7 +82,7 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 		value = new(big.Int)
 	}
 
-	nonce, err := c.client.PendingNonceAt(ctx, common.Address(from))
+	nonce, err := c.client.NonceAt(ctx, common.Address(from), nil)
 	if err != nil {
 		return Tx{}, fmt.Errorf("failed to retrieve account nonce: %v", err)
 	}
@@ -85,20 +93,25 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 		return Tx{}, fmt.Errorf("failed to suggest gas price: %v", err)
 	}
 
-	contractAddr := common.Address(c.address)
-	// If the contract surely has code (or code is not needed), estimate the transaction
-	msg := ethereum.CallMsg{From: common.Address(from), To: &contractAddr, Value: value, Data: data}
-	gasLimit, err := c.client.EstimateGas(ctx, msg)
-	if err != nil {
-		return Tx{}, fmt.Errorf("failed to estimate gas needed: %v", err)
-	}
-
 	// Create the transaction, sign it and schedule it for execution
 	var rawTx *types.Transaction
 	if (c.address == Address{}) {
-		rawTx = types.NewContractCreation(nonce, value, gasLimit, gasPrice, data)
+		// If the contract surely has code (or code is not needed), estimate the transaction
+		msg := ethereum.CallMsg{From: common.Address(from), To: nil, Value: value, Data: data}
+		gasLimit, err := c.client.EstimateGas(ctx, msg)
+		if err != nil {
+			return Tx{}, fmt.Errorf("failed to estimate gas needed: %v", err)
+		}
 		c.address = Address(crypto.CreateAddress(common.Address(from), nonce))
+		rawTx = types.NewContractCreation(nonce, value, gasLimit, gasPrice, data)
 	} else {
+		contractAddr := common.Address(c.address)
+		// If the contract surely has code (or code is not needed), estimate the transaction
+		msg := ethereum.CallMsg{From: common.Address(from), To: &contractAddr, Value: value, Data: data}
+		gasLimit, err := c.client.EstimateGas(ctx, msg)
+		if err != nil {
+			return Tx{}, fmt.Errorf("failed to estimate gas needed: %v", err)
+		}
 		rawTx = types.NewTransaction(nonce, contractAddr, value, gasLimit, gasPrice, data)
 	}
 
@@ -120,7 +133,7 @@ func (c *contract) Call(ctx context.Context, caller Address, result interface{},
 		return err
 	}
 	contractAddr := common.Address(c.address)
-	msg := ethereum.CallMsg{From: common.Address(caller), To: &contractAddr, Data: input}
+	msg := ethereum.CallMsg{To: &contractAddr, Data: input}
 	output, err := c.client.CallContract(ctx, msg, nil)
 	if err == nil && len(output) == 0 {
 		// Make sure we have a contract to operate on, and bail out otherwise.
@@ -131,16 +144,46 @@ func (c *contract) Call(ctx context.Context, caller Address, result interface{},
 		}
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("error calling %s: %v", method, err)
 	}
 
-	return c.abi.Unpack(result, method, output)
+	switch result := result.(type) {
+	case *Address:
+		var resAddr common.Address
+		if err := c.abi.Unpack(&resAddr, method, output); err != nil {
+			return err
+		}
+		return set(result, AddressFromHex(resAddr.Hex()))
+	default:
+		return c.abi.Unpack(result, method, output)
+	}
+}
+
+// set attempts to assign src to dst by either setting, copying or otherwise.
+//
+// set is a bit more lenient when it comes to assignment and doesn't force an as
+// strict ruleset as bare `reflect` does.
+func set(dstVal, srcVal interface{}) error {
+	dst := reflect.ValueOf(dstVal).Elem()
+	src := reflect.ValueOf(srcVal)
+
+	dstType, srcType := dst.Type(), src.Type()
+	switch {
+	case dstType.Kind() == reflect.Interface && dst.Elem().IsValid():
+		return set(dst.Elem(), src)
+	case srcType.AssignableTo(dstType) && dst.CanSet():
+		dst.Set(src)
+	default:
+		return fmt.Errorf("abi: cannot unmarshal %v in to %v", src.Type(), dst.Type())
+	}
+	return nil
 }
 
 func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum *big.Int, event string, indexedArgs ...Hash) error {
 	if beginBlockNum == nil {
 		beginBlockNum = big.NewInt(0)
 	}
+	ticker := time.NewTicker(10 * time.Second)
 	for {
 		topics, err := c.getTopics(event, indexedArgs)
 		if err != nil {
@@ -149,7 +192,7 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
+		case <-ticker.C:
 			logs, err := c.client.FilterLogs(ctx, ethereum.FilterQuery{
 				FromBlock: beginBlockNum,
 				Addresses: []common.Address{
@@ -171,7 +214,10 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 					return fmt.Errorf("failed to unpack an event: %v", err)
 				}
 				// Try to use the timestamp of the log, use zero on failure.
-				header, _ := c.client.HeaderByHash(ctx, log.BlockHash)
+				header, err := c.client.HeaderByHash(ctx, log.BlockHash)
+				if err != nil {
+					return fmt.Errorf("failed to get event time: %v", err)
+				}
 				events <- Event{
 					Name:        event.Name,
 					TxHash:      TxHash(log.TxHash),
@@ -207,7 +253,6 @@ func decodeHashes(chashes []common.Hash) []Hash {
 
 func (c *contract) getTopics(event string, indexedArgs []Hash) ([]common.Hash, error) {
 	eventABI := c.abi.Events[event]
-	fmt.Println(eventABI.ID().Hex())
 	topics := []common.Hash{eventABI.ID()}
 	if len(indexedArgs) > len(eventABI.Inputs)-eventABI.Inputs.LengthNonIndexed() {
 		return topics, fmt.Errorf("invalid number of indexed args: %v", len(indexedArgs))

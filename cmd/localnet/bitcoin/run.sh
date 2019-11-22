@@ -1,10 +1,17 @@
 #!/bin/bash
 Address=$1
+SegWitAddress=$2
 bitcoind
 sleep 5
 
 bitcoin-cli importaddress $Address 
 bitcoin-cli generatetoaddress 100 $Address
+
+if [ "$SegWitAddress" != "" ]
+then
+    bitcoin-cli importaddress $SegWitAddress 
+    bitcoin-cli generatetoaddress 10 $SegWitAddress
+fi   
 
 while :
 do

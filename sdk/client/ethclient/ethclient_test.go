@@ -67,7 +67,8 @@ var _ = Describe("eth client", func() {
 			account, err := ethaccount.RandomAccount(localClient)
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			_, err = localClient.BuildUnsignedTx(ctx, nonce, account.Address(), amount, gasLimit, gasPrice, data)
+			addr := account.Address()
+			_, err = localClient.BuildUnsignedTx(ctx, nonce, &addr, amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

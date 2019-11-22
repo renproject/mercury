@@ -5,6 +5,7 @@ services:
     entrypoint:
       - "./root/run.sh"
       - "mmjwW62DSSWbHuMmRTqUdWd5ABGStniygb"
+      - "bcrt1qtgt0melappj56uw54ja6w4npe2zxg9qhw9u4pnlj2lrwaqw8fs7s66zf85"
 
   zcash:
     image: renproject/zcash:localnet
@@ -16,19 +17,12 @@ services:
     image: renproject/bcash:localnet
     entrypoint:
       - "./root/run.sh"
-      - "qz7xht44kz6a4g6vyvvvcer6jywlus8sksgyj2wnjy"
+      - "qzjwrklk7mr5qnhp66z7vy50gj0tnj3xxgl5ztpnsx"
     
   ethereum:
     image: renproject/parity:localnet
 
   mercury: 
-    build:
-      context: ./mercury
-      args:
-        BTC_RPC_URL: 'http://bitcoin:18443'
-        ZEC_RPC_URL: 'http://zcash:18232'
-        BCH_RPC_URL: 'http://bcash:18443'
-        ETH_RPC_URL: 'http://ethereum:8545'
-    image: mercury:latest
+    image: renproject/mercury:localnet
     ports: 
       - "5000:5000"

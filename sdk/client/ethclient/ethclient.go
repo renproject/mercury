@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	mclient "github.com/renproject/mercury/sdk/client"
@@ -23,7 +24,7 @@ type Client interface {
 	EthClient() *ethclient.Client
 	SuggestGasPrice(context.Context, types.TxSpeed) ethtypes.Amount
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
-	BuildUnsignedTx(context.Context, uint64, ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
+	BuildUnsignedTx(context.Context, uint64, *ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
 	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
 	GetTx(ctx context.Context, hash ethtypes.TxHash) (ethtypes.Tx, error)
@@ -103,10 +104,10 @@ func (c *client) SuggestGasPrice(ctx context.Context, speed types.TxSpeed) ethty
 }
 
 func (c *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Address) (uint64, error) {
-	return c.client.PendingNonceAt(ctx, common.Address(fromAddress))
+	return c.client.NonceAt(ctx, common.Address(fromAddress), nil)
 }
 
-func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
+func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress *ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
 	chainID, err := c.client.NetworkID(ctx)
 	if err != nil {
 		return ethtypes.Tx{}, fmt.Errorf("error building unsigned tx. failed to get chain id. err=%v", err)
@@ -120,7 +121,18 @@ func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) (ethtypes.
 	if !tx.IsSigned() {
 		panic("pre-condition violation: cannot publish unsigned transaction")
 	}
-	return tx.Hash(), c.client.SendTransaction(ctx, tx.ToTransaction())
+	stx := tx.ToTransaction()
+	if err := c.client.SendTransaction(ctx, stx); err != nil {
+		return ethtypes.TxHash{}, err
+	}
+
+	var err error
+	if stx.To() != nil {
+		_, err = bind.WaitMined(ctx, bind.DeployBackend(c.client), stx)
+	} else {
+		_, err = bind.WaitDeployed(ctx, bind.DeployBackend(c.client), stx)
+	}
+	return tx.Hash(), err
 }
 
 func (c *client) Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error) {
@@ -155,5 +167,8 @@ func (c *client) EthClient() *ethclient.Client {
 
 func (c *client) GetTx(ctx context.Context, hash ethtypes.TxHash) (ethtypes.Tx, error) {
 	tx, _, err := c.client.TransactionByHash(ctx, common.Hash(hash))
-	return ethtypes.NewSignedTx(tx), err
+	if err != nil {
+		return ethtypes.Tx{}, err
+	}
+	return ethtypes.NewSignedTx(tx), nil
 }

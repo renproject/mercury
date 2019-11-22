@@ -21,7 +21,7 @@ var _ = Describe("eth account", func() {
 			Expect(account.Address()).To(BeEquivalentTo(convertedAddr))
 		})
 
-		It("can create an unsigned transaction", func() {
+		It("can do a transaction", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
 			gasLimit := uint64(1000)
@@ -29,21 +29,12 @@ var _ = Describe("eth account", func() {
 			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
 			var data []byte
-			_, err = EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
+			addr := account.Address()
+			nonce, err := Client.PendingNonceAt(ctx, addr)
 			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("can sign an unsigned transaction", func() {
-			ctx := context.Background()
-			amount := ethtypes.Ether(3)
-			gasLimit := uint64(1000)
-			gasPrice := Client.SuggestGasPrice(ctx, types.Standard)
-			account, err := RandomAccount(Client)
+			utx, err := Client.BuildUnsignedTx(ctx, nonce, &addr, amount, gasLimit, gasPrice, data)
 			Expect(err).NotTo(HaveOccurred())
-			var data []byte
-			utx, err := EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
-			Expect(err).NotTo(HaveOccurred())
-			err = EthAccount.SignUnsignedTx(ctx, &utx)
+			_, err = EthAccount.Transact(ctx, utx)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -53,7 +44,6 @@ var _ = Describe("eth account", func() {
 			ownerBal, err := EthAccount.Balance(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ownerBal.Gte(amount)).Should(BeTrue())
-			gasLimit := uint64(30000)
 			gasPrice := Client.SuggestGasPrice(ctx, types.Standard)
 			Expect(err).NotTo(HaveOccurred())
 			account, err := RandomAccount(Client)
@@ -61,12 +51,7 @@ var _ = Describe("eth account", func() {
 			bal, err := Client.Balance(ctx, account.Address())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(bal.Eq(ethtypes.Wei(0))).Should(BeTrue())
-			var data []byte
-			tx, err := EthAccount.BuildUnsignedTx(ctx, account.Address(), amount, gasLimit, gasPrice, data)
-			Expect(err).NotTo(HaveOccurred())
-			err = EthAccount.SignUnsignedTx(ctx, &tx)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = Client.PublishSignedTx(ctx, tx)
+			_, err = account.Transfer(ctx, account.Address(), amount, gasPrice)
 			Expect(err).NotTo(HaveOccurred())
 			// check new balance
 			newBal, err := Client.Balance(ctx, account.Address())
