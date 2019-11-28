@@ -1,6 +1,9 @@
-FROM node:alpine
-WORKDIR /app
+FROM mhart/alpine-node:11.10.1
+
+RUN mkdir -p /home/root/.ganache
+
 # Install ganache-cli globally
-RUN npm install -g ganache-cli
+RUN yarn global add ganache-cli@6.5.1
 EXPOSE 8545
-CMD ["ganache-cli", "--account=0xDA42F3D39085CBCA8B145B92BB4E2F226CB5DC78934D31E6BF3F5DD59D1D7553,1000000000000000000000", "--gasPrice=0", "--h=0.0.0.0"]
+
+ENTRYPOINT [ "ganache-cli", "-i", "1313", "-d" ,"-p" ,"8545" ,"-h" ,"0.0.0.0" ,"--db=/home/root/.ganache"]

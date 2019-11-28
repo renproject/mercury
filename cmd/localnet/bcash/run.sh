@@ -4,7 +4,7 @@ bitcoind
 sleep 5
 
 bitcoin-cli importaddress $Address 
-bitcoin-cli generatetoaddress 100 $Address
+bitcoin-cli generatetoaddress 120 $Address
 
 while :
 do

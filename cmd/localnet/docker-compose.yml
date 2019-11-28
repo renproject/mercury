@@ -20,7 +20,7 @@ services:
       - "qzjwrklk7mr5qnhp66z7vy50gj0tnj3xxgl5ztpnsx"
     
   ethereum:
-    image: renproject/parity:localnet
+    image: renproject/ganache:localnet
 
   mercury: 
     image: renproject/mercury:localnet
