@@ -13,6 +13,7 @@ import (
 const (
 	Mainnet network = 1
 	Kovan   network = 42
+	Rinkeby network = 4
 	Ganache network = 255
 )
 
@@ -22,6 +23,8 @@ func (network network) String() string {
 		return "mainnet"
 	case Kovan:
 		return "kovan"
+	case Rinkeby:
+		return "rinkeby"
 	case Ganache:
 		return "ganache"
 	default:

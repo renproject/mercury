@@ -20,6 +20,7 @@ func main() {
 	db := kv.NewMemDB(kv.JSONCodec)
 
 	// Initialise stores.
+	ethRinkebyCache := cache.New(kv.NewTable(db, "ethRinkeby"), logger)
 	ethKovanCache := cache.New(kv.NewTable(db, "ethKovan"), logger)
 	btcTestCache := cache.New(kv.NewTable(db, "btcTest"), logger)
 	zecTestCache := cache.New(kv.NewTable(db, "zecTest"), logger)
@@ -87,6 +88,10 @@ func main() {
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
 	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
+	infuraRinkebyClient := rpc.NewInfuraClient(ethtypes.Rinkeby, taggedKeys)
+	ethRinkebyProxy := proxy.NewProxy(infuraRinkebyClient)
+	ethRinkebyAPI := api.NewApi(ethtypes.Rinkeby, ethRinkebyProxy, ethRinkebyCache, logger)
+
 	var testnetClient rpc.Client
 	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
 	if ethKovanRPCURL == "" {
@@ -102,6 +107,6 @@ func main() {
 	ethTestnetAPI := api.NewApi(ethtypes.Kovan, ethTestnetProxy, ethKovanCache, logger)
 
 	// Set-up and start the server.
-	server := api.NewServer(logger, "5000", btcMainnetAPI, zecMainnetAPI, bchMainnetAPI, btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI)
+	server := api.NewServer(logger, "5000", btcMainnetAPI, zecMainnetAPI, bchMainnetAPI, btcTestnetAPI, zecTestnetAPI, bchTestnetAPI, ethMainnetAPI, ethTestnetAPI, ethRinkebyAPI)
 	server.Run()
 }
