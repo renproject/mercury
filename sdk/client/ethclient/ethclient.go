@@ -41,6 +41,8 @@ type client struct {
 func New(logger logrus.FieldLogger, network ethtypes.Network) (Client, error) {
 	var url string
 	switch network {
+	case ethtypes.Rinkeby:
+		url = fmt.Sprintf("%s/eth/rinkeby", mclient.MercuryURL)
 	case ethtypes.Mainnet:
 		url = fmt.Sprintf("%s/eth/mainnet", mclient.MercuryURL)
 	case ethtypes.Kovan:

@@ -101,6 +101,28 @@ var _ = Describe("btc types", func() {
 		})
 	})
 
+	Context("bitcoin cash address", func() {
+		It("should decode the legacy addresses correctly", func() {
+			laddr, err := testutil.RandomAddress(BtcTestnet)
+			Expect(err).Should(BeNil())
+			addr, err := AddressFromBase58(laddr.EncodeAddress(), BchTestnet)
+			Expect(err).Should(BeNil())
+			Expect(addr.String()).Should(Equal(laddr.EncodeAddress()))
+		})
+
+		It("should decode the cash addresses (with prefix) correctly", func() {
+			addr, err := AddressFromBase58("bchtest:qrch9dvf9rc45p728n7d8p4r7n067jrdxgjyklgcg6", BchTestnet)
+			Expect(err).Should(BeNil())
+			Expect(addr.String()).Should(Equal("qrch9dvf9rc45p728n7d8p4r7n067jrdxgjyklgcg6"))
+		})
+
+		It("should decode the cash addresses (without prefix) correctly", func() {
+			addr, err := AddressFromBase58("qrch9dvf9rc45p728n7d8p4r7n067jrdxgjyklgcg6", BchTestnet)
+			Expect(err).Should(BeNil())
+			Expect(addr.String()).Should(Equal("qrch9dvf9rc45p728n7d8p4r7n067jrdxgjyklgcg6"))
+		})
+	})
+
 	Context("bitcoin networks", func() {
 		It("should be able to parse network from a string", func() {
 			testnet := "testnet"

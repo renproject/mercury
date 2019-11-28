@@ -97,6 +97,8 @@ func getContractDetails(network string, address ethtypes.Address) (string, strin
 		apiPrefix = "api"
 	case "kovan":
 		apiPrefix = "api-kovan"
+	case "rinkeby":
+		apiPrefix = "api-rinkeby"
 	case "ropsten":
 		apiPrefix = "api-ropsten"
 	default:
@@ -445,6 +447,8 @@ func getBin(address ethtypes.Address, network string) string {
 	switch network {
 	case "kovan":
 		url = fmt.Sprintf("https://kovan.etherscan.io/address/%s", address.Hex())
+	case "rinkeby":
+		url = fmt.Sprintf("https://rinkeby.etherscan.io/address/%s", address.Hex())
 	case "mainnet":
 		url = fmt.Sprintf("https://etherscan.io/address/%s", address.Hex())
 	case "ropsten":

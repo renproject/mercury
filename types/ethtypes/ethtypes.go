@@ -14,6 +14,7 @@ import (
 const (
 	Mainnet     network = 1
 	Ropsten     network = 3
+	Rinkeby     network = 4
 	Kovan       network = 42
 	Ganache     network = 255
 	EthLocalnet network = 254
@@ -25,6 +26,8 @@ func (network network) String() string {
 		return "mainnet"
 	case Kovan:
 		return "kovan"
+	case Rinkeby:
+		return "rinkeby"
 	case Ganache:
 		return "ganache"
 	case EthLocalnet:

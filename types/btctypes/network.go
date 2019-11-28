@@ -8,62 +8,57 @@ import (
 )
 
 type ZecNetwork struct {
-	p2shPrefix        []byte
-	p2pkhPrefix       []byte
-	spendingKeyPrefix []byte
-	viewingKeyPrefix  []byte
-	zAddressPrefix    []byte
-	upgradeParams     []upgradeParam
-	params            *chaincfg.Params
-	netString         string
+	p2shPrefix    []byte
+	p2pkhPrefix   []byte
+	upgradeParams []upgradeParam
+	params        *chaincfg.Params
+	expiryHeight  uint32
+	netString     string
 }
 
 var ZecMainnet = ZecNetwork{
-	p2pkhPrefix:       []byte{0x1C, 0xB8},
-	p2shPrefix:        []byte{0x1C, 0xBD},
-	spendingKeyPrefix: []byte{0xAB, 0x36},
-	viewingKeyPrefix:  []byte{0xA8, 0xAB, 0xD3},
-	zAddressPrefix:    []byte{0x16, 0x9A},
+	p2pkhPrefix: []byte{0x1C, 0xB8},
+	p2shPrefix:  []byte{0x1C, 0xBD},
 	upgradeParams: []upgradeParam{
 		{0, []byte{0x00, 0x00, 0x00, 0x00}},
-		{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
-		{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
+		{347500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
+		{419200, []byte{0xBB, 0x09, 0xB8, 0x76}},
+		{653600, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
-	netString: "mainnet",
-	params:    &chaincfg.MainNetParams,
+	expiryHeight: 653599,
+	netString:    "mainnet",
+	params:       &chaincfg.MainNetParams,
 }
 
 var ZecTestnet = ZecNetwork{
-	p2pkhPrefix:       []byte{0x1D, 0x25},
-	p2shPrefix:        []byte{0x1C, 0xBA},
-	spendingKeyPrefix: []byte{0xAC, 0x08},
-	viewingKeyPrefix:  []byte{0x16, 0xB6},
-	zAddressPrefix:    []byte{0xA8, 0xAC, 0x0C},
+	p2pkhPrefix: []byte{0x1D, 0x25},
+	p2shPrefix:  []byte{0x1C, 0xBA},
 	upgradeParams: []upgradeParam{
 		{0, []byte{0x00, 0x00, 0x00, 0x00}},
 		{207500, []byte{0x19, 0x1B, 0xA8, 0x5B}},
 		{280000, []byte{0xBB, 0x09, 0xB8, 0x76}},
 		{584000, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
-	netString: "testnet",
-	params:    &chaincfg.TestNet3Params,
+	expiryHeight: 10000000,
+	netString:    "testnet",
+	params:       &chaincfg.TestNet3Params,
 }
 
-var ZecLocalnet = ZecNetwork{
-	p2pkhPrefix:       []byte{0x1D, 0x25},
-	p2shPrefix:        []byte{0x1C, 0xBA},
-	spendingKeyPrefix: []byte{0xAC, 0x08},
-	viewingKeyPrefix:  []byte{0x16, 0xB6},
-	zAddressPrefix:    []byte{0xA8, 0xAC, 0x0C},
+var ZecRegnet = ZecNetwork{
+	p2pkhPrefix: []byte{0x1D, 0x25},
+	p2shPrefix:  []byte{0x1C, 0xBA},
 	upgradeParams: []upgradeParam{
 		{0, []byte{0x00, 0x00, 0x00, 0x00}},
-		{40, []byte{0x19, 0x1B, 0xA8, 0x5B}},
-		{60, []byte{0xBB, 0x09, 0xB8, 0x76}},
-		{80, []byte{0x60, 0x0E, 0xB4, 0x2B}},
+		{60, []byte{0x19, 0x1B, 0xA8, 0x5B}},
+		{80, []byte{0xBB, 0x09, 0xB8, 0x76}},
+		{100, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
-	netString: "localnet",
-	params:    &chaincfg.RegressionNetParams,
+	expiryHeight: 10000000,
+	netString:    "regtest",
+	params:       &chaincfg.RegressionNetParams,
 }
+
+var ZecLocalnet = ZecRegnet
 
 func NewZecNetwork(network string) ZecNetwork {
 	switch network {
