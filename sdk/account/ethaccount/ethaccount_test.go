@@ -24,7 +24,7 @@ var _ = Describe("eth account", func() {
 		It("can do a transaction", func() {
 			ctx := context.Background()
 			amount := ethtypes.Ether(3)
-			gasLimit := uint64(1000)
+			gasLimit := uint64(21000)
 			gasPrice := Client.SuggestGasPrice(ctx, types.Standard)
 			account, err := RandomAccount(Client)
 			Expect(err).NotTo(HaveOccurred())
