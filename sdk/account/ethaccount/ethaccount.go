@@ -17,6 +17,7 @@ type Account interface {
 	Client() ethclient.Client
 	Address() ethtypes.Address
 	Balance(ctx context.Context) (ethtypes.Amount, error)
+	SendTransaction(ctx context.Context, utx ethtypes.Tx) (ethtypes.TxHash, error)
 	Transact(ctx context.Context, unsignedTx ethtypes.Tx) (ethtypes.TxHash, error)
 	Transfer(ctx context.Context, toAddress ethtypes.Address, value ethtypes.Amount, gasPrice ethtypes.Amount) (ethtypes.TxHash, error)
 	PrivateKey() *ecdsa.PrivateKey
@@ -108,6 +109,13 @@ func (acc *account) Transact(ctx context.Context, utx ethtypes.Tx) (ethtypes.TxH
 		}
 	}
 	return txHash, nil
+}
+
+func (acc *account) SendTransaction(ctx context.Context, utx ethtypes.Tx) (ethtypes.TxHash, error) {
+	if err := utx.Sign(acc.key); err != nil {
+		return ethtypes.TxHash{}, err
+	}
+	return utx.Hash(), acc.client.EthClient().SendTransaction(ctx, utx.ToTransaction())
 }
 
 func (acc *account) Address() ethtypes.Address {
