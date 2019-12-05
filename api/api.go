@@ -98,8 +98,16 @@ type Result struct {
 }
 
 func HashData(data []byte) (string, error) {
+	req := struct {
+		Method string          `json:"method"`
+		Params json.RawMessage `json:"params"`
+	}{}
+	if err := json.Unmarshal(data, &req); err != nil {
+		return "", err
+	}
+
 	h := sha3.New256()
-	h.Write(data)
+	h.Write(append([]byte(req.Method), req.Params...))
 	hash := hex.EncodeToString(h.Sum(nil))
 	return hash, nil
 }
