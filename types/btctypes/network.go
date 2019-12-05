@@ -44,7 +44,7 @@ var ZecTestnet = ZecNetwork{
 	params:       &chaincfg.TestNet3Params,
 }
 
-var ZecRegnet = ZecNetwork{
+var ZecLocalnet = ZecNetwork{
 	p2pkhPrefix: []byte{0x1D, 0x25},
 	p2shPrefix:  []byte{0x1C, 0xBA},
 	upgradeParams: []upgradeParam{
@@ -54,11 +54,11 @@ var ZecRegnet = ZecNetwork{
 		{100, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
 	expiryHeight: 10000000,
-	netString:    "regtest",
+	netString:    "localnet",
 	params:       &chaincfg.RegressionNetParams,
 }
 
-var ZecLocalnet = ZecRegnet
+var ZecRegnet = ZecLocalnet
 
 func NewZecNetwork(network string) ZecNetwork {
 	switch network {
