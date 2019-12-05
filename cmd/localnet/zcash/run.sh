@@ -7,7 +7,7 @@ zcashd
 sleep 5
 
 zcash-cli importaddress $Address 
-zcash-cli generate 100
+zcash-cli generate 120
 
 while :
 do
