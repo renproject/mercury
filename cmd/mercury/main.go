@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -17,18 +19,21 @@ func main() {
 	// Initialise logger.
 	logger := logrus.StandardLogger()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	db := kv.NewMemDB(kv.JSONCodec)
 
 	// Initialise stores.
-	ethRinkebyCache := cache.New(kv.NewTable(db, "ethRinkeby"), logger)
-	ethKovanCache := cache.New(kv.NewTable(db, "ethKovan"), logger)
-	btcTestCache := cache.New(kv.NewTable(db, "btcTest"), logger)
-	zecTestCache := cache.New(kv.NewTable(db, "zecTest"), logger)
-	bchTestCache := cache.New(kv.NewTable(db, "bchTest"), logger)
-	ethCache := cache.New(kv.NewTable(db, "eth"), logger)
-	btcCache := cache.New(kv.NewTable(db, "btc"), logger)
-	zecCache := cache.New(kv.NewTable(db, "zec"), logger)
-	bchCache := cache.New(kv.NewTable(db, "bch"), logger)
+	ethRinkebyCache := cache.New(kv.NewTTLCache(ctx, db, "ethRinkeby", 10*time.Second), logger)
+	ethKovanCache := cache.New(kv.NewTTLCache(ctx, db, "ethKovan", 10*time.Second), logger)
+	btcTestCache := cache.New(kv.NewTTLCache(ctx, db, "btcTest", 10*time.Second), logger)
+	zecTestCache := cache.New(kv.NewTTLCache(ctx, db, "zecTest", 10*time.Second), logger)
+	bchTestCache := cache.New(kv.NewTTLCache(ctx, db, "bchTest", 10*time.Second), logger)
+	ethCache := cache.New(kv.NewTTLCache(ctx, db, "eth", 10*time.Second), logger)
+	btcCache := cache.New(kv.NewTTLCache(ctx, db, "btc", 10*time.Second), logger)
+	zecCache := cache.New(kv.NewTTLCache(ctx, db, "zec", 10*time.Second), logger)
+	bchCache := cache.New(kv.NewTTLCache(ctx, db, "bch", 10*time.Second), logger)
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")

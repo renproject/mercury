@@ -14,7 +14,12 @@ func WhitelistLevel(network types.Network, method string) types.AccessLevel {
 }
 
 func EthWhitelistLevel(method string) types.AccessLevel {
-	return types.FullAccess
+	switch method {
+	case "eth_call":
+		return types.CachedAccess
+	default:
+		return types.FullAccess
+	}
 }
 
 func BtcWhitelistLevel(method string) types.AccessLevel {

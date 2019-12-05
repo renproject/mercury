@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -19,14 +21,16 @@ func main() {
 
 	// Initialise stores.
 	store := kv.NewMemDB(kv.JSONCodec)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	btcStore := kv.NewTable(store, "btc")
+	btcStore := kv.NewTTLCache(ctx, store, "btc", 10*time.Second)
 	btcCache := cache.New(btcStore, logger)
-	zecStore := kv.NewTable(store, "zec")
+	zecStore := kv.NewTTLCache(ctx, store, "zec", 10*time.Second)
 	zecCache := cache.New(zecStore, logger)
-	bchStore := kv.NewTable(store, "bch")
+	bchStore := kv.NewTTLCache(ctx, store, "bch", 10*time.Second)
 	bchCache := cache.New(bchStore, logger)
-	ethStore := kv.NewTable(store, "eth")
+	ethStore := kv.NewTTLCache(ctx, store, "eth", 10*time.Second)
 	ethCache := cache.New(ethStore, logger)
 
 	// Initialise Bitcoin API.
