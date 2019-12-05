@@ -58,9 +58,9 @@ func (server *Server) Run() {
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf(":%v", server.port),
 		Handler:           handler,
-		ReadTimeout:       5 * time.Second,
+		ReadTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 3 * time.Second,
-		WriteTimeout:      5 * time.Second,
+		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       1 * time.Minute,
 		MaxHeaderBytes:    DefaultMaxHeaderBytes,
 	}

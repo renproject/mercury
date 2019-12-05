@@ -31,21 +31,21 @@ func main() {
 
 	// Initialise Bitcoin API.
 	btcNodeClient := rpc.NewClient(os.Getenv("BTC_RPC_URL"), "user", "password")
-	btcProxy := proxy.NewProxy(btcNodeClient)
+	btcProxy := proxy.NewProxy(logger, btcNodeClient)
 	btcAPI := api.NewApi(btctypes.BtcLocalnet, btcProxy, btcCache, logger)
 
 	// Initialise ZCash API.
 	zecNodeClient := rpc.NewClient(os.Getenv("ZEC_RPC_URL"), "user", "password")
-	zecProxy := proxy.NewProxy(zecNodeClient)
+	zecProxy := proxy.NewProxy(logger, zecNodeClient)
 	zecAPI := api.NewApi(btctypes.ZecLocalnet, zecProxy, zecCache, logger)
 
 	// Initialise BCash API.
 	bchNodeClient := rpc.NewClient(os.Getenv("BCH_RPC_URL"), "user", "password")
-	bchProxy := proxy.NewProxy(bchNodeClient)
+	bchProxy := proxy.NewProxy(logger, bchNodeClient)
 	bchAPI := api.NewApi(btctypes.BchLocalnet, bchProxy, bchCache, logger)
 
 	ethNodeClient := rpc.NewClient(os.Getenv("ETH_RPC_URL"), "", "")
-	ethProxy := proxy.NewProxy(ethNodeClient)
+	ethProxy := proxy.NewProxy(logger, ethNodeClient)
 	ethAPI := api.NewApi(ethtypes.EthLocalnet, ethProxy, ethCache, logger)
 
 	// Set-up and start the server.

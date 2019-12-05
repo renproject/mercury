@@ -8,16 +8,19 @@ import (
 
 	"github.com/renproject/mercury/rpc"
 	"github.com/renproject/mercury/types"
+	"github.com/sirupsen/logrus"
 )
 
 // Proxy proxies the request to different clients.
 type Proxy struct {
+	Logger  logrus.FieldLogger
 	Clients []rpc.Client
 }
 
 // NewProxy returns a new Proxy.
-func NewProxy(clients ...rpc.Client) *Proxy {
+func NewProxy(logger logrus.FieldLogger, clients ...rpc.Client) *Proxy {
 	return &Proxy{
+		Logger:  logger,
 		Clients: clients,
 	}
 }
@@ -32,6 +35,7 @@ func (proxy *Proxy) ProxyRequest(ctx context.Context, r *http.Request, data []by
 			default:
 				response, err := client.HandleRequest(r, data)
 				if err != nil {
+					proxy.Logger.Errorf("failed to handle request on proxy %d: %v", i, err)
 					errs[i] = err
 					continue
 				}
