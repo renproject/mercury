@@ -25,7 +25,7 @@ var ZecMainnet = ZecNetwork{
 		{419200, []byte{0xBB, 0x09, 0xB8, 0x76}},
 		{653600, []byte{0x60, 0x0E, 0xB4, 0x2B}},
 	},
-	expiryHeight: 653599,
+	expiryHeight: 10000000,
 	netString:    "mainnet",
 	params:       &chaincfg.MainNetParams,
 }
