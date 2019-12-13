@@ -218,7 +218,8 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 				if err != nil {
 					return fmt.Errorf("failed to get event time: %v", err)
 				}
-				events <- Event{
+				select {
+				case events <- Event{
 					Name:        event.Name,
 					TxHash:      TxHash(log.TxHash),
 					IndexedArgs: decodeHashes(log.Topics[1:]),
@@ -226,6 +227,9 @@ func (c *contract) Watch(ctx context.Context, events chan<- Event, beginBlockNum
 
 					Timestamp:   header.Time,
 					BlockNumber: log.BlockNumber,
+				}:
+				default:
+					return nil
 				}
 			}
 		}
