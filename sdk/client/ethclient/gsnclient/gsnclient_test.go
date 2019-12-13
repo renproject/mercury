@@ -18,21 +18,23 @@ var RelayHubABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\
 var _ = Describe("gsn client", func() {
 	initOptions := func(network ethtypes.Network) GSNClientOptions {
 		return GSNClientOptions{
-			Logger:                    logrus.New(),
-			FilterLogRelayEventsDelay: 20 * time.Millisecond,
-			Network:                   network,
-			MaxClients:                10,
+			Logger:              logrus.New(),
+			Network:             network,
+			MaxClients:          10,
+			PingRelayerInterval: 1 * time.Minute,
 		}
 	}
 
-	Context("when fetching balances", func() {
-		It("can fetch a zero balance address", func() {
-			gsnclient := NewGSNClient(initOptions(ethtypes.Kovan))
+	Context("when running a GSN client on kovan", func() {
+		It("should not error", func() {
 
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
+
+			gsnclient := NewGSNClient(initOptions(ethtypes.Kovan))
 			Expect(gsnclient.Run(ctx, ethtypes.AddressFromHex("0x857a63B523f82d18dE1028B115CE9F24BC7AFfEE"), []byte(RecipientABI), []byte(RelayHubABI))).ShouldNot(HaveOccurred())
 
+			gsnclient.PingRelayers(context.TODO())
 		})
 	})
 })

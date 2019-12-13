@@ -2,7 +2,11 @@ package gsnclient
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"math/big"
+	"net/http"
 	"sync"
 	"time"
 
@@ -13,16 +17,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type RelayerStatusResponse struct {
+	RelayServerAddress string `json:"RelayServerAddress"`
+	MinGasPrice        uint64 `json:"MinGasPrice"`
+	Ready              bool   `json:"Ready"`
+	Version            string `json:"Version"`
+}
+
 const (
 	RelayAdded   = "RelayAdded"
 	RelayRemoved = "RelayRemoved"
 )
 
 type GSNClientOptions struct {
-	Logger                    logrus.FieldLogger
-	FilterLogRelayEventsDelay time.Duration
-	Network                   ethtypes.Network
-	MaxClients                uint8
+	Logger              logrus.FieldLogger
+	Network             ethtypes.Network
+	MaxClients          uint8
+	PingRelayerInterval time.Duration
 }
 
 type gsnClient struct {
@@ -40,19 +51,19 @@ func NewGSNClient(options GSNClientOptions) gsnClient {
 	}
 }
 
+// Run creates a list of potential Relays by listening to events on the RelayHub.
 func (gsnclient *gsnClient) Run(ctx context.Context, recipientAddress ethtypes.Address, recipientABI []byte, relayHubABI []byte) error {
+	gsnclient.options.Logger.Infof("Start running a GSN client")
 	client, err := ethclient.New(gsnclient.options.Logger, gsnclient.options.Network)
 	if err != nil {
 		return err
 	}
-	gsnclient.options.Logger.Infof("1")
 
-	// 1. Create a List of Potential Relays
 	gsnRecipient, err := ethtypes.NewContract(client.EthClient(), recipientAddress, recipientABI)
 	if err != nil {
 		return err
 	}
-	gsnclient.options.Logger.Infof("2")
+	gsnclient.options.Logger.Infof("Obtained the GSN recipient contract on %v", gsnclient.options.Network)
 
 	// First, the client MUST get the RelayHub used by the target gsnRecipient, by
 	// calling target.getHubAddr()
@@ -60,7 +71,7 @@ func (gsnclient *gsnClient) Run(ctx context.Context, recipientAddress ethtypes.A
 	if err := gsnRecipient.Call(ctx, ethtypes.Address{}, &relayHubAddress, "getHubAddr"); err != nil {
 		return err
 	}
-	gsnclient.options.Logger.Infof("3")
+	gsnclient.options.Logger.Infof("GSN Recipient is registered with %v RelayHub", relayHubAddress.String())
 
 	// Next, the client SHOULD filter for recent RelayAdded and RelayRemoved
 	// events sent by the RelayHub. Since a relay is required to send such event
@@ -71,19 +82,16 @@ func (gsnclient *gsnClient) Run(ctx context.Context, recipientAddress ethtypes.A
 	if err != nil {
 		return err
 	}
-	gsnclient.options.Logger.Infof("4")
+	gsnclient.options.Logger.Infof("Current block number: %v", currentBlockNumber)
 
 	relayHub, err := ethtypes.NewContract(client.EthClient(), ethtypes.Address(relayHubAddress), relayHubABI)
 	if err != nil {
 		return err
 	}
-	gsnclient.options.Logger.Infof("5")
-
-	ticker := time.NewTicker(gsnclient.options.FilterLogRelayEventsDelay)
-	defer ticker.Stop()
 
 	events := make(chan ethtypes.Event)
-	gsnclient.options.Logger.Infof("6")
+
+	gsnclient.options.Logger.Infof("Start listening to RelayAdded and RelayRemoved events on the RelayHub")
 
 	phi.ParBegin(
 		func() {
@@ -99,6 +107,8 @@ func (gsnclient *gsnClient) Run(ctx context.Context, recipientAddress ethtypes.A
 			}
 		},
 		func() {
+			defer close(events)
+
 			for {
 				select {
 				case <-ctx.Done():
@@ -108,7 +118,7 @@ func (gsnclient *gsnClient) Run(ctx context.Context, recipientAddress ethtypes.A
 						return
 					}
 
-					gsnclient.options.Logger.Infof("Got %s=>%s\nEvent: %+v", event.Name, event.Args["url"], event)
+					gsnclient.options.Logger.Infof("Got event %s=>%s", event.Name, event.Args["url"])
 					if event.Name == RelayAdded {
 						// For each relay, the client keeps the relay address and url
 						gsnclient.addRelayer(event.Args["url"].(string))
@@ -127,7 +137,6 @@ func (gsnclient *gsnClient) Run(ctx context.Context, recipientAddress ethtypes.A
 			}
 		},
 	)
-	close(events)
 	return nil
 }
 
@@ -158,15 +167,61 @@ func (gsnclient *gsnClient) findRelayer(url string) (int, bool) {
 	return 0, false
 }
 
-// 2. Select a Relay
+// 2. Select a Relay For each potential relay, the client "pings" the relay by
+// sending a /getaddr request. Validate the relay is valid (contains Ready:
+// true) Validate the relay supports this protocol: version:0.4.x Validate the
+// MinGasPrice: The relay MAY reject request with lower gas-price, so the client
+// SHOULD skip requesting the relay if the relay requires higher gas-price.
+func (gsnclient *gsnClient) PingRelayers(ctx context.Context) error {
+	ticker := time.NewTicker(gsnclient.options.PingRelayerInterval)
+	defer ticker.Stop()
 
-// For each potential relay, the client "pings" the relay by sending a /getaddr request.
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			relayers := []string{}
+			func() {
+				gsnclient.relayerURLsMu.RLock()
+				defer gsnclient.relayerURLsMu.RUnlock()
 
-// Validate the relay is valid (contains Ready: true)
+				relayers = gsnclient.relayerURLs
+			}()
 
-// Validate the relay supports this protocol: version:0.4.x
+			for _, relayer := range relayers {
+				body, err := func() ([]byte, error) {
+					resp, err := http.Get(fmt.Sprintf("%s/getaddr", relayer))
+					if err != nil {
+						return nil, err
+					}
 
-// Validate the MinGasPrice: The relay MAY reject request with lower gas-price, so the client SHOULD skip requesting the relay if the relay requires higher gas-price.
+					defer resp.Body.Close()
+
+					body, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						return nil, err
+					}
+					return body, nil
+				}()
+				if body == nil || err != nil {
+					return err
+				}
+
+				response := RelayerStatusResponse{}
+				if err := json.Unmarshal(body, &response); err != nil {
+					return err
+				}
+
+				if !response.Ready {
+					gsnclient.removeRelayer(relayer)
+					continue
+				}
+				gsnclient.options.Logger.Infof("Relayer [%s]: Address = %s, MinGasPrice = %v, Ready = %v, Version: %s", relayer, response.RelayServerAddress, response.MinGasPrice, response.Ready, response.Version)
+			}
+		}
+	}
+}
 
 // 3. Create a Request
 
