@@ -38,12 +38,15 @@ func NewContract(client *ethclient.Client, address Address, contractABI []byte) 
 }
 
 func (c *contract) BuildTx(ctx context.Context, from Address, method string, value *big.Int, params ...interface{}) (Tx, error) {
-
 	data, err := c.abi.Pack(method, params...)
+
 	if err != nil {
 		return Tx{}, fmt.Errorf("failed to pack data: %v", err)
 	}
+	return c.buildTx(ctx, from, value, data)
+}
 
+func (c *contract) buildTx(ctx context.Context, from Address, value *big.Int, data []byte) (Tx, error) {
 	// Ensure a valid value field and resolve the account nonce
 	if value == nil {
 		value = new(big.Int)
