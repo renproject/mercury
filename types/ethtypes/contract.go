@@ -64,6 +64,10 @@ func (c *contract) Address() Address {
 	return c.address
 }
 
+func (c *contract) EncodedFn(method string, params ...interface{}) ([]byte, error) {
+	return c.abi.Pack(method, params...)
+}
+
 func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method string, value *big.Int, params ...interface{}) (Tx, error) {
 	data, err := c.abi.Pack(method, params...)
 	if err != nil {

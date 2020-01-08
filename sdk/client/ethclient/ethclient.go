@@ -26,6 +26,7 @@ type Client interface {
 	PendingNonceAt(context.Context, ethtypes.Address) (uint64, error)
 	BuildUnsignedTx(context.Context, uint64, *ethtypes.Address, ethtypes.Amount, uint64, ethtypes.Amount, []byte) (ethtypes.Tx, error)
 	PublishSignedTx(context.Context, ethtypes.Tx) (ethtypes.TxHash, error)
+	PublishGSNTx(context.Context, ethtypes.Tx, ethtypes.Address) (ethtypes.TxHash, error)
 	GasLimit(context.Context) (uint64, error)
 	GetTx(ctx context.Context, hash ethtypes.TxHash) (ethtypes.Tx, error)
 }
@@ -135,6 +136,18 @@ func (c *client) PublishSignedTx(ctx context.Context, tx ethtypes.Tx) (ethtypes.
 		_, err = bind.WaitDeployed(ctx, bind.DeployBackend(c.client), stx)
 	}
 	return tx.Hash(), err
+}
+
+// PublishGSNTX publishes a signed GSN transaction
+func (c *client) PublishGSNTx(ctx context.Context, tx ethtypes.Tx, from ethtypes.Address) (ethtypes.TxHash, error) {
+	// // Pre-condition checks
+	// if !tx.IsSigned() {
+	// 	panic("pre-condition violation: cannot publish unsigned transaction")
+	// }
+	// return tx.Hash(), c.client.SendTransaction(ctx, tx.ToTransaction())
+
+	// librelay.NewEthClient("", 0)
+	return tx.Hash(), nil
 }
 
 func (c *client) Confirmations(ctx context.Context, hash ethtypes.TxHash) (*big.Int, error) {
