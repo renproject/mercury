@@ -92,7 +92,6 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 	if err != nil {
 		return Tx{}, fmt.Errorf("failed to suggest gas price: %v", err)
 	}
-
 	// Create the transaction, sign it and schedule it for execution
 	var rawTx *types.Transaction
 	if (c.address == Address{}) {
@@ -107,9 +106,20 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 	} else {
 		contractAddr := common.Address(c.address)
 		// If the contract surely has code (or code is not needed), estimate the transaction
-		msg := ethereum.CallMsg{From: common.Address(from), To: &contractAddr, Value: value, Data: data}
+		msg := ethereum.CallMsg{From: common.Address(from), To: &contractAddr, Gas: 7000000, Value: value, Data: data}
+
+		output, err := c.client.CallContract(ctx, msg, nil)
+		if err != nil {
+			return Tx{}, fmt.Errorf("failed to simulate the transaction: %v", err)
+		}
+
 		gasLimit, err := c.client.EstimateGas(ctx, msg)
 		if err != nil {
+			if len(output) != 0 {
+				if reason, err := parseRevertReason(output); err == nil {
+					return Tx{}, fmt.Errorf(reason)
+				}
+			}
 			return Tx{}, fmt.Errorf("failed to estimate gas needed: %v", err)
 		}
 		rawTx = types.NewTransaction(nonce, contractAddr, value, gasLimit, gasPrice, data)
@@ -249,6 +259,19 @@ func decodeHashes(chashes []common.Hash) []Hash {
 		hashes[i] = Hash(chash)
 	}
 	return hashes
+}
+
+func parseRevertReason(data []byte) (string, error) {
+	args := abi.Arguments{{Type: abi.Type{
+		Kind: reflect.String,
+		Type: reflect.TypeOf(""),
+		T:    abi.StringTy,
+	}}}
+	revertReason := ""
+	if err := args.Unpack(&revertReason, data[4:]); err != nil {
+		return "", err
+	}
+	return revertReason, nil
 }
 
 func (c *contract) getTopics(event string, indexedArgs []Hash) ([]common.Hash, error) {
