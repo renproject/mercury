@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/renproject/mercury/proxy"
+	"github.com/sirupsen/logrus"
 
 	"github.com/renproject/mercury/rpc"
 )
@@ -16,8 +17,9 @@ import (
 var _ = Describe("Proxies", func() {
 	Context("when creating a proxy", func() {
 		It("should receive a response if all clients are working", func() {
+			logger := logrus.StandardLogger()
 			mockClient := NewMockClient()
-			proxy := NewProxy(mockClient, mockClient)
+			proxy := NewProxy(logger, mockClient, mockClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -28,9 +30,10 @@ var _ = Describe("Proxies", func() {
 		})
 
 		It("should receive a response if the first client is working", func() {
+			logger := logrus.StandardLogger()
 			mockClient := NewMockClient()
 			errClient := NewMockErrorClient()
-			proxy := NewProxy(mockClient, errClient)
+			proxy := NewProxy(logger, mockClient, errClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -41,9 +44,10 @@ var _ = Describe("Proxies", func() {
 		})
 
 		It("should receive a response if the first client is faulty and second is working", func() {
+			logger := logrus.StandardLogger()
 			mockClient := NewMockClient()
 			errClient := NewMockErrorClient()
-			proxy := NewProxy(errClient, mockClient)
+			proxy := NewProxy(logger, errClient, mockClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -54,8 +58,9 @@ var _ = Describe("Proxies", func() {
 		})
 
 		It("should not receive a response if all clients are faulty", func() {
+			logger := logrus.StandardLogger()
 			errClient := NewMockErrorClient()
-			proxy := NewProxy(errClient, errClient)
+			proxy := NewProxy(logger, errClient, errClient)
 
 			req, err := http.NewRequest("POST", "", nil)
 			Expect(err).ToNot(HaveOccurred())
