@@ -60,7 +60,7 @@ func (server *Server) Run() {
 		Handler:           handler,
 		ReadTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 3 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		WriteTimeout:      2 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
 		MaxHeaderBytes:    DefaultMaxHeaderBytes,
 	}
