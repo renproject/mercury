@@ -110,7 +110,7 @@ func (c *client) PendingNonceAt(ctx context.Context, fromAddress ethtypes.Addres
 }
 
 func (c *client) BuildUnsignedTx(ctx context.Context, nonce uint64, toAddress *ethtypes.Address, value ethtypes.Amount, gasLimit uint64, gasPrice ethtypes.Amount, data []byte) (ethtypes.Tx, error) {
-	chainID, err := c.client.NetworkID(ctx)
+	chainID, err := c.client.ChainID(ctx)
 	if err != nil {
 		return ethtypes.Tx{}, fmt.Errorf("error building unsigned tx. failed to get chain id. err=%v", err)
 	}
