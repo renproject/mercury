@@ -137,11 +137,11 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 		if err != nil {
 			if len(output) != 0 {
 				if reason, err := parseRevertReason(output); err == nil {
-					rawTx = types.NewContractCreation(nonce, value, 2500000, gasPrice, data)
+					rawTx = types.NewTransaction(nonce, contractAddr, value, 2500000, gasPrice, data)
 					return Tx{chainID, rawTx, false}, NewContractRevert(reason)
 				}
 			}
-			rawTx = types.NewContractCreation(nonce, value, 2500000, gasPrice, data)
+			rawTx = types.NewTransaction(nonce, contractAddr, value, 2500000, gasPrice, data)
 			return Tx{chainID, rawTx, false}, NewContractRevert(fmt.Sprintf("failed to estimate gas needed: %v", err))
 		}
 		rawTx = types.NewTransaction(nonce, contractAddr, value, gasLimit, gasPrice, data)
