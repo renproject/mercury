@@ -104,16 +104,24 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 	if err != nil {
 		return Tx{}, fmt.Errorf("failed to suggest gas price: %v", err)
 	}
+
+	chainID, err := c.client.ChainID(ctx)
+	if err != nil {
+		return Tx{}, fmt.Errorf("failed to get chain id: %v", err)
+	}
+
 	// Create the transaction, sign it and schedule it for execution
 	var rawTx *types.Transaction
 	if (c.address == Address{}) {
 		// If the contract surely has code (or code is not needed), estimate the transaction
 		msg := ethereum.CallMsg{From: common.Address(from), To: nil, Value: value, Data: data}
+		c.address = Address(crypto.CreateAddress(common.Address(from), nonce))
+
 		gasLimit, err := c.client.EstimateGas(ctx, msg)
 		if err != nil {
-			return Tx{}, NewContractRevert(fmt.Sprintf("failed to estimate gas needed: %v", err))
+			rawTx = types.NewContractCreation(nonce, value, 2500000, gasPrice, data)
+			return Tx{chainID, rawTx, false}, NewContractRevert(fmt.Sprintf("failed to estimate gas needed: %v", err))
 		}
-		c.address = Address(crypto.CreateAddress(common.Address(from), nonce))
 		rawTx = types.NewContractCreation(nonce, value, gasLimit, gasPrice, data)
 	} else {
 		contractAddr := common.Address(c.address)
@@ -129,17 +137,14 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 		if err != nil {
 			if len(output) != 0 {
 				if reason, err := parseRevertReason(output); err == nil {
-					return Tx{}, NewContractRevert(reason)
+					rawTx = types.NewContractCreation(nonce, value, 2500000, gasPrice, data)
+					return Tx{chainID, rawTx, false}, NewContractRevert(reason)
 				}
 			}
-			return Tx{}, NewContractRevert(fmt.Sprintf("failed to estimate gas needed: %v", err))
+			rawTx = types.NewContractCreation(nonce, value, 2500000, gasPrice, data)
+			return Tx{chainID, rawTx, false}, NewContractRevert(fmt.Sprintf("failed to estimate gas needed: %v", err))
 		}
 		rawTx = types.NewTransaction(nonce, contractAddr, value, gasLimit, gasPrice, data)
-	}
-
-	chainID, err := c.client.ChainID(ctx)
-	if err != nil {
-		return Tx{}, fmt.Errorf("failed to get chain id: %v", err)
 	}
 
 	return Tx{
