@@ -30,6 +30,18 @@ type Contract interface {
 		indexedArgs ...Hash) error
 }
 
+type ContractRevert struct {
+	ErrorMsg string
+}
+
+func (revert ContractRevert) Error() string {
+	return revert.ErrorMsg
+}
+
+func NewContractRevert(err string) error {
+	return ContractRevert{ErrorMsg: err}
+}
+
 func NewContract(client *ethclient.Client, address Address, contractABI []byte) (Contract, error) {
 	abi, err := abi.JSON(bytes.NewBuffer(contractABI))
 	if err != nil {
@@ -99,7 +111,7 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 		msg := ethereum.CallMsg{From: common.Address(from), To: nil, Value: value, Data: data}
 		gasLimit, err := c.client.EstimateGas(ctx, msg)
 		if err != nil {
-			return Tx{}, fmt.Errorf("failed to estimate gas needed: %v", err)
+			return Tx{}, NewContractRevert(fmt.Sprintf("failed to estimate gas needed: %v", err))
 		}
 		c.address = Address(crypto.CreateAddress(common.Address(from), nonce))
 		rawTx = types.NewContractCreation(nonce, value, gasLimit, gasPrice, data)
@@ -117,10 +129,10 @@ func (c *contract) buildTx(ctx context.Context, from Address, bin []byte, method
 		if err != nil {
 			if len(output) != 0 {
 				if reason, err := parseRevertReason(output); err == nil {
-					return Tx{}, fmt.Errorf(reason)
+					return Tx{}, NewContractRevert(reason)
 				}
 			}
-			return Tx{}, fmt.Errorf("failed to estimate gas needed: %v", err)
+			return Tx{}, NewContractRevert(fmt.Sprintf("failed to estimate gas needed: %v", err))
 		}
 		rawTx = types.NewTransaction(nonce, contractAddr, value, gasLimit, gasPrice, data)
 	}
