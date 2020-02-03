@@ -15,6 +15,7 @@ const (
 	Kovan   network = 42
 	Rinkeby network = 4
 	Ganache network = 255
+	EthLocalnet network = 254
 )
 
 func (network network) String() string {
