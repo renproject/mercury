@@ -13,8 +13,8 @@ resource "aws_security_group" "aws_security_group_btc_testnet" {
 
   ingress {
     description = "Allow internal jsonrpc request"
-    from_port   = 8332
-    to_port     = 8332
+    from_port   = 18332
+    to_port     = 18332
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"]
   }
@@ -106,7 +106,7 @@ resource "aws_instance" "bitcoin-testnet-1" {
       "sudo apt-get install --yes bitcoind",
       "mkdir ~/.bitcoin",
       "mv bitcoin.conf ./.bitcoin/",
-      "sudo mv bitcoin.service /lib/systemd/system/bitcoin.service",
+      "sudo mv bitcoin.service /etc/systemd/system/bitcoin.service",
       "sudo service bitcoin start"
     ]
 

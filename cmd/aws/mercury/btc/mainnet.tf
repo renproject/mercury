@@ -105,7 +105,7 @@ resource "aws_instance" "bitcoin-mainnet-1" {
       "sudo apt-get install --yes bitcoind",
       "mkdir ~/.bitcoin",
       "mv bitcoin.conf ./.bitcoin/",
-      "sudo mv bitcoin.service /lib/systemd/system/bitcoin.service",
+      "sudo mv bitcoin.service /etc/systemd/system/bitcoin.service",
       "sudo service bitcoin start"
     ]
 
@@ -192,7 +192,7 @@ resource "aws_instance" "bitcoin-mainnet-2" {
       "sudo apt-get install --yes bitcoind",
       "mkdir ~/.bitcoin",
       "mv bitcoin.conf ./.bitcoin/",
-      "sudo mv bitcoin.service /lib/systemd/system/bitcoin.service",
+      "sudo mv bitcoin.service /etc/systemd/system/bitcoin.service",
       "sudo service bitcoin start"
     ]
 

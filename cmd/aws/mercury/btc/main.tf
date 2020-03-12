@@ -13,11 +13,11 @@ variable "btc_mainnet_password" {
 }
 
 variable "btc_testnet_username" {
-  description = "username for bitcoin testnet nodes jsonrpc"
+  description = "jsonrpc username for bitcoin testnet nodes"
 }
 
 variable "btc_testnet_password" {
-  description = "password for bitcoin tesnet nodes jsonrpc"
+  description = "jsonrpc password for bitcoin tesstnet nodes"
 }
 
 variable "region" {
