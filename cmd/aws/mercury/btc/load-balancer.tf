@@ -1,6 +1,6 @@
 resource "aws_lb" "aws_lb_bitcoin" {
   name               = "aws-lb-bitcoin"
-  internal           = false
+  internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.aws_sg_lb_bitcoin.id]
   subnets            = [var.subnet_id_1, var.subnet_id_2]
@@ -63,4 +63,8 @@ resource "aws_security_group" "aws_sg_lb_bitcoin" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+output "btc_lb_dns" {
+  value = aws_lb.aws_lb_bitcoin.dns_name
 }

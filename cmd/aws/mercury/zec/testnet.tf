@@ -1,6 +1,6 @@
-resource "aws_security_group" "aws_security_group_btc_testnet" {
-  name = "aws_security_group_btc_testnet"
-  description = "Security group for bitcoin testnet node"
+resource "aws_security_group" "aws_security_group_zec_mainnet_testnet" {
+  name = "aws_security_group_zec_mainnet_testnet"
+  description = "Security group for zcash testnet node"
   vpc_id = var.vpc_id
 
   ingress {
@@ -13,16 +13,16 @@ resource "aws_security_group" "aws_security_group_btc_testnet" {
 
   ingress {
     description = "Allow internal jsonrpc request"
-    from_port   = 18332
-    to_port     = 18332
+    from_port   = 18232
+    to_port     = 18232
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"]
   }
 
   ingress {
-    description = "Allow bitcoin nodes communication"
-    from_port = 18333
-    to_port = 18333
+    description = "Allow zcash nodes communication"
+    from_port = 18233
+    to_port = 18233
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -36,32 +36,32 @@ resource "aws_security_group" "aws_security_group_btc_testnet" {
   }
 }
 
-resource "aws_instance" "bitcoin-testnet-1" {
+resource "aws_instance" "zcash-testnet-1" {
   ami = data.aws_ami.ubuntu.id
   instance_type = "t3a.medium"
   availability_zone = var.available_zone_1
   key_name = var.key_name
   subnet_id = var.subnet_id_1
-  vpc_security_group_ids  = [aws_security_group.aws_security_group_btc_testnet.id]
+  vpc_security_group_ids  = [aws_security_group.aws_security_group_zec_mainnet_testnet.id]
   associate_public_ip_address = true
   monitoring = true
   tags = {
-    Name = "bitcoin-testnet-1"
+    Name = "zcash-testnet-1"
   }
 
   root_block_device {
     volume_type = "gp2"
-    volume_size = 50
+    volume_size = 30
   }
 
-  // Create new sudo user `bitcoin`
+  // Create new sudo user `zcash`
   provisioner "remote-exec" {
     inline = [
       "set -x",
-      "sudo adduser bitcoin --gecos \",,,\" --disabled-password",
-      "sudo usermod -aG sudo bitcoin",
-      "sudo rsync --archive --chown=bitcoin:bitcoin ~/.ssh /home/bitcoin",
-      "sudo bash -c 'echo \"bitcoin ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers'"
+      "sudo adduser zcash --gecos \",,,\" --disabled-password",
+      "sudo usermod -aG sudo zcash",
+      "sudo rsync --archive --chown=zcash:zcash ~/.ssh /home/zcash",
+      "sudo bash -c 'echo \"zcash ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers'"
     ]
 
     connection {
@@ -75,11 +75,11 @@ resource "aws_instance" "bitcoin-testnet-1" {
   // Copy service file
   provisioner "file" {
     content = local.service_file
-    destination = "$HOME/bitcoin.service"
+    destination = "$HOME/zcash.service"
     connection {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
-      user = "bitcoin"
+      user = "zcash"
       private_key = file(var.private_key_file)
     }
   }
@@ -87,38 +87,41 @@ resource "aws_instance" "bitcoin-testnet-1" {
   // Copy config file
   provisioner "file" {
     content = local.config_file_testnet
-    destination = "$HOME/bitcoin.conf"
+    destination = "$HOME/zcash.conf"
     connection {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
-      user = "bitcoin"
+      user = "zcash"
       private_key = file(var.private_key_file)
     }
   }
 
-  // Install bitcoind and start the service
+  // Install zcashd and start the service
   provisioner "remote-exec" {
     inline = [
       "set -x",
-      "sudo apt-get install --yes software-properties-common",
-      "sudo add-apt-repository --yes ppa:luke-jr/bitcoincore",
       "sudo apt-get update",
-      "sudo apt-get install --yes bitcoind",
-      "mkdir ~/.bitcoin",
-      "mv bitcoin.conf ./.bitcoin/",
-      "sudo mv bitcoin.service /etc/systemd/system/bitcoin.service",
-      "sudo service bitcoin start"
+      "sudo apt-get install -y apt-transport-https wget gnupg2",
+      "wget -qO - https://apt.z.cash/zcash.asc | sudo apt-key add -",
+      "echo \"deb [arch=amd64] https://apt.z.cash/ jessie main\" | sudo tee /etc/apt/sources.list.d/zcash.list",
+      "sudo apt-get update",
+      "sudo apt-get install -y zcash",
+      "zcash-fetch-params",
+      "mkdir -p ~/.zcash",
+      "mv zcash.conf ./.zcash/",
+      "sudo mv zcash.service /etc/systemd/system/zcash.service",
+      "sudo service zcash start"
     ]
 
     connection {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
-      user = "bitcoin"
+      user = "zcash"
       private_key = file(var.private_key_file)
     }
   }
 }
 
-output "btc_testnet_ip"{
-  value = aws_instance.bitcoin-testnet-1.private_ip
+output "zec_testnet_ip"{
+  value = aws_instance.zcash-testnet-1.private_ip
 }
