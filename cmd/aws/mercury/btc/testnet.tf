@@ -8,15 +8,17 @@ resource "aws_security_group" "aws_security_group_btc_testnet" {
     from_port = 22
     to_port = 22
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 
   ingress {
     description = "Allow internal jsonrpc request"
-    from_port   = 18332
-    to_port     = 18332
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
+    from_port = 18332
+    to_port = 18332
+    protocol = "tcp"
+    cidr_blocks = [
+      "10.0.0.0/16"]
   }
 
   ingress {
@@ -24,7 +26,8 @@ resource "aws_security_group" "aws_security_group_btc_testnet" {
     from_port = 18333
     to_port = 18333
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 
   egress {
@@ -42,7 +45,8 @@ resource "aws_instance" "bitcoin-testnet-1" {
   availability_zone = var.available_zone_1
   key_name = var.key_name
   subnet_id = var.subnet_id_1
-  vpc_security_group_ids  = [aws_security_group.aws_security_group_btc_testnet.id]
+  vpc_security_group_ids = [
+    aws_security_group.aws_security_group_btc_testnet.id]
   associate_public_ip_address = true
   monitoring = true
   tags = {
@@ -119,6 +123,6 @@ resource "aws_instance" "bitcoin-testnet-1" {
   }
 }
 
-output "btc_testnet_ip"{
+output "btc_testnet_ip" {
   value = aws_instance.bitcoin-testnet-1.private_ip
 }

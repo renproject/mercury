@@ -1,6 +1,6 @@
 provider "aws" {
   version = "~> 2.0"
-  region  = var.region
+  region = var.region
 }
 
 // *** Input variables ***
@@ -111,14 +111,18 @@ data "aws_ami" "ubuntu" {
   most_recent = true
 
   filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
+    name = "name"
+    values = [
+      "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
   }
 
   filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
+    name = "virtualization-type"
+    values = [
+      "hvm"]
   }
 
-  owners = ["099720109477"] # Canonical
+  owners = [
+    "099720109477"]
+  # Canonical
 }

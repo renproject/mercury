@@ -1,12 +1,13 @@
 resource "aws_instance" "aws_instance_mercury1" {
-  ami               = data.aws_ami.ubuntu.id
-  instance_type     = "t3a.micro"
+  ami = data.aws_ami.ubuntu.id
+  instance_type = "t3a.micro"
   availability_zone = var.avaiable_zone_1
-  subnet_id         = aws_subnet.aws_subnet1.id
-  key_name          = var.key_name
+  subnet_id = aws_subnet.aws_subnet1.id
+  key_name = var.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids  = [aws_security_group.aws_security_group_mercury.id]
-  monitoring        = true
+  vpc_security_group_ids = [
+    aws_security_group.aws_security_group_mercury.id]
+  monitoring = true
   tags = {
     Name = "mercury1"
   }
@@ -27,9 +28,9 @@ resource "aws_instance" "aws_instance_mercury1" {
     ]
 
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "ubuntu"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "ubuntu"
       private_key = file(var.key_file)
     }
   }
@@ -39,9 +40,9 @@ resource "aws_instance" "aws_instance_mercury1" {
     content = local.service_file
     destination = "$HOME/mercury.service"
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "mercury"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "mercury"
       private_key = file(var.key_file)
     }
   }
@@ -51,9 +52,9 @@ resource "aws_instance" "aws_instance_mercury1" {
     content = local.env_file
     destination = "$HOME/mercury.env"
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "mercury"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "mercury"
       private_key = file(var.key_file)
     }
   }
@@ -75,23 +76,24 @@ resource "aws_instance" "aws_instance_mercury1" {
     ]
 
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "mercury"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "mercury"
       private_key = file(var.key_file)
     }
   }
 }
 
 resource "aws_instance" "aws_instance_mercury2" {
-  ami               = data.aws_ami.ubuntu.id
-  instance_type     = "t3a.micro"
+  ami = data.aws_ami.ubuntu.id
+  instance_type = "t3a.micro"
   availability_zone = var.avaiable_zone_2
-  subnet_id         = aws_subnet.aws_subnet2.id
-  key_name          = var.key_name
+  subnet_id = aws_subnet.aws_subnet2.id
+  key_name = var.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids  = [aws_security_group.aws_security_group_mercury.id]
-  monitoring        = true
+  vpc_security_group_ids = [
+    aws_security_group.aws_security_group_mercury.id]
+  monitoring = true
   tags = {
     Name = "mercury2"
   }
@@ -112,9 +114,9 @@ resource "aws_instance" "aws_instance_mercury2" {
     ]
 
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "ubuntu"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "ubuntu"
       private_key = file(var.key_file)
     }
   }
@@ -124,9 +126,9 @@ resource "aws_instance" "aws_instance_mercury2" {
     content = local.service_file
     destination = "$HOME/mercury.service"
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "mercury"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "mercury"
       private_key = file(var.key_file)
     }
   }
@@ -136,9 +138,9 @@ resource "aws_instance" "aws_instance_mercury2" {
     content = local.env_file
     destination = "$HOME/mercury.env"
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "mercury"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "mercury"
       private_key = file(var.key_file)
     }
   }
@@ -160,39 +162,42 @@ resource "aws_instance" "aws_instance_mercury2" {
     ]
 
     connection {
-      host        = coalesce(self.public_ip, self.private_ip)
-      type        = "ssh"
-      user        = "mercury"
+      host = coalesce(self.public_ip, self.private_ip)
+      type = "ssh"
+      user = "mercury"
       private_key = file(var.key_file)
     }
   }
 }
 
 resource "aws_security_group" "aws_security_group_mercury" {
-  name        = "aws_security_group_mercury_mainnet"
+  name = "aws_security_group_mercury_mainnet"
   description = "Security group for mercury"
-  vpc_id      = aws_vpc.aws_vpc_mercury.id
+  vpc_id = aws_vpc.aws_vpc_mercury.id
 
   ingress {
     description = "Allow SSH connection "
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 
   ingress {
     description = "Allow traffic inside the vpc"
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = [aws_vpc.aws_vpc_mercury.cidr_block]
+    from_port = 5000
+    to_port = 5000
+    protocol = "tcp"
+    cidr_blocks = [
+      aws_vpc.aws_vpc_mercury.cidr_block]
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 }

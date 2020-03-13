@@ -99,8 +99,8 @@ KillSignal=SIGHUP
 WantedBy=default.target
 EOF
 
-//  ZCASH_MAINNET_RPC_URL=http://${module.zcash.zec_lb_dns}
-//  ZCASH_TESTNET_RPC_URL=http://${module.zcash.zec_testnet_ip}
+  //  ZCASH_MAINNET_RPC_URL=http://${module.zcash.zec_lb_dns}
+  //  ZCASH_TESTNET_RPC_URL=http://${module.zcash.zec_testnet_ip}
 
 
   env_file = <<EOF
