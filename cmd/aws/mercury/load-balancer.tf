@@ -81,3 +81,7 @@ resource "aws_lb_listener" "aws_lb_listener_mercury" {
     target_group_arn = aws_lb_target_group.aws_lb_mercury_target_group.arn
   }
 }
+
+output "mercury_load_balancer_dns" {
+  value = aws_lb.aws_lb_mercury.dns_name
+}
