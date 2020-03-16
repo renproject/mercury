@@ -87,7 +87,7 @@ ZCASH_TESTNET_RPC_URL=http://${module.zcash.zec_testnet_ip}:18232
 ZCASH_TESTNET_RPC_USERNAME=${var.zec_testnet_username}
 ZCASH_TESTNET_RPC_PASSWORD=${var.zec_testnet_password}
 
-BCASH_MAINNET_RPC_URL=http://${module.bcash.btc_lb_dns}
+BCASH_MAINNET_RPC_URL=http://${module.bcash.bch_lb_dns}
 BCASH_MAINNET_RPC_USERNAME=${var.bch_mainnet_username}
 BCASH_MAINNET_RPC_PASSWORD=${var.bch_mainnet_password}
 BCASH_TESTNET_RPC_URL=http://${module.bcash.bch_testnet_ip}:18332

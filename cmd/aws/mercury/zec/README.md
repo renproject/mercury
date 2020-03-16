@@ -27,4 +27,4 @@ The zec module will deploy all zcash-related services in Mercury to AWS, includi
 ## Outputs ##
 
 - `zec_lb_dns`     : DNS name of the zcash load balancer.
-- `zec_testnet_ip` : testnet node private ip addres.
+- `zec_testnet_ip` : testnet node private ip address.

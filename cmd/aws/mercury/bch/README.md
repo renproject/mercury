@@ -1,15 +1,15 @@
-The btc module will deploy all bitcoin-related services in Mercury to AWS, including :  
+The bch module will deploy all bitcoin-cash-related services in Mercury to AWS, including :  
 
-- Bitcoin mainnet nodes * 2 in different available zones. 
-- Bitcoin testnet nodes * 1 in `available_zone_1`
+- Bitcoin cash mainnet nodes * 2 in different available zones. 
+- Bitcoin cash testnet nodes * 1 in `available_zone_1`
 - A load-balancer in front of the mainnet nodes.
 
 ## Inputs ##
 
-- `btc_mainnet_username` : jsonrpc username for bitcoin mainnet nodes 
-- `btc_mainnet_password` : jsonrpc password for bitcoin mainnet nodes
-- `btc_testnet_username` : jsonrpc username for bitcoin testnet nodes 
-- `btc_testnet_password` : jsonrpc password for bitcoin testnet nodes
+- `bch_mainnet_username` : jsonrpc username for bitcoin cash mainnet nodes 
+- `bch_mainnet_password` : jsonrpc password for bitcoin cash mainnet nodes
+- `bch_testnet_username` : jsonrpc username for bitcoin cash testnet nodes 
+- `bch_testnet_password` : jsonrpc password for bitcoin cash testnet nodes
 
 - `region`           : region on aws where to deploy the mercury infrastructure. i.e. `us-west-2`
 - `available_zone_1` : first available zone we want to use in the region. i.e. `us-west-2a`
@@ -26,5 +26,5 @@ The btc module will deploy all bitcoin-related services in Mercury to AWS, inclu
 
 ## Outputs ##
 
-- `btc_lb_dns`     : DNS name of the bitcoin load balancer.
-- `btc_testnet_ip` : testnet node private ip address.
+- `bch_lb_dns`     : DNS name of the bitcoin cash load balancer.
+- `bch_testnet_ip` : testnet node private ip address.

@@ -1,16 +1,7 @@
-resource "aws_security_group" "aws_security_group_bch_mainnet" {
-  name = "aws_security_group_bch_mainnet"
+resource "aws_security_group" "aws_sg_bch_mainnet" {
+  name = "aws_sg_bch_mainnet"
   description = "Security group for bitcoin cash mainnet node"
   vpc_id = var.vpc_id
-
-  ingress {
-    description = "Allow SSH connection "
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = [
-      "0.0.0.0/0"]
-  }
 
   ingress {
     description = "Allow bitcoin cash nodes communication"
@@ -29,28 +20,23 @@ resource "aws_security_group" "aws_security_group_bch_mainnet" {
     cidr_blocks = [
       "10.0.0.0/16"]
   }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = [
-      "0.0.0.0/0"]
-  }
 }
 
+// First bitcoin cash node instance
 resource "aws_instance" "bcash-mainnet-1" {
-  ami = data.aws_ami.ubuntu.id
+  ami = var.ami_id
   instance_type = "t3a.large"
   availability_zone = var.available_zone_1
   subnet_id = var.subnet_id_1
   key_name = var.key_name
   associate_public_ip_address = true
   vpc_security_group_ids = [
-    aws_security_group.aws_security_group_bch_mainnet.id]
+    var.default_sg_id,
+    aws_security_group.aws_sg_bch_mainnet.id]
   monitoring = true
   tags = {
     Name = "bcash-mainnet-1"
+    project = "mercury"
   }
 
   root_block_device {
@@ -72,7 +58,7 @@ resource "aws_instance" "bcash-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "ubuntu"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -84,7 +70,7 @@ resource "aws_instance" "bcash-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -96,7 +82,7 @@ resource "aws_instance" "bcash-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -119,28 +105,30 @@ resource "aws_instance" "bcash-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 }
 
 resource "aws_instance" "bcash-mainnet-2" {
-  ami = data.aws_ami.ubuntu.id
+  ami = var.ami_id
   instance_type = "t3a.large"
   availability_zone = var.available_zone_2
   subnet_id = var.subnet_id_2
   key_name = var.key_name
   associate_public_ip_address = true
   vpc_security_group_ids = [
-    aws_security_group.aws_security_group_bch_mainnet.id]
+    var.default_sg_id,
+    aws_security_group.aws_sg_bch_mainnet.id]
   monitoring = true
   tags = {
     Name = "bcash-mainnet-2"
+    project = "mercury"
   }
 
   root_block_device {
     volume_type = "gp2"
-    volume_size = 400
+    volume_size =  200
   }
 
   // Create new sudo user `bitcoin`
@@ -157,7 +145,7 @@ resource "aws_instance" "bcash-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "ubuntu"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -169,7 +157,7 @@ resource "aws_instance" "bcash-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -181,7 +169,7 @@ resource "aws_instance" "bcash-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -204,7 +192,7 @@ resource "aws_instance" "bcash-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 }

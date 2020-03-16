@@ -14,7 +14,7 @@ resource "aws_security_group" "aws_sg_lb_bitcoin" {
   }
 }
 
-// Creata load balancer for the bitcoin mainne nodes.
+// Creata load balancer for the bitcoin mainnet nodes.
 resource "aws_lb" "aws_lb_bitcoin" {
   name = "aws-lb-bitcoin"
   internal = true
@@ -33,7 +33,7 @@ resource "aws_lb" "aws_lb_bitcoin" {
 
 // Load balancer target group.
 resource "aws_lb_target_group" "aws_lb_tg_bitcoin" {
-  name = "bitcoin-lb-tg-bitcoin"
+  name = "aws-lb-tg-bitcoin"
   port = 80
   protocol = "HTTP"
   vpc_id = var.vpc_id

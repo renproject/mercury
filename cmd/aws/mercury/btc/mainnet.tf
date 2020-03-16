@@ -1,4 +1,4 @@
-resource "aws_security_group" "aws_sg_mainnet" {
+resource "aws_security_group" "aws_sg_btc_mainnet" {
   name = "aws_sg_btc_mainnet"
   description = "Security group for bitcoin mainnet nodes"
   vpc_id = var.vpc_id
@@ -32,7 +32,7 @@ resource "aws_instance" "bitcoin-mainnet-1" {
   associate_public_ip_address = true
   vpc_security_group_ids = [
     var.default_sg_id,
-    aws_security_group.aws_sg_mainnet.id]
+    aws_security_group.aws_sg_btc_mainnet.id]
   monitoring = true
   tags = {
     Name = "bitcoin-mainnet-1"
@@ -119,7 +119,7 @@ resource "aws_instance" "bitcoin-mainnet-2" {
   associate_public_ip_address = true
   vpc_security_group_ids = [
     var.default_sg_id,
-    aws_security_group.aws_sg_mainnet.id]
+    aws_security_group.aws_sg_btc_mainnet.id]
   monitoring = true
   tags = {
     Name = "bitcoin-mainnet-2"
