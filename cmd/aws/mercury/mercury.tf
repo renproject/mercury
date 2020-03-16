@@ -29,6 +29,7 @@ resource "aws_instance" "aws_instance_mercury1" {
   monitoring = true
 
   tags = {
+    Name = "mercury1"
     project = "mercury"
   }
 
@@ -117,6 +118,7 @@ resource "aws_instance" "aws_instance_mercury2" {
     aws_security_group.aws_sg_instance_mercury.id]
   monitoring = true
   tags = {
+    Name = "mercury2"
     project = "mercury"
   }
 

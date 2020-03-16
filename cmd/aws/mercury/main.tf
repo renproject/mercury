@@ -60,6 +60,7 @@ module "zcash" {
   available_zone_1 = var.avaiable_zone_1
   available_zone_2 = var.avaiable_zone_2
   ami_id = data.aws_ami.ubuntu.id
+  default_sg_id = aws_security_group.aws_sg_mercury_default.id
 
   vpc_id = aws_vpc.aws_vpc_mercury.id
   subnet_id_1 = aws_subnet.aws_subnet1.id
@@ -82,11 +83,12 @@ module "bcash" {
   available_zone_1 = var.avaiable_zone_1
   available_zone_2 = var.avaiable_zone_2
   ami_id = data.aws_ami.ubuntu.id
+  default_sg_id = aws_security_group.aws_sg_mercury_default.id
 
   vpc_id = aws_vpc.aws_vpc_mercury.id
   subnet_id_1 = aws_subnet.aws_subnet1.id
   subnet_id_2 = aws_subnet.aws_subnet2.id
 
   key_name = var.key_name
-  private_key_file = var.key_file
+  key_file = var.key_file
 }

@@ -20,7 +20,7 @@ resource "aws_lb" "aws_lb_mercury" {
   internal = false
   load_balancer_type = "application"
   security_groups = [
-    aws_security_group.aws_sg_mercury_default,
+    aws_security_group.aws_sg_mercury_default.id,
     aws_security_group.aws_sg_lb_mercury.id
   ]
 
