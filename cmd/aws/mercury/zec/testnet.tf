@@ -1,16 +1,8 @@
-resource "aws_security_group" "aws_security_group_zec_mainnet_testnet" {
-  name = "aws_security_group_zec_mainnet_testnet"
+// Security group for zcash testnet nodes.
+resource "aws_security_group" "aws_sg_zec_testnet" {
+  name = "aws_sg_zec_testnet"
   description = "Security group for zcash testnet node"
   vpc_id = var.vpc_id
-
-  ingress {
-    description = "Allow SSH connection "
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = [
-      "0.0.0.0/0"]
-  }
 
   ingress {
     description = "Allow internal jsonrpc request"
@@ -29,28 +21,23 @@ resource "aws_security_group" "aws_security_group_zec_mainnet_testnet" {
     cidr_blocks = [
       "0.0.0.0/0"]
   }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = [
-      "0.0.0.0/0"]
-  }
 }
 
-resource "aws_instance" "zcash-testnet-1" {
-  ami = data.aws_ami.ubuntu.id
+// Zcash testnet node instance.
+resource "aws_instance" "zcash-testnet" {
+  ami = var.ami_id
   instance_type = "t3a.medium"
   availability_zone = var.available_zone_1
   key_name = var.key_name
   subnet_id = var.subnet_id_1
   vpc_security_group_ids = [
-    aws_security_group.aws_security_group_zec_mainnet_testnet.id]
+    var.default_sg_id,
+    aws_security_group.aws_sg_zec_testnet.id]
   associate_public_ip_address = true
   monitoring = true
   tags = {
-    Name = "zcash-testnet-1"
+    Name = "zcash-testnet"
+    project = "mercury"
   }
 
   root_block_device {
@@ -72,7 +59,7 @@ resource "aws_instance" "zcash-testnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "ubuntu"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -84,7 +71,7 @@ resource "aws_instance" "zcash-testnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "zcash"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -96,7 +83,7 @@ resource "aws_instance" "zcash-testnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "zcash"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 
@@ -121,11 +108,12 @@ resource "aws_instance" "zcash-testnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "zcash"
-      private_key = file(var.private_key_file)
+      private_key = file(var.key_file)
     }
   }
 }
 
+// Output the testnet node instance private ip.
 output "zec_testnet_ip" {
-  value = aws_instance.zcash-testnet-1.private_ip
+  value = aws_instance.zcash-testnet.private_ip
 }

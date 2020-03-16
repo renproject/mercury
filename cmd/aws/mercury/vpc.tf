@@ -4,7 +4,7 @@ resource "aws_vpc" "aws_vpc_mercury" {
   instance_tenancy = "default"
 
   tags = {
-    Name = "mercury"
+    project = "mercury"
   }
 }
 
@@ -13,7 +13,21 @@ resource "aws_internet_gateway" "aws_internet_gateway_mercury" {
   vpc_id = aws_vpc.aws_vpc_mercury.id
 
   tags = {
-    Name = "mercury"
+    project = "mercury"
+  }
+}
+
+// Create a route table for all the public subnets
+resource "aws_route_table" "aws_route_table_mercury" {
+  vpc_id = aws_vpc.aws_vpc_mercury.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.aws_internet_gateway_mercury.id
+  }
+
+  tags = {
+    project = "mercury"
   }
 }
 
@@ -24,26 +38,9 @@ resource "aws_subnet" "aws_subnet1" {
   availability_zone = var.avaiable_zone_1
 
   tags = {
-    Name = "public"
+    project = "mercury"
+    type = "public"
   }
-}
-
-resource "aws_route_table" "aws_route_table_subnet1" {
-  vpc_id = aws_vpc.aws_vpc_mercury.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.aws_internet_gateway_mercury.id
-  }
-
-  tags = {
-    Name = "mercury"
-  }
-}
-
-resource "aws_route_table_association" "aws_route_table_association_subnet1" {
-  subnet_id = aws_subnet.aws_subnet1.id
-  route_table_id = aws_route_table.aws_route_table_subnet1.id
 }
 
 resource "aws_subnet" "aws_subnet2" {
@@ -52,30 +49,25 @@ resource "aws_subnet" "aws_subnet2" {
   availability_zone = var.avaiable_zone_2
 
   tags = {
-    Type = "public"
+    project = "mercury"
+    type = "public"
   }
 }
 
-resource "aws_route_table" "aws_route_table_subnet2" {
-  vpc_id = aws_vpc.aws_vpc_mercury.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.aws_internet_gateway_mercury.id
-  }
-
-  tags = {
-    Name = "mercury"
-  }
+// Associate subnets with the route table.
+resource "aws_route_table_association" "aws_route_table_association_subnet1" {
+  subnet_id = aws_subnet.aws_subnet1.id
+  route_table_id = aws_route_table.aws_route_table_mercury.id
 }
 
 resource "aws_route_table_association" "aws_route_table_association_subnet2" {
   subnet_id = aws_subnet.aws_subnet2.id
-  route_table_id = aws_route_table.aws_route_table_subnet2.id
+  route_table_id = aws_route_table.aws_route_table_mercury.id
 }
 
-// Create a default security group for the new VPC
-resource "aws_security_group" "aws_sg_mercury" {
+// Create a defualt security group for the VPC which allows ssh connectiong and
+// all outbound traffic.
+resource "aws_security_group" "aws_sg_mercury_default" {
   name = "aws_sg_mercury"
   vpc_id = aws_vpc.aws_vpc_mercury.id
   description = "Security group for Mercury VPC"

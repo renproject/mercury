@@ -4,53 +4,34 @@ provider "aws" {
 }
 
 // *** Input variables ***
-variable "btc_mainnet_username" {
-  description = "jsonrpc username for bitcoin mainnet nodes"
-}
+// Check README.md file to see the description of each input parameter.
+variable "btc_mainnet_username" {}
 
-variable "btc_mainnet_password" {
-  description = "jsonrpc password for bitcoin mainnet nodes"
-}
+variable "btc_mainnet_password" {}
 
-variable "btc_testnet_username" {
-  description = "jsonrpc username for bitcoin testnet nodes"
-}
+variable "btc_testnet_username" {}
 
-variable "btc_testnet_password" {
-  description = "jsonrpc password for bitcoin tesstnet nodes"
-}
+variable "btc_testnet_password" {}
 
-variable "region" {
-  description = "region on aws where to deploy the infrastructure"
-}
+variable "region" {}
 
-variable "available_zone_1" {
-  description = "first available zone we want to use"
-}
+variable "available_zone_1" {}
 
-variable "available_zone_2" {
-  description = "second available zone we want to use"
-}
+variable "available_zone_2" {}
 
-variable "vpc_id" {
-  description = "id of the vpc in the region"
-}
+variable "key_name" {}
 
-variable "subnet_id_1" {
-  description = "id of the subnet in the first available zone"
-}
+variable "key_file" {}
 
-variable "subnet_id_2" {
-  description = "id of the subnet in the second available zone"
-}
+variable "ami_id" {}
 
-variable "key_name" {
-  description = "name of the ssh key pair"
-}
+variable "default_sg_id" {}
 
-variable "private_key_file" {
-  description = "file path of the private key"
-}
+variable "vpc_id" {}
+
+variable "subnet_id_1" {}
+
+variable "subnet_id_2" {}
 
 // *** Local variables ***
 locals {
@@ -112,25 +93,4 @@ StartLimitBurst=5
 [Install]
 WantedBy=multi-user.target
 EOF
-}
-
-// Retrive the ubuntu ami from the marketplace
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name = "name"
-    values = [
-      "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
-  }
-
-  filter {
-    name = "virtualization-type"
-    values = [
-      "hvm"]
-  }
-
-  owners = [
-    "099720109477"]
-  # Canonical
 }

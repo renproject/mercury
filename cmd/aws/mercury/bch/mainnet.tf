@@ -1,10 +1,19 @@
-resource "aws_security_group" "aws_sg_mainnet" {
-  name = "aws_sg_btc_mainnet"
-  description = "Security group for bitcoin mainnet nodes"
+resource "aws_security_group" "aws_security_group_bch_mainnet" {
+  name = "aws_security_group_bch_mainnet"
+  description = "Security group for bitcoin cash mainnet node"
   vpc_id = var.vpc_id
 
   ingress {
-    description = "Allow bitcoin nodes communication"
+    description = "Allow SSH connection "
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [
+      "0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow bitcoin cash nodes communication"
     from_port = 8333
     to_port = 8333
     protocol = "tcp"
@@ -20,28 +29,33 @@ resource "aws_security_group" "aws_sg_mainnet" {
     cidr_blocks = [
       "10.0.0.0/16"]
   }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [
+      "0.0.0.0/0"]
+  }
 }
 
-// First bitcoin node instance
-resource "aws_instance" "bitcoin-mainnet-1" {
-  ami = var.ami_id
+resource "aws_instance" "bcash-mainnet-1" {
+  ami = data.aws_ami.ubuntu.id
   instance_type = "t3a.large"
   availability_zone = var.available_zone_1
   subnet_id = var.subnet_id_1
   key_name = var.key_name
   associate_public_ip_address = true
   vpc_security_group_ids = [
-    var.default_sg_id,
-    aws_security_group.aws_sg_mainnet.id]
+    aws_security_group.aws_security_group_bch_mainnet.id]
   monitoring = true
   tags = {
-    Name = "bitcoin-mainnet-1"
-    project = "mercury"
+    Name = "bcash-mainnet-1"
   }
 
   root_block_device {
     volume_type = "gp2"
-    volume_size = 400
+    volume_size = 200
   }
 
   // Create new sudo user `bitcoin`
@@ -58,7 +72,7 @@ resource "aws_instance" "bitcoin-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "ubuntu"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 
@@ -70,7 +84,7 @@ resource "aws_instance" "bitcoin-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 
@@ -82,7 +96,7 @@ resource "aws_instance" "bitcoin-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 
@@ -90,8 +104,9 @@ resource "aws_instance" "bitcoin-mainnet-1" {
   provisioner "remote-exec" {
     inline = [
       "set -x",
+      "sudo apt-get update",
       "sudo apt-get install --yes software-properties-common",
-      "sudo add-apt-repository --yes ppa:luke-jr/bitcoincore",
+      "sudo add-apt-repository --yes ppa:bitcoin-abc/ppa",
       "sudo apt-get update",
       "sudo apt-get install --yes bitcoind",
       "mkdir ~/.bitcoin",
@@ -104,26 +119,23 @@ resource "aws_instance" "bitcoin-mainnet-1" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 }
 
-// Second bitcoin mainet node instance
-resource "aws_instance" "bitcoin-mainnet-2" {
-  ami = var.ami_id
+resource "aws_instance" "bcash-mainnet-2" {
+  ami = data.aws_ami.ubuntu.id
   instance_type = "t3a.large"
   availability_zone = var.available_zone_2
   subnet_id = var.subnet_id_2
   key_name = var.key_name
   associate_public_ip_address = true
   vpc_security_group_ids = [
-    var.default_sg_id,
-    aws_security_group.aws_sg_mainnet.id]
+    aws_security_group.aws_security_group_bch_mainnet.id]
   monitoring = true
   tags = {
-    Name = "bitcoin-mainnet-2"
-    project = "mercury"
+    Name = "bcash-mainnet-2"
   }
 
   root_block_device {
@@ -145,7 +157,7 @@ resource "aws_instance" "bitcoin-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "ubuntu"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 
@@ -157,7 +169,7 @@ resource "aws_instance" "bitcoin-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 
@@ -169,7 +181,7 @@ resource "aws_instance" "bitcoin-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 
@@ -177,8 +189,9 @@ resource "aws_instance" "bitcoin-mainnet-2" {
   provisioner "remote-exec" {
     inline = [
       "set -x",
+      "sudo apt-get update",
       "sudo apt-get install --yes software-properties-common",
-      "sudo add-apt-repository --yes ppa:luke-jr/bitcoincore",
+      "sudo add-apt-repository --yes ppa:bitcoin-abc/ppa",
       "sudo apt-get update",
       "sudo apt-get install --yes bitcoind",
       "mkdir ~/.bitcoin",
@@ -191,7 +204,7 @@ resource "aws_instance" "bitcoin-mainnet-2" {
       host = coalesce(self.public_ip, self.private_ip)
       type = "ssh"
       user = "bitcoin"
-      private_key = file(var.key_file)
+      private_key = file(var.private_key_file)
     }
   }
 }
