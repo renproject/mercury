@@ -12,7 +12,6 @@ require (
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/pkg/errors v0.8.1
-	github.com/renproject/darknode v0.5.2
 	github.com/renproject/kv v1.0.3
 	github.com/renproject/phi v0.1.0
 	github.com/rs/cors v1.7.0

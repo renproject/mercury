@@ -216,8 +216,6 @@ github.com/prometheus/tsdb v0.10.0 h1:If5rVCMTp6W2SiRAQFlbpJNgVlgMEd+U2GZckwK38i
 github.com/prometheus/tsdb v0.10.0/go.mod h1:oi49uRhEe9dPUTlS3JRZOwJuVi6tmh10QSgwXEyGCt4=
 github.com/renproject/aw v0.2.4 h1:kOJVNHs28B//5wY1CesC2IPwGYnHZP8H9XtExCa4N1Y=
 github.com/renproject/aw v0.2.4/go.mod h1:I3azBybw/W3wWC4/xRxgZFFQrAshVgnUWUqUOSeESWE=
-github.com/renproject/darknode v0.5.2 h1:aczcW0JqEWq+jZO25KV4yzkQ2MevPOPttFjuGSzM+F0=
-github.com/renproject/darknode v0.5.2/go.mod h1:kMcgMH1pyr8cFzymYTRzxnCmwQRouKIu4ygeAhy3V7E=
 github.com/renproject/hyperdrive v0.3.1 h1:txkmrf0RcZIxjg7bLzYiLlEcQMIO87p/5vpVGEXRqJA=
 github.com/renproject/hyperdrive v0.3.1/go.mod h1:kFiXW7enjQ5jzwprSr64B5HSCNvnXHfkLzz84R2gA/w=
 github.com/renproject/id v0.1.1 h1:KaV31Xp7SSlyUs5O0vHIw9rhhzrJ0lTOkQXVgbgyPEU=
