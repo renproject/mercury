@@ -3,7 +3,7 @@ version: 2.1
 executors:
   go_exec:
     docker:
-      - image: intabulas/go-node-bedrock:v1.0.87
+      - image: intabulas/go-node-bedrock:v1.0.83
 jobs:
   build:
     executor: go_exec
