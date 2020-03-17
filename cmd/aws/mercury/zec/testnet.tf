@@ -26,7 +26,7 @@ resource "aws_security_group" "aws_sg_zec_testnet" {
 // Zcash testnet node instance.
 resource "aws_instance" "zcash-testnet" {
   ami = var.ami_id
-  instance_type = "t3a.medium"
+  instance_type = "t3a.large"
   availability_zone = var.available_zone_1
   key_name = var.key_name
   subnet_id = var.subnet_id_1

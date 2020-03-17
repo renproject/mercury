@@ -25,7 +25,7 @@ resource "aws_security_group" "aws_sg_zec_mainnet" {
 // First zcash mainnet node instance
 resource "aws_instance" "zcash-mainnet-1" {
   ami = var.ami_id
-  instance_type = "t3a.medium"
+  instance_type = "t3a.large"
   availability_zone = var.available_zone_1
   subnet_id = var.subnet_id_1
   key_name = var.key_name

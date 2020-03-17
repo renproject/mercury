@@ -41,7 +41,7 @@ resource "aws_instance" "bcash-mainnet-1" {
 
   root_block_device {
     volume_type = "gp2"
-    volume_size = 200
+    volume_size = 250
   }
 
   // Create new sudo user `bitcoin`
@@ -128,7 +128,7 @@ resource "aws_instance" "bcash-mainnet-2" {
 
   root_block_device {
     volume_type = "gp2"
-    volume_size = 200
+    volume_size = 250
   }
 
   // Create new sudo user `bitcoin`
