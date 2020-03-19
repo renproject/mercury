@@ -77,7 +77,7 @@ func (client *rpcClient) SendRawTransaction(ctx context.Context, stx btctypes.Bt
 		return "", err
 	}
 	resp := ""
-	if err := client.client.SendRequest(ctx, "sendrawtransaction", &resp, hex.EncodeToString(stxBytes), false); err != nil {
+	if err := client.client.SendRequest(ctx, "sendrawtransaction", &resp, hex.EncodeToString(stxBytes)); err != nil {
 		return resp, err
 	}
 	return resp, nil
