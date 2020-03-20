@@ -20,6 +20,7 @@ resource "aws_lb" "aws_lb_bcash" {
   internal = true
   load_balancer_type = "application"
   security_groups = [
+    var.default_sg_id,
     aws_security_group.aws_sg_lb_bcash.id]
   subnets = [
     var.subnet_id_1,

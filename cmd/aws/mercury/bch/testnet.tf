@@ -91,7 +91,7 @@ resource "aws_instance" "bcash-testnet" {
     inline = [
       "set -x",
       "sudo apt-get install --yes software-properties-common",
-      "sudo add-apt-repository --yes ppa:luke-jr/bitcoincore",
+      "sudo add-apt-repository --yes ppa:bitcoin-abc/ppa",
       "sudo apt-get update",
       "sudo apt-get install --yes bitcoind",
       "mkdir ~/.bitcoin",
