@@ -3,6 +3,7 @@ package btcgateway_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -145,7 +146,7 @@ var _ = Describe("btc gateway", func() {
 		networks := []btctypes.Network{btctypes.BtcLocalnet, btctypes.ZecLocalnet, btctypes.BchLocalnet}
 		for _, network := range networks {
 			network := network
-			It(fmt.Sprintf("should be able to generate a %v gateway", network), func() {
+			FIt(fmt.Sprintf("should be able to generate a %v gateway", network), func() {
 				client := btcclient.NewClient(logger, network)
 				key, err := loadTestAccounts(network).EcdsaKey(44, 1, 0, 0, 1)
 				gateway := New(client, key.PublicKey, []byte{})
@@ -178,6 +179,9 @@ var _ = Describe("btc gateway", func() {
 					Address: account.Address(),
 					Amount:  gatewayUTXOs.Sum() - gasAmount,
 				}}
+				for i := range gatewayUTXOs {
+					log.Printf("amount=%d", gatewayUTXOs[i].Amount())
+				}
 				tx, err := client.BuildUnsignedTx(gatewayUTXOs, recipients, account.Address(), gasAmount)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -206,7 +210,7 @@ var _ = Describe("btc gateway", func() {
 			account, err := btcaccount.NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			// Transfer some funds to the gateway address
-			amount := 20000 * btctypes.SAT
+			amount := 60000 * btctypes.SAT
 
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
@@ -227,7 +231,7 @@ var _ = Describe("btc gateway", func() {
 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 			gasAmount := client.SuggestGasPrice(ctx, types.Standard, txSize)
-			fmt.Printf("gas amount=%v", gasAmount)
+			Expect(amount).To(BeNumerically(">", gasAmount))
 			recipients := btctypes.Recipients{{
 				Address: account.Address(),
 				Amount:  gatewayUTXOs.Sum() - gasAmount,
