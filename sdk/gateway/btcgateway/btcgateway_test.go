@@ -157,7 +157,7 @@ var _ = Describe("btc gateway", func() {
 
 				fmt.Println(network, account.Address())
 				// Transfer some funds to the gateway address
-				amount := 20000 * btctypes.SAT
+				amount := 60000 * btctypes.SAT
 
 				txHash, err := account.Transfer(ctx, gateway.Address(), amount, types.Standard, false)
 				Expect(err).NotTo(HaveOccurred())
@@ -173,7 +173,7 @@ var _ = Describe("btc gateway", func() {
 				Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 				txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 				gasAmount := client.SuggestGasPrice(ctx, types.Standard, txSize)
-				fmt.Printf("gas amount=%v", gasAmount)
+				Expect(amount).To(BeNumerically(">", gasAmount))
 				recipients := btctypes.Recipients{{
 					Address: account.Address(),
 					Amount:  gatewayUTXOs.Sum() - gasAmount,
