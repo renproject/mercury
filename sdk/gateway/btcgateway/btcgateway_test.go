@@ -191,7 +191,7 @@ var _ = Describe("btc gateway", func() {
 				err = tx.InjectSignatures(sigs, key.PublicKey)
 
 				Expect(err).NotTo(HaveOccurred())
-				newTxHash, err := client.SubmitSignedTx(context.Background(), tx)
+				newTxHash, err := client.SubmitSignedTx(ctx, tx)
 				Expect(err).NotTo(HaveOccurred())
 				fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
 			})
