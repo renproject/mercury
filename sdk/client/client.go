@@ -1,5 +1,5 @@
 package client
 
 const (
-	MercuryURL = "http://139.59.217.120:5000"
+	MercuryURL = "http://aws-lb-mercury-1187443577.us-east-1.elb.amazonaws.com"
 )

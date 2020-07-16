@@ -13,12 +13,17 @@
 
 # Environment variables for local tests
 .env
+.tfvars
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# Terraform configs
+.terraform/
+*.tfstate*
 
 # IDE
 .idea

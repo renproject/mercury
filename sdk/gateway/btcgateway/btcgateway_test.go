@@ -3,6 +3,7 @@ package btcgateway_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -157,7 +158,7 @@ var _ = Describe("btc gateway", func() {
 
 				fmt.Println(network, account.Address())
 				// Transfer some funds to the gateway address
-				amount := 20000 * btctypes.SAT
+				amount := 60000 * btctypes.SAT
 
 				txHash, err := account.Transfer(ctx, gateway.Address(), amount, types.Standard, false)
 				Expect(err).NotTo(HaveOccurred())
@@ -173,11 +174,14 @@ var _ = Describe("btc gateway", func() {
 				Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 				txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 				gasAmount := client.SuggestGasPrice(ctx, types.Standard, txSize)
-				fmt.Printf("gas amount=%v", gasAmount)
+				Expect(amount).To(BeNumerically(">", gasAmount))
 				recipients := btctypes.Recipients{{
 					Address: account.Address(),
 					Amount:  gatewayUTXOs.Sum() - gasAmount,
 				}}
+				for i := range gatewayUTXOs {
+					log.Printf("amount=%d", gatewayUTXOs[i].Amount())
+				}
 				tx, err := client.BuildUnsignedTx(gatewayUTXOs, recipients, account.Address(), gasAmount)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -191,7 +195,7 @@ var _ = Describe("btc gateway", func() {
 				err = tx.InjectSignatures(sigs, key.PublicKey)
 
 				Expect(err).NotTo(HaveOccurred())
-				newTxHash, err := client.SubmitSignedTx(context.Background(), tx)
+				newTxHash, err := client.SubmitSignedTx(ctx, tx)
 				Expect(err).NotTo(HaveOccurred())
 				fmt.Printf("spending gateway funds with tx hash=%v\n", newTxHash)
 			})
@@ -206,7 +210,7 @@ var _ = Describe("btc gateway", func() {
 			account, err := btcaccount.NewAccount(client, key)
 			Expect(err).NotTo(HaveOccurred())
 			// Transfer some funds to the gateway address
-			amount := 20000 * btctypes.SAT
+			amount := 60000 * btctypes.SAT
 
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
@@ -227,7 +231,7 @@ var _ = Describe("btc gateway", func() {
 			Expect(len(gatewayUTXOs)).To(BeNumerically(">", 0))
 			txSize := gateway.EstimateTxSize(0, len(gatewayUTXOs), 1)
 			gasAmount := client.SuggestGasPrice(ctx, types.Standard, txSize)
-			fmt.Printf("gas amount=%v", gasAmount)
+			Expect(amount).To(BeNumerically(">", gasAmount))
 			recipients := btctypes.Recipients{{
 				Address: account.Address(),
 				Amount:  gatewayUTXOs.Sum() - gasAmount,
