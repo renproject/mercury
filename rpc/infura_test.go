@@ -18,9 +18,7 @@ var _ = Describe("Infura RPC client", func() {
 	Context("when interacting with the infura client", func() {
 		It("should return the correct response", func() {
 			infuraAPIKey := os.Getenv("INFURA_KEY_DEFAULT")
-			client := NewInfuraClient(ethtypes.Kovan, map[string]string{
-				"": infuraAPIKey,
-			})
+			client := NewInfuraClient(new(http.Client), ethtypes.Kovan, infuraAPIKey)
 
 			r, err := http.NewRequest("POST", "http://0.0.0.0:5000/eth/kovan", nil)
 			Expect(err).ToNot(HaveOccurred())

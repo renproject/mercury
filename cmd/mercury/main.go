@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -20,15 +23,25 @@ func main() {
 	db := kv.NewMemDB(kv.JSONCodec)
 
 	// Initialise stores.
-	ethRinkebyCache := cache.New(kv.NewTable(db, "ethRinkeby"), logger)
-	ethKovanCache := cache.New(kv.NewTable(db, "ethKovan"), logger)
-	btcTestCache := cache.New(kv.NewTable(db, "btcTest"), logger)
-	zecTestCache := cache.New(kv.NewTable(db, "zecTest"), logger)
-	bchTestCache := cache.New(kv.NewTable(db, "bchTest"), logger)
-	ethCache := cache.New(kv.NewTable(db, "eth"), logger)
-	btcCache := cache.New(kv.NewTable(db, "btc"), logger)
-	zecCache := cache.New(kv.NewTable(db, "zec"), logger)
-	bchCache := cache.New(kv.NewTable(db, "bch"), logger)
+	rinkebyTTL := kv.NewTTLCache(context.Background(), db, "ethRinkebyCache", 5*time.Second)
+	kovanTTL := kv.NewTTLCache(context.Background(), db, "ethKovanCache", 5*time.Second)
+	btcTestTTL := kv.NewTTLCache(context.Background(), db, "btcTestCache", 5*time.Second)
+	zecTestTTL := kv.NewTTLCache(context.Background(), db, "zecTestCache", 5*time.Second)
+	bchTestTTL := kv.NewTTLCache(context.Background(), db, "bchTestCache", 5*time.Second)
+	ethTTL := kv.NewTTLCache(context.Background(), db, "ethCache", 5*time.Second)
+	btcTTL := kv.NewTTLCache(context.Background(), db, "btcCache", 5*time.Second)
+	zecTTL := kv.NewTTLCache(context.Background(), db, "zecCache", 5*time.Second)
+	bchTTL := kv.NewTTLCache(context.Background(), db, "bchCache", 5*time.Second)
+
+	ethRinkebyCache := cache.New(kv.NewTable(db, "ethRinkeby"), rinkebyTTL, logger)
+	ethKovanCache := cache.New(kv.NewTable(db, "ethKovan"), kovanTTL, logger)
+	btcTestCache := cache.New(kv.NewTable(db, "btcTest"), btcTestTTL, logger)
+	zecTestCache := cache.New(kv.NewTable(db, "zecTest"), zecTestTTL, logger)
+	bchTestCache := cache.New(kv.NewTable(db, "bchTest"), bchTestTTL, logger)
+	ethCache := cache.New(kv.NewTable(db, "eth"), ethTTL, logger)
+	btcCache := cache.New(kv.NewTable(db, "btc"), btcTTL, logger)
+	zecCache := cache.New(kv.NewTable(db, "zec"), zecTTL, logger)
+	bchCache := cache.New(kv.NewTable(db, "bch"), bchTTL, logger)
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
@@ -76,19 +89,13 @@ func main() {
 	bchMainnetAPI := api.NewApi(btctypes.BchMainnet, bchMainnetProxy, bchCache, logger)
 
 	// Initialize Ethereum API.
-	taggedKeys := map[string]string{
-		"":         os.Getenv("INFURA_KEY_DEFAULT"),
-		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
-		"darknode": os.Getenv("INFURA_KEY_DARKNODE"),
-		"renex":    os.Getenv("INFURA_KEY_RENEX"),
-		"renex-ui": os.Getenv("INFURA_KEY_RENEX_UI"),
-		"dcc":      os.Getenv("INFURA_KEY_DCC"),
-	}
-	infuraMainnetClient := rpc.NewInfuraClient(ethtypes.Mainnet, taggedKeys)
+	infuraKey := os.Getenv("INFURA_KEY_DEFAULT")
+	client := new(http.Client)
+	infuraMainnetClient := rpc.NewInfuraClient(client, ethtypes.Mainnet, infuraKey)
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
 	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
-	infuraRinkebyClient := rpc.NewInfuraClient(ethtypes.Rinkeby, taggedKeys)
+	infuraRinkebyClient := rpc.NewInfuraClient(client, ethtypes.Rinkeby, infuraKey)
 	ethRinkebyProxy := proxy.NewProxy(infuraRinkebyClient)
 	ethRinkebyAPI := api.NewApi(ethtypes.Rinkeby, ethRinkebyProxy, ethRinkebyCache, logger)
 
@@ -96,7 +103,7 @@ func main() {
 	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
 	if ethKovanRPCURL == "" {
 		logger.Infof("Using Infura")
-		testnetClient = rpc.NewInfuraClient(ethtypes.Kovan, taggedKeys)
+		testnetClient = rpc.NewInfuraClient(client, ethtypes.Kovan, infuraKey)
 	} else {
 		logger.Infof("Using local ETH node at: %s", ethKovanRPCURL)
 		ethKovanUser := os.Getenv("ETH_KOVAN_RPC_USERNAME")

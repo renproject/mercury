@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,9 +11,10 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/renproject/mercury/api"
+
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
-	. "github.com/renproject/mercury/api"
 	"github.com/renproject/mercury/cache"
 	"github.com/renproject/mercury/proxy"
 	"github.com/renproject/mercury/rpc"
@@ -32,8 +34,11 @@ var _ = Describe("Server", func() {
 			logger := logrus.StandardLogger()
 			btcTestnetNodeClient := rpc.NewClient(btcTestnetURL, btcTestnetUser, btcTestnetPassword)
 			btcTestnetProxy := proxy.NewProxy(btcTestnetNodeClient)
-			store := kv.NewTable(kv.NewMemDB(kv.JSONCodec), "test")
-			btcCache := cache.New(store, logger)
+
+			db := kv.NewMemDB(kv.JSONCodec)
+			store := kv.NewTable(db, "test")
+			ttl := kv.NewTTLCache(context.Background(), db, "ttl", time.Second)
+			btcCache := cache.New(store, ttl, logger)
 			btcTestnetAPI := api.NewApi(btctypes.BtcTestnet, btcTestnetProxy, btcCache, logger)
 			server := NewServer(logrus.StandardLogger(), "5000", btcTestnetAPI)
 			go server.Run()

@@ -2,39 +2,40 @@ package rpc
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/renproject/mercury/types/ethtypes"
 )
 
 // infuraClient implements the `Client` interface.
 type infuraClient struct {
-	network    ethtypes.Network
-	url        string
-	taggedKeys map[string]string
+	client  *http.Client
+	network ethtypes.Network
+	url     string
 }
 
 // NewInfuraClient returns a new infuraClient.
-func NewInfuraClient(network ethtypes.Network, taggedKeys map[string]string) Client {
+func NewInfuraClient(client *http.Client, network ethtypes.Network, key string) Client {
 	return &infuraClient{
-		network:    network,
-		url:        fmt.Sprintf("https://%s.infura.io/v3", network.String()),
-		taggedKeys: taggedKeys,
+		client:  client,
+		network: network,
+		url:     fmt.Sprintf("https://%s.infura.io/v3/%v", network.String(), key),
 	}
 }
 
 // HandleRequest implements the `Client` interface.
 func (infura *infuraClient) HandleRequest(r *http.Request, data []byte) (*http.Response, error) {
-	tag := r.URL.Query().Get("tag")
-	apiKey := infura.taggedKeys[tag]
-	if apiKey == "" {
-		apiKey = infura.taggedKeys[""]
-	}
-	client := http.Client{}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s", infura.url, apiKey), bytes.NewBuffer(data))
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequest("POST", infura.url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, fmt.Errorf("cannot construct post request for infura: %v", err)
 	}
-	return client.Do(req)
+	req.WithContext(ctx)
+
+	return infura.client.Do(r)
 }
