@@ -40,6 +40,9 @@ func New(store, ttl kv.Table, logger logrus.FieldLogger) *Cache {
 // the function f() from being called multiple times for the same request.
 func (cache *Cache) Get(level types.AccessLevel, hash string, f func() ([]byte, error)) ([]byte, error) {
 	if level == types.FullAccess {
+		if cache.ttl == nil {
+			return f()
+		}
 		var data []byte
 		err := cache.ttl.Get(hash, &data)
 		if err == kv.ErrKeyNotFound {
