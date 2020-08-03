@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"time"
 
@@ -89,13 +88,19 @@ func main() {
 	bchMainnetAPI := api.NewApi(btctypes.BchMainnet, bchMainnetProxy, bchCache, logger)
 
 	// Initialize Ethereum API.
-	infuraKey := os.Getenv("INFURA_KEY_DEFAULT")
-	client := new(http.Client)
-	infuraMainnetClient := rpc.NewInfuraClient(client, ethtypes.Mainnet, infuraKey)
+	taggedKeys := map[string]string{
+		"":         os.Getenv("INFURA_KEY_DEFAULT"),
+		"swapperd": os.Getenv("INFURA_KEY_SWAPPERD"),
+		"darknode": os.Getenv("INFURA_KEY_DARKNODE"),
+		"renex":    os.Getenv("INFURA_KEY_RENEX"),
+		"renex-ui": os.Getenv("INFURA_KEY_RENEX_UI"),
+		"dcc":      os.Getenv("INFURA_KEY_DCC"),
+	}
+	infuraMainnetClient := rpc.NewInfuraClient(ethtypes.Mainnet, taggedKeys)
 	ethMainnetProxy := proxy.NewProxy(infuraMainnetClient)
 	ethMainnetAPI := api.NewApi(ethtypes.Mainnet, ethMainnetProxy, ethCache, logger)
 
-	infuraRinkebyClient := rpc.NewInfuraClient(client, ethtypes.Rinkeby, infuraKey)
+	infuraRinkebyClient := rpc.NewInfuraClient(ethtypes.Rinkeby, taggedKeys)
 	ethRinkebyProxy := proxy.NewProxy(infuraRinkebyClient)
 	ethRinkebyAPI := api.NewApi(ethtypes.Rinkeby, ethRinkebyProxy, ethRinkebyCache, logger)
 
@@ -103,7 +108,7 @@ func main() {
 	ethKovanRPCURL := os.Getenv("ETH_KOVAN_RPC_URL")
 	if ethKovanRPCURL == "" {
 		logger.Infof("Using Infura")
-		testnetClient = rpc.NewInfuraClient(client, ethtypes.Kovan, infuraKey)
+		testnetClient = rpc.NewInfuraClient(ethtypes.Kovan, taggedKeys)
 	} else {
 		logger.Infof("Using local ETH node at: %s", ethKovanRPCURL)
 		ethKovanUser := os.Getenv("ETH_KOVAN_RPC_USERNAME")
