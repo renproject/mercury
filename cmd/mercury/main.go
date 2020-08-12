@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/renproject/kv"
 	"github.com/renproject/mercury/api"
@@ -20,15 +22,25 @@ func main() {
 	db := kv.NewMemDB(kv.JSONCodec)
 
 	// Initialise stores.
-	ethRinkebyCache := cache.New(kv.NewTable(db, "ethRinkeby"), logger)
-	ethKovanCache := cache.New(kv.NewTable(db, "ethKovan"), logger)
-	btcTestCache := cache.New(kv.NewTable(db, "btcTest"), logger)
-	zecTestCache := cache.New(kv.NewTable(db, "zecTest"), logger)
-	bchTestCache := cache.New(kv.NewTable(db, "bchTest"), logger)
-	ethCache := cache.New(kv.NewTable(db, "eth"), logger)
-	btcCache := cache.New(kv.NewTable(db, "btc"), logger)
-	zecCache := cache.New(kv.NewTable(db, "zec"), logger)
-	bchCache := cache.New(kv.NewTable(db, "bch"), logger)
+	rinkebyTTL := kv.NewTTLCache(context.Background(), db, "ethRinkebyCache", 5*time.Second)
+	kovanTTL := kv.NewTTLCache(context.Background(), db, "ethKovanCache", 5*time.Second)
+	// btcTestTTL := kv.NewTTLCache(context.Background(), db, "btcTestCache", 5*time.Second)
+	// zecTestTTL := kv.NewTTLCache(context.Background(), db, "zecTestCache", 5*time.Second)
+	// bchTestTTL := kv.NewTTLCache(context.Background(), db, "bchTestCache", 5*time.Second)
+	// ethTTL := kv.NewTTLCache(context.Background(), db, "ethCache", 5*time.Second)
+	// btcTTL := kv.NewTTLCache(context.Background(), db, "btcCache", 5*time.Second)
+	// zecTTL := kv.NewTTLCache(context.Background(), db, "zecCache", 5*time.Second)
+	// bchTTL := kv.NewTTLCache(context.Background(), db, "bchCache", 5*time.Second)
+
+	ethRinkebyCache := cache.New(kv.NewTable(db, "ethRinkeby"), rinkebyTTL, logger)
+	ethKovanCache := cache.New(kv.NewTable(db, "ethKovan"), kovanTTL, logger)
+	btcTestCache := cache.New(kv.NewTable(db, "btcTest"), nil, logger)
+	zecTestCache := cache.New(kv.NewTable(db, "zecTest"), nil, logger)
+	bchTestCache := cache.New(kv.NewTable(db, "bchTest"), nil, logger)
+	ethCache := cache.New(kv.NewTable(db, "eth"), nil, logger)
+	btcCache := cache.New(kv.NewTable(db, "btc"), nil, logger)
+	zecCache := cache.New(kv.NewTable(db, "zec"), nil, logger)
+	bchCache := cache.New(kv.NewTable(db, "bch"), nil, logger)
 
 	// Initialise Bitcoin API.
 	btcTestnetURL := os.Getenv("BITCOIN_TESTNET_RPC_URL")
