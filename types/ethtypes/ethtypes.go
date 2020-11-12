@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	Mainnet     network = 1
-	Kovan       network = 42
-	Rinkeby     network = 4
-	Ganache     network = 255
+	Mainnet network = 1
+	Kovan   network = 42
+	Rinkeby network = 4
+	Ganache network = 255
 	EthLocalnet network = 254
 )
 

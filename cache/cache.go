@@ -20,16 +20,14 @@ var (
 
 type Cache struct {
 	locks  sync.Map
-	ttl    kv.Table
 	store  kv.Table
 	logger logrus.FieldLogger
 }
 
 // New returns a new Cache.
-func New(store, ttl kv.Table, logger logrus.FieldLogger) *Cache {
+func New(store kv.Table, logger logrus.FieldLogger) *Cache {
 	return &Cache{
 		locks:  sync.Map{},
-		ttl:    ttl,
 		store:  store,
 		logger: logger,
 	}
@@ -39,21 +37,8 @@ func New(store, ttl kv.Table, logger logrus.FieldLogger) *Cache {
 // requests that are sent while the result is being retrieved, wait until the first function call returns. This prevents
 // the function f() from being called multiple times for the same request.
 func (cache *Cache) Get(level types.AccessLevel, hash string, f func() ([]byte, error)) ([]byte, error) {
-	if level == types.FullAccess {
-		if cache.ttl == nil {
-			return f()
-		}
-		var data []byte
-		err := cache.ttl.Get(hash, &data)
-		if err == kv.ErrKeyNotFound {
-			value, err := f()
-			if err != nil {
-				return nil, err
-			}
-
-			return value, cache.ttl.Insert(hash, value)
-		}
-		return data, err
+	if level == 2 {
+		return f()
 	}
 
 	// Check if the result already exists in the store.
